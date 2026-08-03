@@ -7,7 +7,6 @@ package db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
-
 /**
  *
  * @author HP
@@ -19,10 +18,11 @@ public class DBconnection {
         Connection con = null;
 
         try {
+            // Using the modern driver class name for Connector/J 8.x / 9.x
+            Class.forName("com.mysql.cj.jdbc.Driver");
 
-            Class.forName("com.mysql.jdbc.Driver");
-
-            String url = "jdbc:mysql://127.0.0.1:3306/student_db?useSSL=false";
+            // Updated database name to sunrise_dental
+            String url = "jdbc:mysql://127.0.0.1:3306/sunrise_dental?useSSL=false&serverTimezone=UTC";
 
             con = DriverManager.getConnection(url, "root", "");
 
