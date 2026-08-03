@@ -10,54 +10,43 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 
 /**
- * SidebarPanel - professional, collapsible left navigation.
- *
- * Structure: a set of NavGroups, each either a single leaf item (Dashboard)
- * or a parent with an accordion of NavChild items underneath it.
- *
- * Pure View layer: on selection it only calls MainFrame.showCard(cardName).
- * No business logic, no data access.
+ * SidebarPanel - JDK 26 compatible. No Unicode symbols, no custom fonts.
+ * Uses only standard Swing APIs available since Java 8+.
  */
 public class SidebarPanel extends JPanel {
 
-    // ---- Dental Clinic palette ----------------------------------------
-    private static final Color CHARCOAL      = Color.decode("#2F3E3C"); // sidebar background
-    private static final Color MINT          = Color.decode("#BDDBD1"); // active accent
-    private static final Color LIGHT_MINT_BG = Color.decode("#E8F0F1"); // hover tint (on dark, used as text tint)
-    private static final Color SKY           = Color.decode("#C7E7EC"); // secondary accent
-    private static final Color CREAM         = Color.decode("#FBF9F1"); // primary text on dark
-    private static final Color MUTED_TEXT    = new Color(255, 255, 255, 140); // dimmed labels
-    private static final Color FOOTER_BG     = Color.decode("#26332F"); // slightly darker than charcoal
-    private static final Color DIVIDER       = new Color(255, 255, 255, 20);
+    private static final Color SIDEBAR_BG     = new Color(251, 249, 241);
+    private static final Color PRIMARY_TEXT   = new Color(47, 62, 60);
+    private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
+    private static final Color ACTIVE_BG      = new Color(189, 219, 209);
+    private static final Color HOVER_BG       = new Color(232, 240, 241);
+    private static final Color ACCENT         = new Color(199, 231, 236);
+    private static final Color DIVIDER        = new Color(217, 223, 218);
+    private static final Color FOOTER_BG      = new Color(242, 240, 232);
 
-    private static final Font FONT_GROUP = new Font("SansSerif", Font.BOLD, 13);
-    private static final Font FONT_CHILD = new Font("SansSerif", Font.PLAIN, 13);
-    private static final Font FONT_NAME  = new Font("SansSerif", Font.BOLD, 13);
-    private static final Font FONT_ROLE  = new Font("SansSerif", Font.PLAIN, 11);
+    private static final Font FONT_GROUP = new Font(Font.SANS_SERIF, Font.BOLD, 14);
+    private static final Font FONT_CHILD = new Font(Font.SANS_SERIF, Font.PLAIN, 13);
+    private static final Font FONT_NAME  = new Font(Font.SANS_SERIF, Font.BOLD, 13);
+    private static final Font FONT_ROLE  = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
+    private static final Font FONT_TITLE = new Font(Font.SANS_SERIF, Font.BOLD, 20);
+    private static final Font FONT_SUB   = new Font(Font.SANS_SERIF, Font.PLAIN, 11);
 
     private final MainFrame mainFrame;
-    private JPanel navListPanel;
-    private JLabel activeIndicatorTarget; // currently selected row (for accent bar)
+    private JPanel activeRow;
 
-    /** One expandable/leaf navigation group, e.g. "Patient Management". */
     private static class NavGroup {
-        String icon;
         String label;
-        String cardName;      // non-null only for leaf groups (e.g. Dashboard)
+        String cardName;
         List<NavChild> children = new ArrayList<>();
-
-        NavGroup(String icon, String label, String cardName) {
-            this.icon = icon;
+        NavGroup(String label, String cardName) {
             this.label = label;
             this.cardName = cardName;
         }
     }
 
-    /** One sub-item under a group, e.g. "Patient List". */
     private static class NavChild {
         String label;
         String cardName;
-
         NavChild(String label, String cardName) {
             this.label = label;
             this.cardName = cardName;
@@ -66,54 +55,55 @@ public class SidebarPanel extends JPanel {
 
     public SidebarPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
-
         setLayout(new BorderLayout());
-        setBackground(CHARCOAL);
+        setBackground(SIDEBAR_BG);
         setPreferredSize(new Dimension(270, 0));
         setBorder(new MatteBorder(0, 0, 0, 1, DIVIDER));
-
         add(buildBrandHeader(), BorderLayout.NORTH);
         add(buildScrollableNav(), BorderLayout.CENTER);
         add(buildUserFooter(), BorderLayout.SOUTH);
     }
 
-    // ---------------------------------------------------------------
-    // Brand header
-    // ---------------------------------------------------------------
     private JPanel buildBrandHeader() {
         JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(CHARCOAL);
-        header.setBorder(new EmptyBorder(26, 24, 22, 24));
+        header.setBackground(SIDEBAR_BG);
+        header.setBorder(new EmptyBorder(28, 24, 0, 24));
 
-        JLabel title = new JLabel("Sunrise Dental");
-        title.setFont(new Font("SansSerif", Font.BOLD, 18));
-        title.setForeground(CREAM);
+        JLabel title = new JLabel("SUNRISE DENTAL");
+        title.setFont(FONT_TITLE);
+        title.setForeground(PRIMARY_TEXT);
 
-        JLabel subtitle = new JLabel("Clinic Management");
-        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        subtitle.setForeground(MUTED_TEXT);
+        JLabel subtitle = new JLabel("Clinic Management System");
+        subtitle.setFont(FONT_SUB);
+        subtitle.setForeground(SECONDARY_TEXT);
 
         JPanel textStack = new JPanel();
         textStack.setLayout(new BoxLayout(textStack, BoxLayout.Y_AXIS));
-        textStack.setBackground(CHARCOAL);
+        textStack.setBackground(SIDEBAR_BG);
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
         subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         textStack.add(title);
-        textStack.add(Box.createRigidArea(new Dimension(0, 2)));
+        textStack.add(Box.createRigidArea(new Dimension(0, 3)));
         textStack.add(subtitle);
 
-        header.add(textStack, BorderLayout.WEST);
+        JSeparator sep = new JSeparator();
+        sep.setForeground(ACCENT);
+        sep.setBackground(ACCENT);
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        sep.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        textStack.add(Box.createRigidArea(new Dimension(0, 16)));
+        textStack.add(sep);
+
+        header.add(textStack, BorderLayout.CENTER);
         return header;
     }
 
-    // ---------------------------------------------------------------
-    // Scrollable nav list
-    // ---------------------------------------------------------------
     private JScrollPane buildScrollableNav() {
-        navListPanel = new JPanel();
+        JPanel navListPanel = new JPanel();
         navListPanel.setLayout(new BoxLayout(navListPanel, BoxLayout.Y_AXIS));
-        navListPanel.setBackground(CHARCOAL);
-        navListPanel.setBorder(new EmptyBorder(8, 0, 8, 0));
+        navListPanel.setBackground(SIDEBAR_BG);
+        navListPanel.setBorder(new EmptyBorder(12, 0, 12, 0));
 
         for (NavGroup group : buildNavData()) {
             navListPanel.add(buildGroup(group));
@@ -121,62 +111,60 @@ public class SidebarPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(navListPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getViewport().setBackground(CHARCOAL);
+        scrollPane.getViewport().setBackground(SIDEBAR_BG);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(14);
         return scrollPane;
     }
 
-    /** The full navigation tree, matching the required structure. */
     private List<NavGroup> buildNavData() {
         List<NavGroup> groups = new ArrayList<>();
+        groups.add(new NavGroup("Dashboard", "DASHBOARD"));
 
-        groups.add(new NavGroup("\u25A3", "Dashboard", "DASHBOARD")); // leaf
-
-        NavGroup patients = new NavGroup("\uD83D\uDC64", "Patient Management", null);
+        NavGroup patients = new NavGroup("Patients", null);
         patients.children.add(new NavChild("Patient List", "PATIENT_LIST"));
         patients.children.add(new NavChild("Add Patient", "PATIENT_ADD"));
         patients.children.add(new NavChild("Patient Details", "PATIENT_DETAILS"));
         groups.add(patients);
 
-        NavGroup appointments = new NavGroup("\uD83D\uDCC5", "Appointment Management", null);
+        NavGroup appointments = new NavGroup("Appointments", null);
         appointments.children.add(new NavChild("Appointment List", "APPOINTMENT_LIST"));
         appointments.children.add(new NavChild("Book Appointment", "APPOINTMENT_BOOK"));
         appointments.children.add(new NavChild("Appointment Details", "APPOINTMENT_DETAILS"));
         appointments.children.add(new NavChild("Daily Schedule", "APPOINTMENT_SCHEDULE"));
         groups.add(appointments);
 
-        NavGroup billing = new NavGroup("\uD83D\uDCB0", "Billing Management", null);
+        NavGroup billing = new NavGroup("Billing", null);
         billing.children.add(new NavChild("Bill List", "BILL_LIST"));
         billing.children.add(new NavChild("Generate Bill", "BILL_GENERATE"));
         billing.children.add(new NavChild("Bill Details", "BILL_DETAILS"));
         groups.add(billing);
 
-        NavGroup reports = new NavGroup("\uD83D\uDCC8", "Reports & Analytics", null);
+        NavGroup reports = new NavGroup("Reports", null);
         reports.children.add(new NavChild("Report Dashboard", "REPORT_DASHBOARD"));
         reports.children.add(new NavChild("Revenue Report", "REPORT_REVENUE"));
         reports.children.add(new NavChild("Schedule Report", "REPORT_SCHEDULE"));
         reports.children.add(new NavChild("Patient Report", "REPORT_PATIENT"));
         groups.add(reports);
 
-        NavGroup staff = new NavGroup("\uD83D\uDC65", "Staff Management", null);
+        NavGroup staff = new NavGroup("Staff", null);
         staff.children.add(new NavChild("Staff List", "STAFF_LIST"));
         staff.children.add(new NavChild("Add Staff", "STAFF_ADD"));
         staff.children.add(new NavChild("Staff Details", "STAFF_DETAILS"));
         groups.add(staff);
 
-        NavGroup dentists = new NavGroup("\uD83E\uDDB7", "Dentist Management", null);
+        NavGroup dentists = new NavGroup("Dentists", null);
         dentists.children.add(new NavChild("Dentist List", "DENTIST_LIST"));
         dentists.children.add(new NavChild("Add Dentist", "DENTIST_ADD"));
         groups.add(dentists);
 
-        NavGroup treatments = new NavGroup("\uD83D\uDC8A", "Treatment Management", null);
+        NavGroup treatments = new NavGroup("Treatments", null);
         treatments.children.add(new NavChild("Treatment List", "TREATMENT_LIST"));
         treatments.children.add(new NavChild("Add Treatment", "TREATMENT_ADD"));
         groups.add(treatments);
 
-        NavGroup audit = new NavGroup("\uD83D\uDCCB", "Audit Logs", null);
+        NavGroup audit = new NavGroup("Audit Logs", null);
         audit.children.add(new NavChild("Activity Log", "AUDIT_ACTIVITY"));
         audit.children.add(new NavChild("Login History", "AUDIT_LOGIN"));
         groups.add(audit);
@@ -184,27 +172,27 @@ public class SidebarPanel extends JPanel {
         return groups;
     }
 
-    // ---------------------------------------------------------------
-    // Build one group: leaf row, or parent row + collapsible children
-    // ---------------------------------------------------------------
     private JPanel buildGroup(NavGroup group) {
         JPanel wrapper = new JPanel();
         wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
-        wrapper.setBackground(CHARCOAL);
+        wrapper.setBackground(SIDEBAR_BG);
         wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         boolean isLeaf = group.cardName != null;
 
         JPanel childContainer = new JPanel();
         childContainer.setLayout(new BoxLayout(childContainer, BoxLayout.Y_AXIS));
-        childContainer.setBackground(CHARCOAL);
-        childContainer.setVisible(false); // collapsed by default
+        childContainer.setBackground(SIDEBAR_BG);
+        childContainer.setVisible(false);
 
-        JLabel chevron = new JLabel(isLeaf ? "" : "\u2304"); // ⌄
-        chevron.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        chevron.setForeground(MUTED_TEXT);
+        JLabel chevron = new JLabel(isLeaf ? "" : ">");
+        chevron.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        chevron.setForeground(SECONDARY_TEXT);
 
-        JPanel groupRow = buildRow(group.icon, group.label, FONT_GROUP, CREAM, chevron);
+        JPanel groupRow = buildRow(group.label, FONT_GROUP, PRIMARY_TEXT, chevron);
+        groupRow.setPreferredSize(new Dimension(260, 48));
+        groupRow.setMinimumSize(new Dimension(260, 48));
+        groupRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
 
         if (isLeaf) {
             groupRow.addMouseListener(new RowClickHandler(groupRow, () -> selectLeaf(groupRow, group.cardName)));
@@ -212,12 +200,16 @@ public class SidebarPanel extends JPanel {
             groupRow.addMouseListener(new RowClickHandler(groupRow, () -> {
                 boolean expanding = !childContainer.isVisible();
                 childContainer.setVisible(expanding);
-                chevron.setText(expanding ? "\u2303" : "\u2304"); // ⌃ expanded / ⌄ collapsed
+                chevron.setText(expanding ? "v" : ">");
                 wrapper.revalidate();
+                wrapper.repaint();
             }));
 
             for (NavChild child : group.children) {
                 JPanel childRow = buildChildRow(child.label);
+                childRow.setPreferredSize(new Dimension(260, 40));
+                childRow.setMinimumSize(new Dimension(260, 40));
+                childRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
                 childRow.addMouseListener(new RowClickHandler(childRow, () -> selectLeaf(childRow, child.cardName)));
                 childContainer.add(childRow);
             }
@@ -228,29 +220,17 @@ public class SidebarPanel extends JPanel {
         return wrapper;
     }
 
-    private JPanel buildRow(String icon, String label, Font font, Color textColor, JLabel trailing) {
+    private JPanel buildRow(String label, Font font, Color textColor, JLabel trailing) {
         JPanel row = new JPanel(new BorderLayout(12, 0));
-        row.setBackground(CHARCOAL);
-        row.setBorder(new EmptyBorder(11, 24, 11, 20));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        row.setBackground(SIDEBAR_BG);
+        row.setBorder(new EmptyBorder(0, 24, 0, 20));
         row.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        row.putClientProperty("baseColor", CHARCOAL);
-
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("SansSerif", Font.PLAIN, 15));
-        iconLabel.setForeground(textColor);
-        iconLabel.setPreferredSize(new Dimension(20, 20));
 
         JLabel textLabel = new JLabel(label);
         textLabel.setFont(font);
         textLabel.setForeground(textColor);
 
-        JPanel left = new JPanel(new BorderLayout(12, 0));
-        left.setOpaque(false);
-        left.add(iconLabel, BorderLayout.WEST);
-        left.add(textLabel, BorderLayout.CENTER);
-
-        row.add(left, BorderLayout.CENTER);
+        row.add(textLabel, BorderLayout.CENTER);
         if (trailing != null) {
             row.add(trailing, BorderLayout.EAST);
         }
@@ -259,44 +239,46 @@ public class SidebarPanel extends JPanel {
 
     private JPanel buildChildRow(String label) {
         JPanel row = new JPanel(new BorderLayout());
-        row.setBackground(CHARCOAL);
-        row.setBorder(new EmptyBorder(9, 24, 9, 20));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        row.setBackground(SIDEBAR_BG);
+        row.setBorder(new EmptyBorder(0, 40, 0, 20));
         row.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        row.putClientProperty("baseColor", CHARCOAL);
 
-        JLabel textLabel = new JLabel("    " + label); // indent under parent icon
+        JLabel textLabel = new JLabel(label);
         textLabel.setFont(FONT_CHILD);
-        textLabel.setForeground(MUTED_TEXT);
-        textLabel.putClientProperty("isChildLabel", true);
+        textLabel.setForeground(SECONDARY_TEXT);
 
         row.add(textLabel, BorderLayout.CENTER);
         return row;
     }
 
-    // ---------------------------------------------------------------
-    // Selection + hover behaviour
-    // ---------------------------------------------------------------
     private void selectLeaf(JPanel row, String cardName) {
         mainFrame.showCard(cardName);
         highlightActive(row);
     }
 
-    private JPanel activeRow;
-
     private void highlightActive(JPanel row) {
-        // Reset previously active row back to its base look
         if (activeRow != null) {
             resetRowStyle(activeRow);
         }
-        row.setBackground(MINT);
-        setRowTextColor(row, CHARCOAL);
+        row.setBackground(ACTIVE_BG);
+        row.setBorder(BorderFactory.createMatteBorder(0, 4, 0, 0, PRIMARY_TEXT));
+        setRowTextColor(row, PRIMARY_TEXT);
         activeRow = row;
     }
 
     private void resetRowStyle(JPanel row) {
-        row.setBackground(CHARCOAL);
-        setRowTextColor(row, CREAM);
+        boolean child = isChildRow(row);
+        row.setBorder(new EmptyBorder(0, child ? 40 : 24, 0, 20));
+        row.setBackground(SIDEBAR_BG);
+        setRowTextColor(row, child ? SECONDARY_TEXT : PRIMARY_TEXT);
+    }
+
+    private boolean isChildRow(JPanel row) {
+        if (row.getBorder() instanceof EmptyBorder) {
+            EmptyBorder eb = (EmptyBorder) row.getBorder();
+            return eb.getBorderInsets().left >= 40;
+        }
+        return false;
     }
 
     private void setRowTextColor(JPanel row, Color color) {
@@ -313,7 +295,6 @@ public class SidebarPanel extends JPanel {
         }
     }
 
-    /** Shared hover + click handling for both group rows and child rows. */
     private class RowClickHandler extends MouseAdapter {
         private final JPanel row;
         private final Runnable onClick;
@@ -331,45 +312,59 @@ public class SidebarPanel extends JPanel {
         @Override
         public void mouseEntered(MouseEvent e) {
             if (row != activeRow) {
-                row.setBackground(new Color(255, 255, 255, 18));
+                row.setBackground(HOVER_BG);
+                setRowTextColor(row, PRIMARY_TEXT);
             }
         }
 
         @Override
         public void mouseExited(MouseEvent e) {
             if (row != activeRow) {
-                row.setBackground(CHARCOAL);
+                row.setBackground(SIDEBAR_BG);
+                setRowTextColor(row, isChildRow(row) ? SECONDARY_TEXT : PRIMARY_TEXT);
             }
         }
     }
 
-    // ---------------------------------------------------------------
-    // Footer: logged-in user
-    // ---------------------------------------------------------------
     private JPanel buildUserFooter() {
         JPanel footer = new JPanel(new BorderLayout(12, 0));
         footer.setBackground(FOOTER_BG);
-        footer.setBorder(new EmptyBorder(16, 22, 16, 18));
         footer.setPreferredSize(new Dimension(0, 68));
+        footer.setBorder(BorderFactory.createCompoundBorder(
+            new MatteBorder(1, 0, 0, 0, DIVIDER),
+            new EmptyBorder(16, 22, 16, 18)
+        ));
 
-        JLabel avatar = new JLabel("\u25CF");
-        avatar.setFont(new Font("SansSerif", Font.PLAIN, 30));
-        avatar.setForeground(SKY);
-        avatar.setHorizontalAlignment(SwingConstants.CENTER);
+        // Painted circle avatar - no Unicode, works on every JDK and OS
+        JPanel avatar = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(ACCENT);
+                int d = Math.min(getWidth(), getHeight()) - 4;
+                int x = (getWidth() - d) / 2;
+                int y = (getHeight() - d) / 2;
+                g2.fillOval(x, y, d, d);
+                g2.dispose();
+            }
+        };
+        avatar.setOpaque(false);
         avatar.setPreferredSize(new Dimension(36, 36));
 
         JPanel textStack = new JPanel();
         textStack.setLayout(new BoxLayout(textStack, BoxLayout.Y_AXIS));
         textStack.setOpaque(false);
 
-        JLabel name = new JLabel("Amanda Piterson");
+        JLabel name = new JLabel("Amanda Peterson");
         name.setFont(FONT_NAME);
-        name.setForeground(CREAM);
+        name.setForeground(PRIMARY_TEXT);
         name.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel role = new JLabel("Clinic Manager");
         role.setFont(FONT_ROLE);
-        role.setForeground(MUTED_TEXT);
+        role.setForeground(SECONDARY_TEXT);
         role.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         textStack.add(name);
