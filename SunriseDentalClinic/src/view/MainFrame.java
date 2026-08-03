@@ -5,8 +5,8 @@ import javax.swing.*;
 
 /**
  * MainFrame - the main application shell.
- * Step 1: just gets a window on screen with a placeholder content area.
- * Sidebar and TopBar will be added in the next steps.
+ * Now includes SidebarPanel (left nav) and TopBarPanel (top search/icons),
+ * with a CardLayout content area in the center for screen switching.
  */
 public class MainFrame extends JFrame {
 
@@ -23,6 +23,8 @@ public class MainFrame extends JFrame {
 
         initContentPanel();
 
+        add(new SidebarPanel(this), BorderLayout.WEST);
+        add(new TopBarPanel(), BorderLayout.NORTH);
         add(contentPanel, BorderLayout.CENTER);
     }
 
@@ -45,7 +47,7 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * Called by SidebarPanel (added in the next step) to switch screens.
+     * Called by SidebarPanel to switch screens.
      * e.g. mainFrame.showCard("PATIENTS")
      */
     public void showCard(String cardName) {
@@ -53,13 +55,10 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * Called later once real screens exist, to register them as cards.
+     * Called once real screens exist, to register them as cards.
      * e.g. mainFrame.addScreen("PATIENTS", new PatientListPanel());
      */
-
-    
     public void addScreen(String cardName, JPanel screen) {
-        add(new SidebarPanel(this), BorderLayout.WEST);
         contentPanel.add(screen, cardName);
     }
 
