@@ -1,29 +1,28 @@
 package view;
 
+import model.User;
+import model.User.UserRole;
 import java.awt.*;
 import javax.swing.*;
 
-/**
- * MainFrame - the main application shell.
- * Now includes SidebarPanel (left nav) and TopBarPanel (top search/icons),
- * with a CardLayout content area in the center for screen switching.
- */
 public class MainFrame extends JFrame {
 
     private CardLayout cardLayout;
     private JPanel contentPanel;
+    private SidebarPanel sidebarPanel;
 
     public MainFrame() {
         setTitle("Sunrise Dental Clinic - Management System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1400, 850);
         setMinimumSize(new Dimension(1100, 700));
-        setLocationRelativeTo(null); // center on screen
+        setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
         initContentPanel();
-
-        add(new SidebarPanel(this), BorderLayout.WEST);
+        
+        sidebarPanel = new SidebarPanel(this);
+        add(sidebarPanel, BorderLayout.WEST);
         add(new TopBarPanel(), BorderLayout.NORTH);
         add(contentPanel, BorderLayout.CENTER);
     }
@@ -31,9 +30,9 @@ public class MainFrame extends JFrame {
     private void initContentPanel() {
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
+        contentPanel.setBackground(Color.WHITE);
 
-        // Placeholder dashboard card for now.
-        // Will be replaced with view.DashboardPanel once it's built.
+        // Dashboard placeholder
         JPanel dashboardPlaceholder = new JPanel(new BorderLayout());
         JLabel placeholderLabel = new JLabel("Dashboard goes here", SwingConstants.CENTER);
         placeholderLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
@@ -42,28 +41,22 @@ public class MainFrame extends JFrame {
         dashboardPlaceholder.setBackground(Color.WHITE);
 
         contentPanel.add(dashboardPlaceholder, "DASHBOARD");
-
         cardLayout.show(contentPanel, "DASHBOARD");
     }
 
-    /**
-     * Called by SidebarPanel to switch screens.
-     * e.g. mainFrame.showCard("PATIENTS")
-     */
+    public void configureSidebarForRole(UserRole role) {
+        sidebarPanel.configureForRole(role);
+    }
+
     public void showCard(String cardName) {
         cardLayout.show(contentPanel, cardName);
     }
 
-    /**
-     * Called once real screens exist, to register them as cards.
-     * e.g. mainFrame.addScreen("PATIENTS", new PatientListPanel());
-     */
     public void addScreen(String cardName, JPanel screen) {
         contentPanel.add(screen, cardName);
     }
 
     public static void main(String[] args) {
-        // Run on the Event Dispatch Thread, as Swing requires
         SwingUtilities.invokeLater(() -> {
             MainFrame frame = new MainFrame();
             frame.setVisible(true);
