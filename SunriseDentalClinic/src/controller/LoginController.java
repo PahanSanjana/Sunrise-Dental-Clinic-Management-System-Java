@@ -3,16 +3,16 @@ package controller;
 import dao.UserDAO;
 import model.LoginSession;
 import model.User;
-import view.LoginView;
+import view.Login;
 import view.MainFrame;
 
 import javax.swing.*;
 
 public class LoginController {
-    private LoginView loginView;
+    private Login loginView;
     private UserDAO userDAO;
 
-    public LoginController(LoginView loginView) {
+    public LoginController(Login loginView) {
         this.loginView = loginView;
         this.userDAO = new UserDAO();
         initController();
@@ -60,17 +60,21 @@ public class LoginController {
 
         // Login successful
         LoginSession.getInstance().setCurrentUser(user);
-        loginView.showSuccess("Login successful! Welcome, " + user.getFullName());
+        loginView.showSuccess("Login successful! Welcome, " + user.getUsername());
+        loginView.showRole(user.getRole().name());
         
-        // Open main application
-        openMainApplication(user);
-        loginView.dispose();
+        // Open main application after short delay
+        Timer timer = new Timer(1000, e -> {
+            openMainApplication(user);
+            loginView.dispose();
+        });
+        timer.setRepeats(false);
+        timer.start();
     }
 
     private void openMainApplication(User user) {
         SwingUtilities.invokeLater(() -> {
             MainFrame mainFrame = new MainFrame();
-            // Configure sidebar based on user role
             mainFrame.configureSidebarForRole(user.getRole());
             mainFrame.setVisible(true);
         });

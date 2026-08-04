@@ -1,63 +1,147 @@
 package model;
 
 public class User {
-    private int userId;
-    private String username;
-    private String password;
-    private String fullName;
-    private String email;
-    private String phone;
-    private UserRole role;
-    private boolean active;
-
+    
     public enum UserRole {
         ADMIN,
-        RECEPTIONIST,
+        RECEPTION,
         DENTIST,
         PATIENT
     }
+    
+    private int userId;
+    private String username;
+    private String passwordHash;
+    private String salt;
+    private UserRole role;
+    private boolean isActive;
+    private String createdAt;
 
+    // Default constructor
     public User() {}
 
-    public User(int userId, String username, String password, String fullName, 
-                String email, String phone, UserRole role, boolean active) {
+    // Parameterized constructor
+    public User(int userId, String username, String passwordHash, String salt, 
+                UserRole role, boolean isActive, String createdAt) {
         this.userId = userId;
         this.username = username;
-        this.password = password;
-        this.fullName = fullName;
-        this.email = email;
-        this.phone = phone;
+        this.passwordHash = passwordHash;
+        this.salt = salt;
         this.role = role;
-        this.active = active;
+        this.isActive = isActive;
+        this.createdAt = createdAt;
     }
 
-    // Getters and Setters
-    public int getUserId() { return userId; }
-    public void setUserId(int userId) { this.userId = userId; }
+    // Constructor without userId (for creating new users)
+    public User(String username, String passwordHash, String salt, 
+                UserRole role, boolean isActive) {
+        this.username = username;
+        this.passwordHash = passwordHash;
+        this.salt = salt;
+        this.role = role;
+        this.isActive = isActive;
+    }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    // Getters
+    public int getUserId() { 
+        return userId; 
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public String getUsername() { 
+        return username; 
+    }
 
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
+    public String getPasswordHash() { 
+        return passwordHash; 
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public String getSalt() { 
+        return salt; 
+    }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    public UserRole getRole() { 
+        return role; 
+    }
 
-    public UserRole getRole() { return role; }
-    public void setRole(UserRole role) { this.role = role; }
+    public boolean isActive() { 
+        return isActive; 
+    }
 
-    public boolean isActive() { return active; }
-    public void setActive(boolean active) { this.active = active; }
+    public String getCreatedAt() { 
+        return createdAt; 
+    }
+
+    // Setters
+    public void setUserId(int userId) { 
+        this.userId = userId; 
+    }
+
+    public void setUsername(String username) { 
+        this.username = username; 
+    }
+
+    public void setPasswordHash(String passwordHash) { 
+        this.passwordHash = passwordHash; 
+    }
+
+    public void setSalt(String salt) { 
+        this.salt = salt; 
+    }
+
+    public void setRole(UserRole role) { 
+        this.role = role; 
+    }
+
+    public void setActive(boolean active) { 
+        isActive = active; 
+    }
+
+    public void setCreatedAt(String createdAt) { 
+        this.createdAt = createdAt; 
+    }
+
+    // Helper methods
+    public boolean isAdmin() {
+        return role == UserRole.ADMIN;
+    }
+
+    public boolean isReception() {
+        return role == UserRole.RECEPTION;
+    }
+
+    public boolean isDentist() {
+        return role == UserRole.DENTIST;
+    }
+
+    public boolean isPatient() {
+        return role == UserRole.PATIENT;
+    }
+
+    public boolean hasRole(UserRole... roles) {
+        if (roles == null) return false;
+        for (UserRole r : roles) {
+            if (this.role == r) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     public String toString() {
-        return fullName + " (" + role + ")";
+        return username + " (" + role + ")";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        User user = (User) obj;
+        return userId == user.userId;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(userId);
     }
 }
