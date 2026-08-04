@@ -44,12 +44,12 @@ public class SunriseDentalWelcome extends JFrame {
 
     private void loadImages() {
         try {
-            // Load logo
+            // Load logo with high quality
             logoImage = ImageIO.read(new File(
                 "src/resources/Remove Bg light.png"
             ));
             
-            // Load welcome hero image
+            // Load welcome hero image (without background)
             welcomeImage = ImageIO.read(new File(
                 "src/resources/Welcome.png"
             ));
@@ -70,6 +70,7 @@ public class SunriseDentalWelcome extends JFrame {
 
         Graphics2D g2 = resized.createGraphics();
 
+        // Highest quality rendering settings
         g2.setRenderingHint(
                 RenderingHints.KEY_INTERPOLATION,
                 RenderingHints.VALUE_INTERPOLATION_BICUBIC);
@@ -82,14 +83,15 @@ public class SunriseDentalWelcome extends JFrame {
                 RenderingHints.KEY_ALPHA_INTERPOLATION,
                 RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 
-        g2.drawImage(
-                original,
-                0,
-                0,
-                width,
-                height,
-                null);
+        g2.setRenderingHint(
+                RenderingHints.KEY_COLOR_RENDERING,
+                RenderingHints.VALUE_COLOR_RENDER_QUALITY);
 
+        g2.setRenderingHint(
+                RenderingHints.KEY_DITHERING,
+                RenderingHints.VALUE_DITHER_ENABLE);
+
+        g2.drawImage(original, 0, 0, width, height, null);
         g2.dispose();
 
         return resized;
@@ -103,10 +105,24 @@ public class SunriseDentalWelcome extends JFrame {
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         left.setOpaque(false);
 
-        // Logo - using high-quality rendering
+        // Logo - using high-quality rendering with crisp edges
         if (logoImage != null) {
-            BufferedImage scaledLogo = resizeImage(logoImage, 60, 60);
-            JLabel logo = new JLabel(new ImageIcon(scaledLogo));
+            // Use larger size for sharper logo (120x120 then scale down with quality)
+            BufferedImage tempScaled = resizeImage(logoImage, 120, 120);
+            BufferedImage scaledLogo = resizeImage(tempScaled, 60, 60);
+            
+            JLabel logo = new JLabel(new ImageIcon(scaledLogo)) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
+                                       RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setRenderingHint(RenderingHints.KEY_RENDERING, 
+                                       RenderingHints.VALUE_RENDER_QUALITY);
+                    super.paintComponent(g2);
+                    g2.dispose();
+                }
+            };
             left.add(logo);
         }
 
@@ -126,7 +142,7 @@ public class SunriseDentalWelcome extends JFrame {
 
         left.add(brandPanel);
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT)); // FIXED: Changed FlowPanel to FlowLayout
         right.setOpaque(false);
 
         JLabel badge = new JLabel("v1.0");
@@ -277,7 +293,7 @@ public class SunriseDentalWelcome extends JFrame {
     }
 
     // =======================
-    // Hero Panel - Professional Image Display
+    // Hero Panel - Transparent Background Blending
     // =======================
 
     static class HeroPanel extends JPanel {
@@ -294,6 +310,7 @@ public class SunriseDentalWelcome extends JFrame {
 
             Graphics2D g2 = (Graphics2D) g.create();
 
+            // Highest quality rendering
             g2.setRenderingHint(
                     RenderingHints.KEY_ANTIALIASING,
                     RenderingHints.VALUE_ANTIALIAS_ON);
@@ -310,29 +327,33 @@ public class SunriseDentalWelcome extends JFrame {
                     RenderingHints.KEY_ALPHA_INTERPOLATION,
                     RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 
+            g2.setRenderingHint(
+                    RenderingHints.KEY_COLOR_RENDERING,
+                    RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+
             int width = getWidth();
             int height = getHeight();
 
-            // Premium card container with soft shadow
-            g2.setColor(new Color(0, 0, 0, 10));
-            g2.fillRoundRect(25, 25, width - 50, height - 50, 40, 40);
-
-            // Main white card
-            g2.setColor(Color.WHITE);
+            // Subtle decorative elements behind the image
+            GradientPaint gradient = new GradientPaint(
+                0, 0, new Color(0xE8F0F1),
+                width, height, new Color(0xFBF9F1)
+            );
+            g2.setPaint(gradient);
             g2.fillRoundRect(20, 20, width - 40, height - 40, 40, 40);
 
-            // Subtle border
-            g2.setColor(new Color(230, 230, 230));
-            g2.drawRoundRect(20, 20, width - 40, height - 40, 40, 40);
+            // Soft shadow effect
+            g2.setColor(new Color(0, 0, 0, 8));
+            g2.fillRoundRect(25, 25, width - 50, height - 50, 40, 40);
 
-            // Display the welcome image if available
+            // Display the welcome image with transparency
             if (welcomeImage != null) {
                 int imgW = welcomeImage.getWidth();
                 int imgH = welcomeImage.getHeight();
 
-                // Calculate padding (10% on each side)
-                int paddingX = (int) (width * 0.08);
-                int paddingY = (int) (height * 0.08);
+                // Calculate padding (10% on each side for breathing room)
+                int paddingX = (int) (width * 0.10);
+                int paddingY = (int) (height * 0.10);
 
                 int availableW = width - (paddingX * 2);
                 int availableH = height - (paddingY * 2);
@@ -340,8 +361,11 @@ public class SunriseDentalWelcome extends JFrame {
                 double scaleX = availableW / (double) imgW;
                 double scaleY = availableH / (double) imgH;
 
-                // Use contain mode - show the entire image
+                // Use contain mode to show entire image without cropping
                 double scale = Math.min(scaleX, scaleY);
+
+                // Slightly reduce scale to give more breathing room
+                scale = scale * 0.92;
 
                 int drawW = (int) (imgW * scale);
                 int drawH = (int) (imgH * scale);
@@ -349,9 +373,17 @@ public class SunriseDentalWelcome extends JFrame {
                 int x = (width - drawW) / 2;
                 int y = (height - drawH) / 2;
 
+                // Draw image with transparency preserved
                 g2.drawImage(welcomeImage, x, y, drawW, drawH, null);
+                
+                // Add a subtle glow effect around the image
+                Color glowColor = new Color(47, 62, 60, 20);
+                g2.setColor(glowColor);
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawRoundRect(x - 10, y - 10, drawW + 20, drawH + 20, 30, 30);
+                
             } else {
-                // Fallback: Show a professional message if image not found
+                // Fallback display
                 g2.setColor(new Color(200, 200, 200));
                 g2.setFont(new Font("Segoe UI", Font.PLAIN, 18));
                 String message = "Welcome Image Here";
@@ -381,12 +413,16 @@ public class SunriseDentalWelcome extends JFrame {
         private Color bg;
         private Color fg;
         private Color borderColor;
+        private Color hoverColor;
+        private Color originalBg;
 
         RoundedButton(String text, Color bg, Color fg) {
             super(text);
             this.bg = bg;
+            this.originalBg = bg;
             this.fg = fg;
             this.borderColor = bg;
+            this.hoverColor = bg;
 
             setForeground(fg);
             setFont(new Font("Segoe UI", Font.BOLD, 15));
@@ -396,23 +432,30 @@ public class SunriseDentalWelcome extends JFrame {
             setFocusPainted(false);
             setCursor(new Cursor(Cursor.HAND_CURSOR));
 
+            // Calculate hover color (darker version)
+            if (bg.equals(PRIMARY_DARK)) {
+                hoverColor = new Color(40, 55, 53);
+            } else {
+                hoverColor = new Color(220, 220, 210);
+            }
+
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    if (bg.equals(PRIMARY_DARK)) {
-                        setBackground(new Color(40, 55, 53));
-                    }
+                    RoundedButton.this.bg = hoverColor;
+                    repaint();
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e) {
+                    RoundedButton.this.bg = originalBg;
                     repaint();
                 }
             });
         }
 
         public void setBorderColor(Color c) {
-            borderColor = c;
+            this.borderColor = c;
         }
 
         @Override
@@ -426,7 +469,7 @@ public class SunriseDentalWelcome extends JFrame {
             g2.setColor(bg);
             g2.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24);
 
-            if (borderColor != bg) {
+            if (borderColor != bg && borderColor != null) {
                 g2.setColor(borderColor);
                 g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 24, 24);
             }
@@ -449,9 +492,11 @@ public class SunriseDentalWelcome extends JFrame {
                     RenderingHints.KEY_ANTIALIASING,
                     RenderingHints.VALUE_ANTIALIAS_ON);
 
+            // Shadow
             g2.setColor(new Color(0, 0, 0, 15));
             g2.fillRoundRect(6, 6, getWidth() - 12, getHeight() - 12, 20, 20);
 
+            // Main card
             g2.setColor(getBackground());
             g2.fillRoundRect(0, 0, getWidth() - 12, getHeight() - 12, 20, 20);
 
