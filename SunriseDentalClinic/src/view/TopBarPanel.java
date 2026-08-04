@@ -107,6 +107,10 @@ public class TopBarPanel extends JPanel {
         return new LogoFallbackMark();
     }
 
+    void setUserInfo(String username, String name) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
     /** Minimal vector "tooth" mark used only if the logo file can't be loaded. */
     private static class LogoFallbackMark extends JPanel {
         LogoFallbackMark() {

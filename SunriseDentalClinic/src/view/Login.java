@@ -2,7 +2,6 @@ package view;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -12,9 +11,9 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-public class LoginView extends JFrame {
+public class Login extends javax.swing.JFrame {
     
-    // Color Palette (matching SunriseDentalWelcome)
+    // Color Palette
     private static final Color PRIMARY_DARK = new Color(0x2F3E3C);
     private static final Color MINT = new Color(0xBDDBD1);
     private static final Color SOFT_SURFACE = new Color(0xFBF9F1);
@@ -23,14 +22,16 @@ public class LoginView extends JFrame {
     private static final Color SECONDARY_ACCENT = new Color(0xC7E7EC);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
+    private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
 
     private JTextField usernameField;
     private JPasswordField passwordField;
-    private JButton loginButton;
-    private JButton cancelButton;
+    private RoundedButton loginButton;
+    private RoundedButton cancelButton;
     private JLabel messageLabel;
+    private JLabel roleDisplayLabel;
 
-    public LoginView() {
+    public Login() {
         initComponents();
         setLocationRelativeTo(null);
     }
@@ -38,8 +39,8 @@ public class LoginView extends JFrame {
     private void initComponents() {
         setTitle("SUNRISE DENTAL - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 600);
-        setMinimumSize(new Dimension(800, 500));
+        setSize(1000, 650);
+        setMinimumSize(new Dimension(900, 550));
         setResizable(true);
 
         JPanel mainPanel = new JPanel(new GridLayout(1, 2));
@@ -77,7 +78,7 @@ public class LoginView extends JFrame {
         subtitleLabel.setForeground(SECONDARY_TEXT);
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(subtitleLabel);
-        panel.add(Box.createRigidArea(new Dimension(0, 40)));
+        panel.add(Box.createRigidArea(new Dimension(0, 35)));
 
         // Username field
         JLabel userLabel = new JLabel("Username");
@@ -133,6 +134,14 @@ public class LoginView extends JFrame {
 
         panel.add(Box.createVerticalGlue());
 
+        // Role display
+        roleDisplayLabel = new JLabel(" ");
+        roleDisplayLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        roleDisplayLabel.setForeground(SECONDARY_TEXT);
+        roleDisplayLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(roleDisplayLabel);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+
         // Demo credentials hint
         JLabel demoHint = new JLabel(
             "<html><div style='color:#7A8A87;font-size:11px;'>"
@@ -164,8 +173,7 @@ public class LoginView extends JFrame {
                 imageLabel.setIcon(icon);
             }
         } catch (Exception e) {
-            // If image not found, show text
-            imageLabel.setText("Welcome to Sunrise Dental");
+            imageLabel.setText("🦷 Welcome to Sunrise Dental");
             imageLabel.setForeground(Color.WHITE);
             imageLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
             imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -174,13 +182,30 @@ public class LoginView extends JFrame {
 
         panel.add(imageLabel, BorderLayout.CENTER);
 
+        JPanel textPanel = new JPanel();
+        textPanel.setOpaque(false);
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        
         JLabel welcomeText = new JLabel(
-            "<html><div style='text-align:center;color:white;font-size:16px;'>"
+            "<html><div style='text-align:center;color:white;font-size:18px;font-weight:bold;'>"
             + "Your Trusted Partner in<br>Dental Care Excellence"
             + "</div></html>"
         );
         welcomeText.setHorizontalAlignment(SwingConstants.CENTER);
-        panel.add(welcomeText, BorderLayout.SOUTH);
+        welcomeText.setAlignmentX(Component.CENTER_ALIGNMENT);
+        textPanel.add(welcomeText);
+        textPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        
+        JLabel subText = new JLabel(
+            "<html><div style='text-align:center;color:rgba(255,255,255,0.7);font-size:13px;'>"
+            + "Secure Login Portal"
+            + "</div></html>"
+        );
+        subText.setHorizontalAlignment(SwingConstants.CENTER);
+        subText.setAlignmentX(Component.CENTER_ALIGNMENT);
+        textPanel.add(subText);
+        
+        panel.add(textPanel, BorderLayout.SOUTH);
 
         return panel;
     }
@@ -201,12 +226,12 @@ public class LoginView extends JFrame {
     }
 
     private JTextField createStyledTextField() {
-        JTextField field = new JTextField() {
+        return new JTextField() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(SOFT_SURFACE);
+                g2.setColor(Color.WHITE);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 12, 12));
                 g2.setColor(LIGHT_SURFACE);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, getWidth() - 1, getHeight() - 1, 12, 12));
@@ -214,21 +239,15 @@ public class LoginView extends JFrame {
                 super.paintComponent(g);
             }
         };
-        field.setOpaque(false);
-        field.setBorder(new EmptyBorder(8, 15, 8, 15));
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        field.setForeground(PRIMARY_DARK);
-        field.setBackground(SOFT_SURFACE);
-        return field;
     }
 
     private JPasswordField createStyledPasswordField() {
-        JPasswordField field = new JPasswordField() {
+        return new JPasswordField() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(SOFT_SURFACE);
+                g2.setColor(Color.WHITE);
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 12, 12));
                 g2.setColor(LIGHT_SURFACE);
                 g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, getWidth() - 1, getHeight() - 1, 12, 12));
@@ -236,22 +255,15 @@ public class LoginView extends JFrame {
                 super.paintComponent(g);
             }
         };
-        field.setOpaque(false);
-        field.setBorder(new EmptyBorder(8, 15, 8, 15));
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        field.setForeground(PRIMARY_DARK);
-        field.setBackground(SOFT_SURFACE);
-        return field;
     }
 
     private RoundedButton createRoundedButton(String text, Color bg, Color fg) {
         return new RoundedButton(text, bg, fg);
     }
 
-    // Inner class for rounded button (reused from SunriseDentalWelcome)
+    // Inner class for rounded button
     private static class RoundedButton extends JButton {
         private Color bg;
-        private Color fg;
         private Color borderColor;
         private Color hoverColor;
         private Color originalBg;
@@ -260,7 +272,6 @@ public class LoginView extends JFrame {
             super(text);
             this.bg = bg;
             this.originalBg = bg;
-            this.fg = fg;
             this.borderColor = bg;
             this.hoverColor = bg;
 
@@ -315,7 +326,10 @@ public class LoginView extends JFrame {
         }
     }
 
-    // Public methods for controller
+    // ========================
+    // Public methods for Controller
+    // ========================
+    
     public String getUsername() {
         return usernameField.getText().trim();
     }
@@ -328,6 +342,7 @@ public class LoginView extends JFrame {
         usernameField.setText("");
         passwordField.setText("");
         messageLabel.setText(" ");
+        roleDisplayLabel.setText(" ");
     }
 
     public void clearPassword() {
@@ -341,7 +356,11 @@ public class LoginView extends JFrame {
 
     public void showSuccess(String message) {
         messageLabel.setText("✓ " + message);
-        messageLabel.setForeground(new Color(60, 160, 80));
+        messageLabel.setForeground(SUCCESS_COLOR);
+    }
+
+    public void showRole(String role) {
+        roleDisplayLabel.setText("🔑 Logging in as: " + role);
     }
 
     public void addLoginListener(ActionListener listener) {
@@ -359,7 +378,9 @@ public class LoginView extends JFrame {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception ignored) {}
-            new LoginView().setVisible(true);
+            
+            Login loginView = new Login();
+            loginView.setVisible(true);
         });
     }
 }
