@@ -5,6 +5,7 @@ import java.awt.Cursor;
 import model.User;
 import view.Signup;
 import view.Login;
+import view.SunriseDentalWelcome;
 
 import javax.swing.*;
 
@@ -20,7 +21,13 @@ public class SignupController {
 
     private void initController() {
         signupView.addSignupListener(e -> handleSignup());
-        signupView.addCancelListener(e -> signupView.dispose());
+        
+        // Updated: Navigate to Welcome page on Cancel
+        signupView.addCancelListener(e -> {
+            signupView.dispose();
+            openWelcomeView();
+        });
+        
         signupView.addLoginLinkListener(e -> {
             signupView.dispose();
             openLoginView();
@@ -166,6 +173,13 @@ public class SignupController {
             Login loginView = new Login();
             new LoginController(loginView);
             loginView.setVisible(true);
+        });
+    }
+
+    private void openWelcomeView() {
+        SwingUtilities.invokeLater(() -> {
+            SunriseDentalWelcome welcome = new SunriseDentalWelcome();
+            welcome.setVisible(true);
         });
     }
 
