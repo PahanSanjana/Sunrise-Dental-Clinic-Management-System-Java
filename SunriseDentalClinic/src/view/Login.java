@@ -28,6 +28,7 @@ public class Login extends javax.swing.JFrame {
     private JPasswordField passwordField;
     private RoundedButton loginButton;
     private RoundedButton cancelButton;
+    private JButton signupLinkButton;
     private JLabel messageLabel;
     private JLabel roleDisplayLabel;
 
@@ -132,7 +133,29 @@ public class Login extends javax.swing.JFrame {
         buttonPanel.add(cancelButton);
         panel.add(buttonPanel);
 
-        panel.add(Box.createVerticalGlue());
+        panel.add(Box.createRigidArea(new Dimension(0, 15)));
+
+        // Signup link
+        JPanel signupLinkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        signupLinkPanel.setOpaque(false);
+        signupLinkPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel noAccountLabel = new JLabel("Don't have an account?");
+        noAccountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        noAccountLabel.setForeground(SECONDARY_TEXT);
+        signupLinkPanel.add(noAccountLabel);
+
+        signupLinkButton = new JButton("Sign up here");
+        signupLinkButton.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        signupLinkButton.setForeground(PRIMARY_DARK);
+        signupLinkButton.setBorderPainted(false);
+        signupLinkButton.setContentAreaFilled(false);
+        signupLinkButton.setFocusPainted(false);
+        signupLinkButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        signupLinkPanel.add(signupLinkButton);
+
+        panel.add(signupLinkPanel);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         // Role display
         roleDisplayLabel = new JLabel(" ");
@@ -371,6 +394,10 @@ public class Login extends javax.swing.JFrame {
 
     public void addCancelListener(ActionListener listener) {
         cancelButton.addActionListener(listener);
+    }
+
+    public void addSignupLinkListener(ActionListener listener) {
+        signupLinkButton.addActionListener(listener);
     }
 
     public static void main(String[] args) {

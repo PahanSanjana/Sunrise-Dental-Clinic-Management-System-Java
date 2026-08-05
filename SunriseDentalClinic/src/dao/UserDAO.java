@@ -9,6 +9,10 @@ import java.util.List;
 
 public class UserDAO {
     
+    // =====================================================
+    // AUTHENTICATION METHODS
+    // =====================================================
+    
     /**
      * Authenticate user with username and password
      * @param username The username
@@ -29,7 +33,6 @@ public class UserDAO {
                 
                 // For demo purposes, we're comparing plain text
                 // In production, use proper password hashing with salt
-                // Example: verifyPassword(password, user.getSalt(), user.getPasswordHash())
                 if (password.equals(user.getPasswordHash())) {
                     return user;
                 }
@@ -41,6 +44,10 @@ public class UserDAO {
         return null;
     }
 
+    // =====================================================
+    // READ METHODS
+    // =====================================================
+    
     /**
      * Get user by ID
      * @param userId The user ID
@@ -137,6 +144,35 @@ public class UserDAO {
     }
 
     /**
+     * Get active users by role
+     * @param role The role to filter by
+     * @return List of active users with the specified role
+     */
+    public List<User> getActiveUsersByRole(UserRole role) {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM users WHERE role = ? AND is_active = 1 ORDER BY username";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, role.name());
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                users.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting active users by role: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    // =====================================================
+    // CREATE METHODS
+    // =====================================================
+    
+    /**
      * Create a new user
      * @param user The user to create
      * @return true if successful, false otherwise
@@ -170,6 +206,104 @@ public class UserDAO {
         return false;
     }
 
+    /**
+     * Create a new patient user with default PATIENT role
+     * This creates both a user account and a patient record
+     * @param username The username
+     * @param passwordHash The hashed password (plain text for demo)
+     * @param salt The salt
+     * @param fullName The full name
+     * @param email The email
+     * @param phone The phone number
+     * @return The created User object if successful, null otherwise
+     */
+    public User createPatientUser(String username, String passwordHash, String salt, 
+                                  String fullName, String email, String phone) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DBconnection.getConnection();
+            conn.setAutoCommit(false);
+            
+            // First, create the user with PATIENT role
+            String userSql = "INSERT INTO users (username, password_hash, salt, role, is_active) "
+                           + "VALUES (?, ?, ?, 'PATIENT', 1)";
+            pstmt = conn.prepareStatement(userSql, Statement.RETURN_GENERATED_KEYS);
+            pstmt.setString(1, username);
+            pstmt.setString(2, passwordHash);
+            pstmt.setString(3, salt);
+            
+            int affectedRows = pstmt.executeUpdate();
+            
+            if (affectedRows == 0) {
+                conn.rollback();
+                return null;
+            }
+            
+            rs = pstmt.getGeneratedKeys();
+            int userId = 0;
+            if (rs.next()) {
+                userId = rs.getInt(1);
+            } else {
+                conn.rollback();
+                return null;
+            }
+            
+            // Close the first statement
+            pstmt.close();
+            
+            // Then, create the patient record
+            String patientSql = "INSERT INTO patients (user_id, first_name, last_name, email, phone) "
+                              + "VALUES (?, ?, ?, ?, ?)";
+            pstmt = conn.prepareStatement(patientSql);
+            pstmt.setInt(1, userId);
+            
+            // Split full name into first and last name
+            String[] nameParts = fullName.split(" ", 2);
+            String firstName = nameParts[0];
+            String lastName = nameParts.length > 1 ? nameParts[1] : "";
+            
+            pstmt.setString(2, firstName);
+            pstmt.setString(3, lastName);
+            pstmt.setString(4, email);
+            pstmt.setString(5, phone);
+            
+            pstmt.executeUpdate();
+            
+            conn.commit();
+            
+            // Return the created user
+            return getUserById(userId);
+            
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            System.err.println("Error creating patient user: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // =====================================================
+    // UPDATE METHODS
+    // =====================================================
+    
     /**
      * Update an existing user
      * @param user The user to update
@@ -219,6 +353,10 @@ public class UserDAO {
         return false;
     }
 
+    // =====================================================
+    // DELETE / DEACTIVATE METHODS
+    // =====================================================
+    
     /**
      * Deactivate a user (soft delete)
      * @param userId The user ID
@@ -279,13 +417,17 @@ public class UserDAO {
         return false;
     }
 
+    // =====================================================
+    // VALIDATION / CHECK METHODS
+    // =====================================================
+    
     /**
-     * Check if username already exists
+     * Check if username already exists (case insensitive)
      * @param username The username to check
      * @return true if exists, false otherwise
      */
     public boolean usernameExists(String username) {
-        String sql = "SELECT COUNT(*) FROM users WHERE username = ?";
+        String sql = "SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?)";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -303,6 +445,66 @@ public class UserDAO {
         return false;
     }
 
+    /**
+     * Check if email already exists in patients table
+     * @param email The email to check
+     * @return true if exists, false otherwise
+     */
+    public boolean emailExists(String email) {
+        if (email == null || email.isEmpty()) {
+            return false;
+        }
+        
+        String sql = "SELECT COUNT(*) FROM patients WHERE email = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, email);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking email existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Check if phone already exists in patients table
+     * @param phone The phone number to check
+     * @return true if exists, false otherwise
+     */
+    public boolean phoneExists(String phone) {
+        if (phone == null || phone.isEmpty()) {
+            return false;
+        }
+        
+        String sql = "SELECT COUNT(*) FROM patients WHERE phone = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, phone);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking phone existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // =====================================================
+    // COUNT METHODS
+    // =====================================================
+    
     /**
      * Get count of users by role
      * @param role The role to count
@@ -327,6 +529,31 @@ public class UserDAO {
         return 0;
     }
 
+    /**
+     * Get total count of active users
+     * @return Total number of active users
+     */
+    public int countActiveUsers() {
+        String sql = "SELECT COUNT(*) FROM users WHERE is_active = 1";
+        
+        try (Connection conn = DBconnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting active users: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    // =====================================================
+    // HELPER METHODS
+    // =====================================================
+    
     /**
      * Map ResultSet to User object
      * @param rs The ResultSet

@@ -5,6 +5,7 @@ import model.LoginSession;
 import model.User;
 import view.Login;
 import view.MainFrame;
+import view.Signup;
 
 import javax.swing.*;
 
@@ -21,6 +22,10 @@ public class LoginController {
     private void initController() {
         loginView.addLoginListener(e -> handleLogin());
         loginView.addCancelListener(e -> System.exit(0));
+        loginView.addSignupLinkListener(e -> {
+            loginView.dispose();
+            openSignupView();
+        });
     }
 
     private void handleLogin() {
@@ -43,33 +48,55 @@ public class LoginController {
             return;
         }
 
-        // Authenticate user
-        User user = userDAO.authenticate(username, password);
-        
-        if (user == null) {
-            loginView.showError("Invalid username or password. Please try again.");
-            loginView.clearPassword();
-            return;
-        }
+        // Show loading message
+        loginView.showSuccess("Authenticating... Please wait.");
+        loginView.setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
-        if (!user.isActive()) {
-            loginView.showError("Your account has been deactivated. Please contact administrator.");
-            loginView.clearFields();
-            return;
-        }
+        // Use SwingWorker to perform authentication in background
+        SwingWorker<User, Void> worker = new SwingWorker<User, Void>() {
+            @Override
+            protected User doInBackground() throws Exception {
+                return userDAO.authenticate(username, password);
+            }
 
-        // Login successful
-        LoginSession.getInstance().setCurrentUser(user);
-        loginView.showSuccess("Login successful! Welcome, " + user.getUsername());
-        loginView.showRole(user.getRole().name());
-        
-        // Open main application after short delay
-        Timer timer = new Timer(1000, e -> {
-            openMainApplication(user);
-            loginView.dispose();
-        });
-        timer.setRepeats(false);
-        timer.start();
+            @Override
+            protected void done() {
+                loginView.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                try {
+                    User user = get();
+                    
+                    if (user == null) {
+                        loginView.showError("Invalid username or password. Please try again.");
+                        loginView.clearPassword();
+                        return;
+                    }
+
+                    if (!user.isActive()) {
+                        loginView.showError("Your account has been deactivated. Please contact administrator.");
+                        loginView.clearFields();
+                        return;
+                    }
+
+                    // Login successful
+                    LoginSession.getInstance().setCurrentUser(user);
+                    loginView.showSuccess("Login successful! Welcome, " + user.getUsername());
+                    loginView.showRole(user.getRole().name());
+                    
+                    // Open main application after short delay
+                    Timer timer = new Timer(1000, e -> {
+                        openMainApplication(user);
+                        loginView.dispose();
+                    });
+                    timer.setRepeats(false);
+                    timer.start();
+                    
+                } catch (Exception e) {
+                    loginView.showError("Error during login: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void openMainApplication(User user) {
@@ -77,6 +104,26 @@ public class LoginController {
             MainFrame mainFrame = new MainFrame();
             mainFrame.configureSidebarForRole(user.getRole());
             mainFrame.setVisible(true);
+        });
+    }
+
+    private void openSignupView() {
+        SwingUtilities.invokeLater(() -> {
+            Signup signupView = new Signup();
+            new SignupController(signupView);
+            signupView.setVisible(true);
+        });
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ignored) {}
+            
+            Login loginView = new Login();
+            new LoginController(loginView);
+            loginView.setVisible(true);
         });
     }
 }
