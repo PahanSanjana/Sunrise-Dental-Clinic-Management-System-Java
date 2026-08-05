@@ -36,6 +36,8 @@ public class TopBarPanel extends JPanel {
     private static final String FONT_FAMILY = resolveFontFamily();
     private static final Font FONT_SEARCH    = new Font(FONT_FAMILY, Font.PLAIN, 13);
     private static final Font FONT_LOGOUT    = new Font(FONT_FAMILY, Font.BOLD, 13);
+    private static final Font FONT_USER      = new Font(FONT_FAMILY, Font.BOLD, 13);
+    private static final Font FONT_ROLE      = new Font(FONT_FAMILY, Font.PLAIN, 11);
 
     // ---- Layout constants --------------------------------------------
     private static final int BAR_HEIGHT     = 72;
@@ -46,6 +48,8 @@ public class TopBarPanel extends JPanel {
 
     private JTextField searchField;
     private LogoutButton logoutButton;
+    private JLabel userNameLabel;
+    private JLabel userRoleLabel;
 
     public TopBarPanel() {
         setLayout(new BorderLayout());
@@ -107,8 +111,20 @@ public class TopBarPanel extends JPanel {
         return new LogoFallbackMark();
     }
 
-    void setUserInfo(String username, String name) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    /**
+     * Set user information in the top bar
+     * @param username The username to display
+     * @param role The role to display
+     */
+    public void setUserInfo(String username, String role) {
+        if (userNameLabel != null) {
+            userNameLabel.setText(username != null ? username : "Guest");
+        }
+        if (userRoleLabel != null) {
+            userRoleLabel.setText(role != null ? role : "User");
+        }
+        revalidate();
+        repaint();
     }
 
     /** Minimal vector "tooth" mark used only if the logo file can't be loaded. */
@@ -280,13 +296,33 @@ public class TopBarPanel extends JPanel {
     }
 
     // =================================================================
-    // =================================================================
-    // RIGHT: logout only (avatar and name/role removed per request)
+    // RIGHT: User info + Logout
     // =================================================================
     private JPanel buildActionsSection() {
         JPanel section = new JPanel(new FlowLayout(FlowLayout.RIGHT, 18, 0));
         section.setOpaque(false);
         section.setBorder(new EmptyBorder(0, 16, 0, 24));
+
+        // User info panel
+        JPanel userPanel = new JPanel();
+        userPanel.setLayout(new BoxLayout(userPanel, BoxLayout.Y_AXIS));
+        userPanel.setOpaque(false);
+        
+        userNameLabel = new JLabel("Guest");
+        userNameLabel.setFont(FONT_USER);
+        userNameLabel.setForeground(PRIMARY_DARK);
+        userNameLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        
+        userRoleLabel = new JLabel("User");
+        userRoleLabel.setFont(FONT_ROLE);
+        userRoleLabel.setForeground(SECONDARY_TEXT);
+        userRoleLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        
+        userPanel.add(userNameLabel);
+        userPanel.add(Box.createRigidArea(new Dimension(0, 2)));
+        userPanel.add(userRoleLabel);
+
+        section.add(userPanel);
 
         logoutButton = new LogoutButton();
         section.add(logoutButton);
