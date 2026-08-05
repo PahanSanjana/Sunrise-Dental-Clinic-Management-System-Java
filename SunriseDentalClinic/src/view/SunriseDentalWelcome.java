@@ -1,5 +1,7 @@
 package view;
 
+import controller.LoginController;
+import controller.SignupController;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -21,6 +23,8 @@ public class SunriseDentalWelcome extends JFrame {
 
     private BufferedImage logoImage;
     private BufferedImage welcomeImage;
+    private RoundedButton loginBtn;
+    private RoundedButton signupBtn;
 
     public SunriseDentalWelcome() {
         
@@ -28,7 +32,7 @@ public class SunriseDentalWelcome extends JFrame {
         loadImages();
 
         setTitle("SUNRISE DENTAL - Clinic Management System");
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         JPanel root = new JPanel(new BorderLayout());
@@ -142,7 +146,7 @@ public class SunriseDentalWelcome extends JFrame {
 
         left.add(brandPanel);
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT)); // FIXED: Changed FlowPanel to FlowLayout
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         right.setOpaque(false);
 
         JLabel badge = new JLabel("v1.0");
@@ -204,9 +208,13 @@ public class SunriseDentalWelcome extends JFrame {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
         btnPanel.setOpaque(false);
 
-        RoundedButton loginBtn = new RoundedButton("Login to Portal", PRIMARY_DARK, Color.WHITE);
-        RoundedButton signupBtn = new RoundedButton("Create Account", SOFT_SURFACE, PRIMARY_DARK);
+        loginBtn = new RoundedButton("Login to Portal", PRIMARY_DARK, Color.WHITE);
+        signupBtn = new RoundedButton("Create Account", SOFT_SURFACE, PRIMARY_DARK);
         signupBtn.setBorderColor(MINT);
+
+        // Add action listeners for navigation
+        loginBtn.addActionListener(e -> openLoginView());
+        signupBtn.addActionListener(e -> openSignupView());
 
         btnPanel.add(loginBtn);
         btnPanel.add(signupBtn);
@@ -290,6 +298,34 @@ public class SunriseDentalWelcome extends JFrame {
 
     private Font font(int style, int size) {
         return new Font("Segoe UI", style, size);
+    }
+
+    // =======================
+    // Navigation Methods
+    // =======================
+
+    private void openLoginView() {
+        SwingUtilities.invokeLater(() -> {
+            // Close the welcome window
+            this.dispose();
+            
+            // Open login window
+            Login loginView = new Login();
+            new LoginController(loginView);
+            loginView.setVisible(true);
+        });
+    }
+
+    private void openSignupView() {
+        SwingUtilities.invokeLater(() -> {
+            // Close the welcome window
+            this.dispose();
+            
+            // Open signup window
+            Signup signupView = new Signup();
+            new SignupController(signupView);
+            signupView.setVisible(true);
+        });
     }
 
     // =======================
