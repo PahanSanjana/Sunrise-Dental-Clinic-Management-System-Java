@@ -1,13 +1,12 @@
 package controller;
 
 import dao.PatientDAO;
-import java.awt.Container;
-import java.awt.Cursor;
 import model.Patient;
 import view.AddPatientPanel;
 import view.MainFrame;
 
 import javax.swing.*;
+import java.awt.*;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -26,7 +25,7 @@ public class PatientController {
         view.addSaveListener(e -> handleSavePatient());
         view.addClearListener(e -> view.clearForm());
         view.addCancelListener(e -> {
-            // Navigate back to patient list or dashboard
+            // Navigate back to patient list
             Container parent = view.getParent();
             while (parent != null && !(parent instanceof MainFrame)) {
                 parent = parent.getParent();
@@ -38,32 +37,31 @@ public class PatientController {
     }
 
     private void handleSavePatient() {
-        // Validate all fields
-        String firstName = view.getFirstName();
-        String lastName = view.getLastName();
-        String dob = view.getDateOfBirth();
+        // Get all form values
+        String patientName = view.getPatientName();
         String gender = view.getGender();
-        String phone = view.getPhone();
-        String email = view.getEmail();
         String address = view.getAddress();
+        String contactNumber = view.getContactNumber();
+        String email = view.getEmail();
+        String dob = view.getDateOfBirth();
         String emergencyContact = view.getEmergencyContact();
         String emergencyPhone = view.getEmergencyPhone();
         String medicalHistory = view.getMedicalHistory();
         String allergies = view.getAllergies();
 
         // Validate required fields
-        if (firstName.isEmpty() || lastName.isEmpty()) {
-            view.showError("First Name and Last Name are required.");
+        if (patientName.isEmpty()) {
+            view.showError("Patient Name is required.");
             return;
         }
 
-        if (firstName.length() < 2 || lastName.length() < 2) {
-            view.showError("Name must be at least 2 characters.");
+        if (patientName.length() < 2) {
+            view.showError("Patient Name must be at least 2 characters.");
             return;
         }
 
-        if (!firstName.matches("^[a-zA-Z\\s]+$") || !lastName.matches("^[a-zA-Z\\s]+$")) {
-            view.showError("Name can only contain letters and spaces.");
+        if (!patientName.matches("^[a-zA-Z\\s.]+$")) {
+            view.showError("Patient Name can only contain letters, spaces, and dots.");
             return;
         }
 
@@ -78,7 +76,6 @@ public class PatientController {
             LocalDate localDate = LocalDate.parse(dob, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             dateOfBirth = Date.valueOf(localDate);
             
-            // Check if date is in the future
             if (localDate.isAfter(LocalDate.now())) {
                 view.showError("Date of Birth cannot be in the future.");
                 return;
@@ -88,58 +85,29 @@ public class PatientController {
             return;
         }
 
-        // Validate phone
-        if (phone.isEmpty()) {
-            view.showError("Phone number is required.");
+        // Validate contact number
+        if (contactNumber.isEmpty()) {
+            view.showError("Contact Number is required.");
             return;
         }
-        String phoneDigits = phone.replaceAll("[^0-9]", "");
-        if (phoneDigits.length() < 10) {
-            view.showError("Please enter a valid phone number (at least 10 digits).");
+        String contactDigits = contactNumber.replaceAll("[^0-9]", "");
+        if (contactDigits.length() < 10) {
+            view.showError("Please enter a valid contact number (at least 10 digits).");
             return;
         }
 
-        // Validate email
-        if (email.isEmpty()) {
-            view.showError("Email is required.");
-            return;
-        }
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+        // Validate email (optional but if provided, validate format)
+        if (!email.isEmpty() && !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             view.showError("Please enter a valid email address.");
             return;
         }
 
-        // Validate address
-        if (address.isEmpty()) {
-            view.showError("Address is required.");
-            return;
-        }
-
-        // Validate emergency contact
-        if (emergencyContact.isEmpty()) {
-            view.showError("Emergency contact name is required.");
-            return;
-        }
-        if (emergencyContact.length() < 2) {
-            view.showError("Emergency contact name must be at least 2 characters.");
-            return;
-        }
-
-        // Validate emergency phone
-        if (emergencyPhone.isEmpty()) {
-            view.showError("Emergency phone number is required.");
-            return;
-        }
-        String emergencyPhoneDigits = emergencyPhone.replaceAll("[^0-9]", "");
-        if (emergencyPhoneDigits.length() < 10) {
-            view.showError("Please enter a valid emergency phone number (at least 10 digits).");
-            return;
-        }
-
-        // Create Patient object
+        // Create Patient object with NULL patientLoginId (0 means no user linked)
+        // Using -1 to indicate NULL in the database
         Patient patient = new Patient(
-            firstName, lastName, dateOfBirth, gender,
-            phone, email, address, emergencyContact, emergencyPhone,
+            patientName, gender, address, contactNumber,
+            email, dateOfBirth, emergencyContact, emergencyPhone,
+            -1, // Use -1 to indicate NULL (will be handled in DAO)
             medicalHistory, allergies
         );
 
@@ -163,9 +131,8 @@ public class PatientController {
                         view.showSuccess("Patient saved successfully! Patient ID: " + patient.getPatientId());
                         view.clearForm();
                         
-                        // Show success message and navigate back after delay
+                        // Show success and navigate back after delay
                         Timer timer = new Timer(2000, e -> {
-                            // Navigate back to patient list
                             Container parent = view.getParent();
                             while (parent != null && !(parent instanceof MainFrame)) {
                                 parent = parent.getParent();
@@ -186,20 +153,5 @@ public class PatientController {
             }
         };
         worker.execute();
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {}
-            
-            JFrame frame = new JFrame("Add Patient");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(900, 800);
-            frame.setLocationRelativeTo(null);
-            frame.add(new AddPatientPanel());
-            frame.setVisible(true);
-        });
     }
 }

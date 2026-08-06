@@ -1,9 +1,11 @@
 package view;
 
-import model.User;
-import model.User.UserRole;
 import java.awt.*;
 import javax.swing.*;
+import model.User;
+import model.User.UserRole;
+import view.AddPatientPanel;
+
 
 public class MainFrame extends JFrame {
 
@@ -45,7 +47,8 @@ public class MainFrame extends JFrame {
         // Patient placeholder
         JPanel patientPlaceholder = createPlaceholderPanel("Patients Module");
         contentPanel.add(patientPlaceholder, "PATIENT_LIST");
-        contentPanel.add(createPlaceholderPanel("Add Patient"), "PATIENT_ADD");
+        AddPatientPanel addPatientPanel = new AddPatientPanel();
+        contentPanel.add(addPatientPanel, "PATIENT_ADD");
         contentPanel.add(createPlaceholderPanel("Patient Details"), "PATIENT_DETAILS");
         
         // Appointment placeholders

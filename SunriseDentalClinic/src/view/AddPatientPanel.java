@@ -19,13 +19,12 @@ public class AddPatientPanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     
     // Form Fields
-    private JTextField firstNameField;
-    private JTextField lastNameField;
-    private JTextField dobField;
+    private JTextField patientNameField;
     private JComboBox<String> genderCombo;
-    private JTextField phoneField;
-    private JTextField emailField;
     private JTextArea addressArea;
+    private JTextField contactNumberField;
+    private JTextField emailField;
+    private JTextField dobField;
     private JTextField emergencyContactField;
     private JTextField emergencyPhoneField;
     private JTextArea medicalHistoryArea;
@@ -38,8 +37,8 @@ public class AddPatientPanel extends JPanel {
     private PatientController controller;
 
     public AddPatientPanel() {
-        this.controller = new PatientController(this);
         initComponents();
+        this.controller = new PatientController(this);
     }
 
     private void initComponents() {
@@ -110,14 +109,10 @@ public class AddPatientPanel extends JPanel {
         formPanel.add(sectionLabel1, gbc);
         row++;
 
-        // First Name
+        // Patient Name
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 5, 10);
-        addFormField(formPanel, gbc, "First Name:", firstNameField = createTextField(), row++, 0);
-        addFormField(formPanel, gbc, "Last Name:", lastNameField = createTextField(), row++, 1);
-
-        // Date of Birth
-        addFormField(formPanel, gbc, "Date of Birth (YYYY-MM-DD):", dobField = createTextField(), row++, 0);
+        addFormField(formPanel, gbc, "Patient Name:", patientNameField = createTextField(), row++, 0);
         
         // Gender
         JLabel genderLabel = new JLabel("Gender:");
@@ -134,6 +129,9 @@ public class AddPatientPanel extends JPanel {
         formPanel.add(genderCombo, gbc);
         row++;
 
+        // Date of Birth
+        addFormField(formPanel, gbc, "Date of Birth (YYYY-MM-DD):", dobField = createTextField(), row++, 0);
+
         // Contact Information Section
         JLabel sectionLabel2 = createSectionLabel("Contact Information");
         gbc.gridx = 0;
@@ -143,10 +141,10 @@ public class AddPatientPanel extends JPanel {
         formPanel.add(sectionLabel2, gbc);
         row++;
 
-        // Phone and Email
+        // Contact Number and Email
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 10, 5, 10);
-        addFormField(formPanel, gbc, "Phone:", phoneField = createTextField(), row++, 0);
+        addFormField(formPanel, gbc, "Contact Number:", contactNumberField = createTextField(), row++, 0);
         addFormField(formPanel, gbc, "Email:", emailField = createTextField(), row++, 1);
 
         // Address
@@ -302,9 +300,9 @@ public class AddPatientPanel extends JPanel {
 
         saveButton = createStyledButton("Save Patient", PRIMARY_DARK, Color.WHITE);
         clearButton = createStyledButton("Clear Form", SOFT_SURFACE, PRIMARY_DARK);
-        clearButton.setBorderColor(LIGHT_SURFACE);  // Now works because clearButton is RoundedButton
+        clearButton.setBorderColor(LIGHT_SURFACE);
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
-        cancelButton.setBorderColor(LIGHT_SURFACE);  // Now works because cancelButton is RoundedButton
+        cancelButton.setBorderColor(LIGHT_SURFACE);
 
         footer.add(clearButton);
         footer.add(cancelButton);
@@ -386,26 +384,24 @@ public class AddPatientPanel extends JPanel {
     // Public methods for Controller
     // ========================
 
-    public String getFirstName() { return firstNameField.getText().trim(); }
-    public String getLastName() { return lastNameField.getText().trim(); }
-    public String getDateOfBirth() { return dobField.getText().trim(); }
+    public String getPatientName() { return patientNameField.getText().trim(); }
     public String getGender() { return (String) genderCombo.getSelectedItem(); }
-    public String getPhone() { return phoneField.getText().trim(); }
-    public String getEmail() { return emailField.getText().trim(); }
     public String getAddress() { return addressArea.getText().trim(); }
+    public String getContactNumber() { return contactNumberField.getText().trim(); }
+    public String getEmail() { return emailField.getText().trim(); }
+    public String getDateOfBirth() { return dobField.getText().trim(); }
     public String getEmergencyContact() { return emergencyContactField.getText().trim(); }
     public String getEmergencyPhone() { return emergencyPhoneField.getText().trim(); }
     public String getMedicalHistory() { return medicalHistoryArea.getText().trim(); }
     public String getAllergies() { return allergiesArea.getText().trim(); }
 
     public void clearForm() {
-        firstNameField.setText("");
-        lastNameField.setText("");
-        dobField.setText("");
+        patientNameField.setText("");
         genderCombo.setSelectedIndex(0);
-        phoneField.setText("");
-        emailField.setText("");
         addressArea.setText("");
+        contactNumberField.setText("");
+        emailField.setText("");
+        dobField.setText("");
         emergencyContactField.setText("");
         emergencyPhoneField.setText("");
         medicalHistoryArea.setText("");
@@ -425,18 +421,23 @@ public class AddPatientPanel extends JPanel {
     }
 
     public void addSaveListener(ActionListener listener) {
-        saveButton.addActionListener(listener);
+        if (saveButton != null) {
+            saveButton.addActionListener(listener);
+        }
     }
 
     public void addClearListener(ActionListener listener) {
-        clearButton.addActionListener(listener);
+        if (clearButton != null) {
+            clearButton.addActionListener(listener);
+        }
     }
 
     public void addCancelListener(ActionListener listener) {
-        cancelButton.addActionListener(listener);
+        if (cancelButton != null) {
+            cancelButton.addActionListener(listener);
+        }
     }
 
-    // MouseAdapter inner class for button hover
     private static class MouseAdapter extends java.awt.event.MouseAdapter {
         // Empty implementation - used by RoundedButton
     }
