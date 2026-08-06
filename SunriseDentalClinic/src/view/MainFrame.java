@@ -5,6 +5,7 @@ import javax.swing.*;
 import model.User;
 import model.User.UserRole;
 import view.AddPatientPanel;
+import view.PatientListPanel;
 
 
 public class MainFrame extends JFrame {

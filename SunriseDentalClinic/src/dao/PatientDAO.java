@@ -343,4 +343,56 @@ public class PatientDAO {
         patient.setAllergies(rs.getString("allergies"));
         return patient;
     }
+    
+    /**
+ * Get recent patients (limited number)
+ * @param limit Number of recent patients to get
+ * @return List of recent patients
+ */
+public List<Patient> getRecentPatients(int limit) {
+    List<Patient> patients = new ArrayList<>();
+    String sql = "SELECT * FROM patients ORDER BY created_at DESC LIMIT ?";
+    
+    try (Connection conn = DBconnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        
+        pstmt.setInt(1, limit);
+        ResultSet rs = pstmt.executeQuery();
+        
+        while (rs.next()) {
+            patients.add(mapResultSetToPatient(rs));
+        }
+    } catch (SQLException e) {
+        System.err.println("Error getting recent patients: " + e.getMessage());
+        e.printStackTrace();
+    }
+    return patients;
+}
+
+/**
+ * Get patients with pagination
+ * @param offset The offset (starting point)
+ * @param limit The number of records to fetch
+ * @return List of patients
+ */
+public List<Patient> getPatientsPaginated(int offset, int limit) {
+    List<Patient> patients = new ArrayList<>();
+    String sql = "SELECT * FROM patients ORDER BY patient_name LIMIT ? OFFSET ?";
+    
+    try (Connection conn = DBconnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        
+        pstmt.setInt(1, limit);
+        pstmt.setInt(2, offset);
+        ResultSet rs = pstmt.executeQuery();
+        
+        while (rs.next()) {
+            patients.add(mapResultSetToPatient(rs));
+        }
+    } catch (SQLException e) {
+        System.err.println("Error getting patients with pagination: " + e.getMessage());
+        e.printStackTrace();
+    }
+    return patients;
+}
 }
