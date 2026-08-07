@@ -3,7 +3,6 @@ package view;
 import controller.AppointmentController;
 import model.Patient;
 import model.Dentist;
-import model.Treatment;
 import model.Appointment;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -17,9 +16,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class BookAppointmentPanel extends JPanel {
     
@@ -28,73 +24,34 @@ public class BookAppointmentPanel extends JPanel {
     private static final Color MINT = new Color(0xBDDBD1);
     private static final Color SOFT_SURFACE = new Color(0xFBF9F1);
     private static final Color LIGHT_SURFACE = new Color(0xE7E9E3);
-    private static final Color HOVER_SURFACE = new Color(0xE8F0F1);
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
-    private static final Color SELECTED_COLOR = new Color(0xBDDBD1);
 
-    // Components
-    private JPanel contentPanel;
-    private CardLayout cardLayout;
-    
-    // Step 1: Patient Selection
-    private JTextField searchField;
-    private JPanel patientListPanel;
-    private JButton newPatientButton;
-    private JLabel selectedPatientLabel;
-    private JButton clearPatientButton;
-    private Patient selectedPatient;
-    
-    // Step 2: Treatment Selection
-    private JPanel treatmentGridPanel;
-    private Treatment selectedTreatment;
-    
-    // Step 3: Dentist Selection
-    private JPanel dentistGridPanel;
-    private Dentist selectedDentist;
-    
-    // Step 4: Date & Time
-    private JPanel calendarPanel;
-    private JPanel timeSlotPanel;
-    private JLabel monthLabel;
-    private JButton prevMonthButton;
-    private JButton nextMonthButton;
-    private String selectedDate;
-    private String selectedTime;
-    private int currentMonth;
-    private int currentYear;
-    private Map<String, List<String>> bookedSlots;
-    
-    // Step 5: Confirmation
+    // Form Fields
+    private JComboBox<Patient> patientCombo;
+    private JComboBox<Dentist> dentistCombo;
+    private JTextField dateField;
+    private JComboBox<String> timeCombo;
+    private JComboBox<String> durationCombo;
+    private JTextArea reasonArea;
     private JTextArea notesArea;
-    private JLabel confirmationPatient;
-    private JLabel confirmationTreatment;
-    private JLabel confirmationDentist;
-    private JLabel confirmationDateTime;
+    private JComboBox<String> statusCombo;
     
-    // Navigation
-    private int currentStep = 1;
-    private JButton backButton;
-    private JButton nextButton;
-    private JButton confirmButton;
-    private JLabel stepIndicator;
+    // Labels for additional info
+    private JLabel patientPhoneLabel;
+    private JLabel patientEmailLabel;
+    private JLabel dentistSpecializationLabel;
+    private JLabel consultationFeeLabel;
     
-    // Controller
+    // Buttons
+    private RoundedButton bookButton;
+    private RoundedButton clearButton;
+    private RoundedButton cancelButton;
+    private RoundedButton checkAvailabilityButton;
+    
+    private JLabel statusLabel;
     private AppointmentController controller;
-    
-    // Data
-    private List<Patient> patients;
-    private List<Dentist> dentists;
-    private List<Treatment> treatments;
-    
-    // Time slots
-    private static final String[] TIME_SLOTS = {
-        "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-        "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
-        "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-        "17:00", "17:30"
-    };
 
     public BookAppointmentPanel() {
         this.controller = new AppointmentController(this);
@@ -107,27 +64,14 @@ public class BookAppointmentPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header
+        // Header Panel
         add(createHeaderPanel(), BorderLayout.NORTH);
         
-        // Content with CardLayout for steps
-        cardLayout = new CardLayout();
-        contentPanel = new JPanel(cardLayout);
-        contentPanel.setBackground(SOFT_SURFACE);
-        contentPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        // Form Panel
+        add(createFormPanel(), BorderLayout.CENTER);
         
-        contentPanel.add(createPatientStep(), "STEP_1");
-        contentPanel.add(createTreatmentStep(), "STEP_2");
-        contentPanel.add(createDentistStep(), "STEP_3");
-        contentPanel.add(createDateTimeStep(), "STEP_4");
-        contentPanel.add(createConfirmationStep(), "STEP_5");
-        
-        add(contentPanel, BorderLayout.CENTER);
-        
-        // Footer with navigation
+        // Footer Panel
         add(createFooterPanel(), BorderLayout.SOUTH);
-        
-        showStep(1);
     }
 
     private JPanel createHeaderPanel() {
@@ -135,6 +79,7 @@ public class BookAppointmentPanel extends JPanel {
         header.setBackground(SOFT_SURFACE);
         header.setBorder(new EmptyBorder(0, 0, 15, 0));
 
+        // Title
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setOpaque(false);
@@ -145,954 +90,386 @@ public class BookAppointmentPanel extends JPanel {
         
         JLabel subtitleLabel = new JLabel("Schedule a new appointment for a patient");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        subtitleLabel.setForeground(SECONDARY_TEXT);
+        subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
         titlePanel.add(subtitleLabel);
 
-        // Step indicator
-        stepIndicator = new JLabel("Step 1 of 5: Select Patient");
-        stepIndicator.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        stepIndicator.setForeground(PRIMARY_DARK);
-        
         header.add(titlePanel, BorderLayout.WEST);
-        header.add(stepIndicator, BorderLayout.EAST);
-
         return header;
     }
 
-    // ========================
-    // STEP 1: Select Patient
-    // ========================
-    private JPanel createPatientStep() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        // Header
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
-        
-        JLabel title = new JLabel("Select Patient");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(PRIMARY_DARK);
-        header.add(title, BorderLayout.WEST);
-        
-        newPatientButton = createStyledButton("New Patient", PRIMARY_DARK, Color.WHITE);
-        newPatientButton.setPreferredSize(new Dimension(130, 35));
-        newPatientButton.addActionListener(e -> openNewPatient());
-        header.add(newPatientButton, BorderLayout.EAST);
-        
-        panel.add(header, BorderLayout.NORTH);
-
-        // Search
-        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
-        searchPanel.setOpaque(false);
-        searchPanel.setBorder(new EmptyBorder(15, 0, 15, 0));
-        
-        searchField = new JTextField();
-        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        searchField.setBorder(BorderFactory.createCompoundBorder(
+    private JPanel createFormPanel() {
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            new EmptyBorder(20, 30, 20, 30)
         ));
-        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterPatients(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterPatients(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterPatients(); }
-        });
-        
-        JButton searchButton = createStyledButton("Search", PRIMARY_DARK, Color.WHITE);
-        searchButton.setPreferredSize(new Dimension(100, 40));
-        searchButton.addActionListener(e -> filterPatients());
-        
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(searchButton, BorderLayout.EAST);
-        
-        panel.add(searchPanel, BorderLayout.CENTER);
 
-        // Patient List
-        patientListPanel = new JPanel();
-        patientListPanel.setLayout(new BoxLayout(patientListPanel, BoxLayout.Y_AXIS));
-        patientListPanel.setBackground(Color.WHITE);
-        patientListPanel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
+        // Patient Information Section
+        formPanel.add(createSectionPanel("Patient Information", createPatientPanel()));
+        formPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        JScrollPane scrollPane = new JScrollPane(patientListPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setPreferredSize(new Dimension(0, 400));
+        // Appointment Details Section
+        formPanel.add(createSectionPanel("Appointment Details", createAppointmentPanel()));
+        formPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        panel.add(scrollPane, BorderLayout.SOUTH);
+        // Additional Information Section
+        formPanel.add(createSectionPanel("Additional Information", createAdditionalInfoPanel()));
 
-        return panel;
+        return formPanel;
     }
 
-    // ========================
-    // STEP 2: Select Treatment
-    // ========================
-    private JPanel createTreatmentStep() {
+    private JPanel createSectionPanel(String title, JPanel content) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JLabel title = new JLabel("Select Treatment");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(PRIMARY_DARK);
-        panel.add(title, BorderLayout.NORTH);
-
-        treatmentGridPanel = new JPanel(new GridLayout(0, 3, 15, 15));
-        treatmentGridPanel.setBackground(Color.WHITE);
-        treatmentGridPanel.setBorder(new EmptyBorder(15, 0, 15, 0));
-        
-        JScrollPane scrollPane = new JScrollPane(treatmentGridPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    // ========================
-    // STEP 3: Select Dentist
-    // ========================
-    private JPanel createDentistStep() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JLabel title = new JLabel("Select Dentist");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(PRIMARY_DARK);
-        panel.add(title, BorderLayout.NORTH);
-
-        dentistGridPanel = new JPanel(new GridLayout(0, 3, 15, 15));
-        dentistGridPanel.setBackground(Color.WHITE);
-        dentistGridPanel.setBorder(new EmptyBorder(15, 0, 15, 0));
-        
-        JScrollPane scrollPane = new JScrollPane(dentistGridPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    // ========================
-    // STEP 4: Select Date & Time
-    // ========================
-    private JPanel createDateTimeStep() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JLabel title = new JLabel("Select Date & Time");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(PRIMARY_DARK);
-        panel.add(title, BorderLayout.NORTH);
-
-        JPanel content = new JPanel(new GridLayout(1, 2, 20, 0));
-        content.setBackground(Color.WHITE);
-        content.setBorder(new EmptyBorder(15, 0, 15, 0));
-
-        // Calendar Panel
-        calendarPanel = createCalendarPanel();
-        content.add(calendarPanel);
-
-        // Time Slots Panel
-        timeSlotPanel = createTimeSlotPanel();
-        content.add(timeSlotPanel);
-
+        panel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(MINT, 1),
+            title,
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14),
+            PRIMARY_DARK
+        ));
         panel.add(content, BorderLayout.CENTER);
-
         return panel;
     }
 
-    private JPanel createCalendarPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private JPanel createPatientPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
-
-        // Header
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(MINT);
-        header.setBorder(new EmptyBorder(10, 15, 10, 15));
-        
-        prevMonthButton = new JButton("<");
-        prevMonthButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        prevMonthButton.setBackground(MINT);
-        prevMonthButton.setBorderPainted(false);
-        prevMonthButton.setFocusPainted(false);
-        prevMonthButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        prevMonthButton.addActionListener(e -> changeMonth(-1));
-        
-        monthLabel = new JLabel("", SwingConstants.CENTER);
-        monthLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        monthLabel.setForeground(PRIMARY_DARK);
-        
-        nextMonthButton = new JButton(">");
-        nextMonthButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        nextMonthButton.setBackground(MINT);
-        nextMonthButton.setBorderPainted(false);
-        nextMonthButton.setFocusPainted(false);
-        nextMonthButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        nextMonthButton.addActionListener(e -> changeMonth(1));
-        
-        header.add(prevMonthButton, BorderLayout.WEST);
-        header.add(monthLabel, BorderLayout.CENTER);
-        header.add(nextMonthButton, BorderLayout.EAST);
-        
-        panel.add(header, BorderLayout.NORTH);
-
-        // Calendar Grid
-        JPanel gridPanel = new JPanel(new GridLayout(0, 7, 5, 5));
-        gridPanel.setBackground(Color.WHITE);
-        gridPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        String[] days = {"S", "M", "T", "W", "T", "F", "S"};
-        for (String day : days) {
-            JLabel label = new JLabel(day, SwingConstants.CENTER);
-            label.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            label.setForeground(SECONDARY_TEXT);
-            gridPanel.add(label);
-        }
-        
-        // We'll populate this dynamically
-        gridPanel.setName("CALENDAR_GRID");
-        
-        panel.add(gridPanel, BorderLayout.CENTER);
-
-        // Initialize current month/year
-        LocalDate now = LocalDate.now();
-        currentMonth = now.getMonthValue();
-        currentYear = now.getYear();
-        updateCalendar();
-
-        return panel;
-    }
-
-    private JPanel createTimeSlotPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
-
-        JLabel title = new JLabel("Available Time Slots", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        title.setForeground(PRIMARY_DARK);
-        title.setBorder(new EmptyBorder(10, 0, 10, 0));
-        panel.add(title, BorderLayout.NORTH);
-
-        JPanel slotsPanel = new JPanel(new GridLayout(0, 4, 8, 8));
-        slotsPanel.setBackground(Color.WHITE);
-        slotsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        slotsPanel.setName("TIME_SLOTS");
-        
-        JScrollPane scrollPane = new JScrollPane(slotsPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    // ========================
-    // STEP 5: Confirmation
-    // ========================
-    private JPanel createConfirmationStep() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JLabel title = new JLabel("Confirm Booking");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(PRIMARY_DARK);
-        panel.add(title, BorderLayout.NORTH);
-
-        JPanel content = new JPanel(new GridBagLayout());
-        content.setBackground(Color.WHITE);
-        content.setBorder(new EmptyBorder(15, 0, 15, 0));
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(5, 10, 5, 10);
         gbc.weightx = 1.0;
 
-        // Patient
+        // Patient Selection
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
-        JLabel patientLabel = new JLabel("Patient:");
+        gbc.weightx = 0.2;
+        JLabel patientLabel = new JLabel("Select Patient:");
         patientLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         patientLabel.setForeground(PRIMARY_DARK);
-        content.add(patientLabel, gbc);
+        panel.add(patientLabel, gbc);
 
         gbc.gridx = 1;
-        confirmationPatient = new JLabel("--");
-        confirmationPatient.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        content.add(confirmationPatient, gbc);
+        gbc.gridwidth = 2;
+        gbc.weightx = 0.8;
+        patientCombo = new JComboBox<>();
+        patientCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        patientCombo.setPreferredSize(new Dimension(300, 35));
+        patientCombo.addActionListener(e -> loadPatientDetails());
+        panel.add(patientCombo, gbc);
 
-        // Treatment
+        // Patient Details
         gbc.gridx = 0;
         gbc.gridy = 1;
-        JLabel treatmentLabel = new JLabel("Treatment:");
-        treatmentLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        treatmentLabel.setForeground(PRIMARY_DARK);
-        content.add(treatmentLabel, gbc);
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel phoneLabel = new JLabel("Phone:");
+        phoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        phoneLabel.setForeground(PRIMARY_DARK);
+        panel.add(phoneLabel, gbc);
 
         gbc.gridx = 1;
-        confirmationTreatment = new JLabel("--");
-        confirmationTreatment.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        content.add(confirmationTreatment, gbc);
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        patientPhoneLabel = new JLabel("--");
+        patientPhoneLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        patientPhoneLabel.setForeground(SECONDARY_TEXT);
+        panel.add(patientPhoneLabel, gbc);
 
-        // Dentist
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        JLabel dentistLabel = new JLabel("Dentist:");
-        dentistLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        dentistLabel.setForeground(PRIMARY_DARK);
-        content.add(dentistLabel, gbc);
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel emailLabel = new JLabel("Email:");
+        emailLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        emailLabel.setForeground(PRIMARY_DARK);
+        panel.add(emailLabel, gbc);
 
-        gbc.gridx = 1;
-        confirmationDentist = new JLabel("--");
-        confirmationDentist.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        content.add(confirmationDentist, gbc);
-
-        // Date & Time
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        JLabel dateTimeLabel = new JLabel("Date & Time:");
-        dateTimeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        dateTimeLabel.setForeground(PRIMARY_DARK);
-        content.add(dateTimeLabel, gbc);
-
-        gbc.gridx = 1;
-        confirmationDateTime = new JLabel("--");
-        confirmationDateTime.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        content.add(confirmationDateTime, gbc);
-
-        // Notes
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.gridwidth = 2;
-        JLabel notesLabel = new JLabel("Notes (Optional):");
-        notesLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        notesLabel.setForeground(PRIMARY_DARK);
-        content.add(notesLabel, gbc);
-
-        gbc.gridy = 5;
-        notesArea = new JTextArea(3, 30);
-        notesArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        notesArea.setLineWrap(true);
-        notesArea.setWrapStyleWord(true);
-        notesArea.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
-        JScrollPane notesScroll = new JScrollPane(notesArea);
-        notesScroll.setPreferredSize(new Dimension(400, 80));
-        content.add(notesScroll, gbc);
-
-        panel.add(content, BorderLayout.CENTER);
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        patientEmailLabel = new JLabel("--");
+        patientEmailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        patientEmailLabel.setForeground(SECONDARY_TEXT);
+        panel.add(patientEmailLabel, gbc);
 
         return panel;
     }
 
-    // ========================
-    // FOOTER PANEL
-    // ========================
+    private JPanel createAppointmentPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+
+        // Dentist Selection
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel dentistLabel = new JLabel("Select Dentist:");
+        dentistLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dentistLabel.setForeground(PRIMARY_DARK);
+        panel.add(dentistLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        gbc.weightx = 0.8;
+        dentistCombo = new JComboBox<>();
+        dentistCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        dentistCombo.setPreferredSize(new Dimension(300, 35));
+        dentistCombo.addActionListener(e -> loadDentistDetails());
+        panel.add(dentistCombo, gbc);
+
+        // Dentist Details
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel specLabel = new JLabel("Specialization:");
+        specLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        specLabel.setForeground(PRIMARY_DARK);
+        panel.add(specLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        dentistSpecializationLabel = new JLabel("--");
+        dentistSpecializationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        dentistSpecializationLabel.setForeground(SECONDARY_TEXT);
+        panel.add(dentistSpecializationLabel, gbc);
+
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel feeLabel = new JLabel("Consultation Fee:");
+        feeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        feeLabel.setForeground(PRIMARY_DARK);
+        panel.add(feeLabel, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        consultationFeeLabel = new JLabel("--");
+        consultationFeeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        consultationFeeLabel.setForeground(SECONDARY_TEXT);
+        panel.add(consultationFeeLabel, gbc);
+
+        // Date
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel dateLabel = new JLabel("Date (YYYY-MM-DD):");
+        dateLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dateLabel.setForeground(PRIMARY_DARK);
+        panel.add(dateLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        dateField = new JTextField(LocalDate.now().toString());
+        dateField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        dateField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        panel.add(dateField, gbc);
+
+        // Check Availability Button
+        gbc.gridx = 2;
+        gbc.gridwidth = 2;
+        gbc.weightx = 0.5;
+        checkAvailabilityButton = createStyledButton("Check Availability", PRIMARY_DARK, Color.WHITE);
+        checkAvailabilityButton.setPreferredSize(new Dimension(150, 35));
+        checkAvailabilityButton.addActionListener(e -> checkAvailability());
+        panel.add(checkAvailabilityButton, gbc);
+
+        // Time
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel timeLabel = new JLabel("Time:");
+        timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        timeLabel.setForeground(PRIMARY_DARK);
+        panel.add(timeLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        timeCombo = new JComboBox<>(generateTimeSlots());
+        timeCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timeCombo.setPreferredSize(new Dimension(150, 35));
+        panel.add(timeCombo, gbc);
+
+        // Duration
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel durationLabel = new JLabel("Duration:");
+        durationLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        durationLabel.setForeground(PRIMARY_DARK);
+        panel.add(durationLabel, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        durationCombo = new JComboBox<>(new String[]{"15 min", "30 min", "45 min", "60 min", "90 min", "120 min"});
+        durationCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        durationCombo.setPreferredSize(new Dimension(100, 35));
+        panel.add(durationCombo, gbc);
+
+        // Status
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel statusLabel = new JLabel("Status:");
+        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        statusLabel.setForeground(PRIMARY_DARK);
+        panel.add(statusLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        statusCombo = new JComboBox<>(new String[]{"Scheduled", "Confirmed", "Pending"});
+        statusCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        statusCombo.setPreferredSize(new Dimension(200, 35));
+        panel.add(statusCombo, gbc);
+
+        return panel;
+    }
+
+    private JPanel createAdditionalInfoPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+
+        // Reason
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel reasonLabel = new JLabel("Reason for Visit:");
+        reasonLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        reasonLabel.setForeground(PRIMARY_DARK);
+        panel.add(reasonLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        reasonArea = createTextArea();
+        JScrollPane reasonScroll = new JScrollPane(reasonArea);
+        reasonScroll.setPreferredSize(new Dimension(400, 60));
+        panel.add(reasonScroll, gbc);
+
+        // Notes
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel notesLabel = new JLabel("Additional Notes:");
+        notesLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        notesLabel.setForeground(PRIMARY_DARK);
+        panel.add(notesLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        notesArea = createTextArea();
+        JScrollPane notesScroll = new JScrollPane(notesArea);
+        notesScroll.setPreferredSize(new Dimension(400, 60));
+        panel.add(notesScroll, gbc);
+
+        return panel;
+    }
+
     private JPanel createFooterPanel() {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(SOFT_SURFACE);
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
-        backButton = createStyledButton("← Back", SOFT_SURFACE, PRIMARY_DARK);
-        backButton.setBorderColor(LIGHT_SURFACE);
-        backButton.setPreferredSize(new Dimension(120, 40));
-        backButton.addActionListener(e -> navigateBack());
+        statusLabel = new JLabel(" ");
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setForeground(SECONDARY_TEXT);
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        rightPanel.setOpaque(false);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
 
-        nextButton = createStyledButton("Next →", PRIMARY_DARK, Color.WHITE);
-        nextButton.setPreferredSize(new Dimension(120, 40));
-        nextButton.addActionListener(e -> navigateNext());
+        bookButton = createStyledButton("Book Appointment", PRIMARY_DARK, Color.WHITE);
+        bookButton.setPreferredSize(new Dimension(160, 40));
+        bookButton.addActionListener(e -> bookAppointment());
 
-        confirmButton = createStyledButton("✓ Confirm Booking", PRIMARY_DARK, Color.WHITE);
-        confirmButton.setPreferredSize(new Dimension(160, 40));
-        confirmButton.setVisible(false);
-        confirmButton.addActionListener(e -> confirmBooking());
+        clearButton = createStyledButton("Clear", SOFT_SURFACE, PRIMARY_DARK);
+        clearButton.setBorderColor(LIGHT_SURFACE);
+        clearButton.setPreferredSize(new Dimension(100, 40));
+        clearButton.addActionListener(e -> clearForm());
 
-        rightPanel.add(nextButton);
-        rightPanel.add(confirmButton);
+        cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
+        cancelButton.setBorderColor(LIGHT_SURFACE);
+        cancelButton.setPreferredSize(new Dimension(100, 40));
+        cancelButton.addActionListener(e -> navigateBack());
 
-        footer.add(backButton, BorderLayout.WEST);
-        footer.add(rightPanel, BorderLayout.EAST);
+        buttonPanel.add(clearButton);
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(bookButton);
+
+        footer.add(statusLabel, BorderLayout.WEST);
+        footer.add(buttonPanel, BorderLayout.EAST);
 
         return footer;
     }
 
     // ========================
-    // HELPER METHODS
+    // Helper Methods
     // ========================
 
-    private void loadData() {
-        // Load patients, dentists, treatments from database
-        patients = controller.getAllPatients();
-        dentists = controller.getAllDentists();
-        treatments = controller.getAllTreatments();
-        
-        // Initialize booked slots (will come from database)
-        bookedSlots = new HashMap<>();
-        
-        // Populate patient list
-        displayPatients(patients);
-        populateTreatmentGrid();
-        populateDentistGrid();
-    }
-
-    private void displayPatients(List<Patient> patientList) {
-        patientListPanel.removeAll();
-        
-        if (patientList == null || patientList.isEmpty()) {
-            JLabel emptyLabel = new JLabel("No patients found", SwingConstants.CENTER);
-            emptyLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            emptyLabel.setForeground(SECONDARY_TEXT);
-            emptyLabel.setBorder(new EmptyBorder(30, 0, 30, 0));
-            patientListPanel.add(emptyLabel);
-        } else {
-            for (Patient patient : patientList) {
-                JPanel card = createPatientCard(patient);
-                patientListPanel.add(card);
-                patientListPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+    private String[] generateTimeSlots() {
+        String[] slots = new String[24];
+        int index = 0;
+        for (int hour = 8; hour <= 20; hour++) {
+            for (int minute = 0; minute < 60; minute += 30) {
+                if (hour == 20 && minute > 0) break;
+                String time = String.format("%02d:%02d", hour, minute);
+                slots[index++] = time;
             }
         }
-        
-        patientListPanel.revalidate();
-        patientListPanel.repaint();
+        // Trim the array
+        String[] result = new String[index];
+        System.arraycopy(slots, 0, result, 0, index);
+        return result;
     }
 
-    private JPanel createPatientCard(Patient patient) {
-        JPanel card = new JPanel(new BorderLayout(15, 0));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
+    private JTextArea createTextArea() {
+        JTextArea area = new JTextArea();
+        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            new EmptyBorder(12, 15, 12, 15)
+            BorderFactory.createEmptyBorder(8, 10, 8, 10)
         ));
-        card.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        card.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                selectPatient(patient);
-            }
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                card.setBackground(HOVER_SURFACE);
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                card.setBackground(Color.WHITE);
-            }
-        });
-
-        // Avatar
-        JLabel avatar = new JLabel(getInitials(patient.getPatientName()));
-        avatar.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        avatar.setForeground(Color.WHITE);
-        avatar.setOpaque(true);
-        avatar.setBackground(PRIMARY_DARK);
-        avatar.setHorizontalAlignment(SwingConstants.CENTER);
-        avatar.setPreferredSize(new Dimension(40, 40));
-        avatar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-        // Info
-        JPanel info = new JPanel();
-        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
-        info.setOpaque(false);
-        
-        JLabel nameLabel = new JLabel(patient.getPatientName());
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        nameLabel.setForeground(PRIMARY_DARK);
-        
-        JLabel detailLabel = new JLabel("ID: " + patient.getPatientId() + " | " + patient.getContactNumber());
-        detailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        detailLabel.setForeground(SECONDARY_TEXT);
-        
-        info.add(nameLabel);
-        info.add(detailLabel);
-
-        card.add(avatar, BorderLayout.WEST);
-        card.add(info, BorderLayout.CENTER);
-
-        return card;
-    }
-
-    private void populateTreatmentGrid() {
-        treatmentGridPanel.removeAll();
-        
-        if (treatments != null) {
-            for (Treatment treatment : treatments) {
-                JPanel card = createTreatmentCard(treatment);
-                treatmentGridPanel.add(card);
-            }
-        }
-        
-        treatmentGridPanel.revalidate();
-        treatmentGridPanel.repaint();
-    }
-
-    private JPanel createTreatmentCard(Treatment treatment) {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            new EmptyBorder(15, 15, 15, 15)
-        ));
-        card.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        card.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        card.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                selectTreatment(treatment);
-            }
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                card.setBackground(HOVER_SURFACE);
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                card.setBackground(selectedTreatment != null && selectedTreatment.getId() == treatment.getId() ? 
-                    SELECTED_COLOR : Color.WHITE);
-            }
-        });
-
-        // Icon
-        JLabel iconLabel = new JLabel("🦷", SwingConstants.CENTER);
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 30));
-        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        card.add(iconLabel);
-        card.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        // Name
-        JLabel nameLabel = new JLabel(treatment.getName());
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        nameLabel.setForeground(PRIMARY_DARK);
-        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        card.add(nameLabel);
-        card.add(Box.createRigidArea(new Dimension(0, 5)));
-
-        // Duration
-        JLabel durationLabel = new JLabel(treatment.getDuration() + " min");
-        durationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        durationLabel.setForeground(SECONDARY_TEXT);
-        durationLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        card.add(durationLabel);
-
-        // Cost
-        JLabel costLabel = new JLabel("Rs. " + treatment.getCost());
-        costLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        costLabel.setForeground(PRIMARY_DARK);
-        costLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        card.add(costLabel);
-
-        return card;
-    }
-
-    private void populateDentistGrid() {
-        dentistGridPanel.removeAll();
-        
-        if (dentists != null) {
-            for (Dentist dentist : dentists) {
-                if (dentist.isActive()) {
-                    JPanel card = createDentistCard(dentist);
-                    dentistGridPanel.add(card);
-                }
-            }
-        }
-        
-        dentistGridPanel.revalidate();
-        dentistGridPanel.repaint();
-    }
-
-    private JPanel createDentistCard(Dentist dentist) {
-        JPanel card = new JPanel(new BorderLayout(15, 0));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            new EmptyBorder(15, 15, 15, 15)
-        ));
-        card.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        card.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                selectDentist(dentist);
-            }
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                card.setBackground(HOVER_SURFACE);
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                card.setBackground(selectedDentist != null && selectedDentist.getId() == dentist.getId() ? 
-                    SELECTED_COLOR : Color.WHITE);
-            }
-        });
-
-        // Avatar
-        JLabel avatar = new JLabel(getInitials(dentist.getName()));
-        avatar.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        avatar.setForeground(Color.WHITE);
-        avatar.setOpaque(true);
-        avatar.setBackground(MINT);
-        avatar.setHorizontalAlignment(SwingConstants.CENTER);
-        avatar.setPreferredSize(new Dimension(50, 50));
-        avatar.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-        // Info
-        JPanel info = new JPanel();
-        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
-        info.setOpaque(false);
-        
-        JLabel nameLabel = new JLabel(dentist.getName());
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        nameLabel.setForeground(PRIMARY_DARK);
-        
-        JLabel specLabel = new JLabel(dentist.getSpecialization());
-        specLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        specLabel.setForeground(SECONDARY_TEXT);
-        
-        info.add(nameLabel);
-        info.add(specLabel);
-
-        card.add(avatar, BorderLayout.WEST);
-        card.add(info, BorderLayout.CENTER);
-
-        return card;
-    }
-
-    private void updateCalendar() {
-        LocalDate date = LocalDate.of(currentYear, currentMonth, 1);
-        monthLabel.setText(date.getMonth().toString() + " " + currentYear);
-        
-        JPanel gridPanel = (JPanel) ((JPanel) calendarPanel.getComponent(1));
-        gridPanel.removeAll();
-        
-        // Day names
-        String[] days = {"S", "M", "T", "W", "T", "F", "S"};
-        for (String day : days) {
-            JLabel label = new JLabel(day, SwingConstants.CENTER);
-            label.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            label.setForeground(SECONDARY_TEXT);
-            gridPanel.add(label);
-        }
-        
-        // Calendar days
-        int firstDayOfMonth = date.getDayOfWeek().getValue() % 7;
-        int daysInMonth = date.lengthOfMonth();
-        LocalDate today = LocalDate.now();
-        String todayStr = today.toString();
-        
-        for (int i = 0; i < firstDayOfMonth; i++) {
-            gridPanel.add(new JLabel(""));
-        }
-        
-        for (int day = 1; day <= daysInMonth; day++) {
-            String dateStr = currentYear + "-" + String.format("%02d", currentMonth) + "-" + String.format("%02d", day);
-            LocalDate currentDate = LocalDate.of(currentYear, currentMonth, day);
-            
-            JButton dayButton = new JButton(String.valueOf(day));
-            dayButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            dayButton.setBackground(Color.WHITE);
-            dayButton.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
-            dayButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            boolean isPast = currentDate.isBefore(today);
-            boolean isBooked = isDateFullyBooked(dateStr);
-            boolean isSelected = dateStr.equals(selectedDate);
-            
-            if (isPast) {
-                dayButton.setEnabled(false);
-                dayButton.setForeground(Color.LIGHT_GRAY);
-            } else if (isBooked) {
-                dayButton.setEnabled(false);
-                dayButton.setBackground(new Color(255, 200, 200));
-                dayButton.setForeground(Color.GRAY);
-                dayButton.setToolTipText("Fully booked");
-            } else {
-                if (isSelected) {
-                    dayButton.setBackground(MINT);
-                    dayButton.setForeground(PRIMARY_DARK);
-                }
-                dayButton.addActionListener(e -> selectDate(dateStr));
-            }
-            
-            gridPanel.add(dayButton);
-        }
-        
-        gridPanel.revalidate();
-        gridPanel.repaint();
-        updateTimeSlots();
-    }
-
-    private void updateTimeSlots() {
-        JPanel slotsPanel = (JPanel) ((JPanel) timeSlotPanel.getComponent(1));
-        slotsPanel.removeAll();
-        
-        if (selectedDate == null) {
-            JLabel hint = new JLabel("Please select a date first", SwingConstants.CENTER);
-            hint.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            hint.setForeground(SECONDARY_TEXT);
-            hint.setBorder(new EmptyBorder(30, 0, 30, 0));
-            slotsPanel.add(hint);
-        } else {
-            List<String> booked = bookedSlots.getOrDefault(selectedDate, new ArrayList<>());
-            boolean hasAvailable = false;
-            
-            for (String time : TIME_SLOTS) {
-                boolean isBooked = booked.contains(time);
-                boolean isSelected = time.equals(selectedTime);
-                
-                JButton timeButton = new JButton(time);
-                timeButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                timeButton.setBackground(Color.WHITE);
-                timeButton.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
-                timeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                
-                if (isBooked) {
-                    timeButton.setEnabled(false);
-                    timeButton.setBackground(new Color(255, 200, 200));
-                    timeButton.setForeground(Color.GRAY);
-                } else {
-                    hasAvailable = true;
-                    if (isSelected) {
-                        timeButton.setBackground(MINT);
-                        timeButton.setForeground(PRIMARY_DARK);
-                    }
-                    timeButton.addActionListener(e -> selectTime(time));
-                }
-                
-                slotsPanel.add(timeButton);
-            }
-            
-            if (!hasAvailable) {
-                slotsPanel.removeAll();
-                JLabel hint = new JLabel("No slots available for this date", SwingConstants.CENTER);
-                hint.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-                hint.setForeground(SECONDARY_TEXT);
-                hint.setBorder(new EmptyBorder(30, 0, 30, 0));
-                slotsPanel.add(hint);
-            }
-        }
-        
-        slotsPanel.revalidate();
-        slotsPanel.repaint();
-    }
-
-    private void changeMonth(int delta) {
-        currentMonth += delta;
-        if (currentMonth > 12) {
-            currentMonth = 1;
-            currentYear++;
-        } else if (currentMonth < 1) {
-            currentMonth = 12;
-            currentYear--;
-        }
-        updateCalendar();
-    }
-
-    private boolean isDateFullyBooked(String date) {
-        List<String> booked = bookedSlots.getOrDefault(date, new ArrayList<>());
-        return booked.size() >= TIME_SLOTS.length;
-    }
-
-    private void selectPatient(Patient patient) {
-        selectedPatient = patient;
-        // Highlight selected card
-        for (Component comp : patientListPanel.getComponents()) {
-            if (comp instanceof JPanel) {
-                comp.setBackground(Color.WHITE);
-            }
-        }
-        // Navigate to next step automatically
-        showStep(2);
-    }
-
-    private void selectTreatment(Treatment treatment) {
-        selectedTreatment = treatment;
-        // Highlight selected card
-        for (Component comp : treatmentGridPanel.getComponents()) {
-            if (comp instanceof JPanel) {
-                comp.setBackground(Color.WHITE);
-            }
-        }
-        showStep(3);
-    }
-
-    private void selectDentist(Dentist dentist) {
-        selectedDentist = dentist;
-        // Highlight selected card
-        for (Component comp : dentistGridPanel.getComponents()) {
-            if (comp instanceof JPanel) {
-                comp.setBackground(Color.WHITE);
-            }
-        }
-        showStep(4);
-    }
-
-    private void selectDate(String date) {
-        selectedDate = date;
-        selectedTime = null;
-        updateCalendar();
-        updateTimeSlots();
-    }
-
-    private void selectTime(String time) {
-        selectedTime = time;
-        updateTimeSlots();
-    }
-
-    private void filterPatients() {
-        String query = searchField.getText().trim().toLowerCase();
-        if (query.isEmpty()) {
-            displayPatients(patients);
-        } else {
-            List<Patient> filtered = new ArrayList<>();
-            for (Patient p : patients) {
-                if (p.getPatientName().toLowerCase().contains(query) ||
-                    p.getContactNumber().contains(query) ||
-                    String.valueOf(p.getPatientId()).contains(query)) {
-                    filtered.add(p);
-                }
-            }
-            displayPatients(filtered);
-        }
-    }
-
-    private void openNewPatient() {
-        Container parent = getParent();
-        while (parent != null && !(parent instanceof MainFrame)) {
-            parent = parent.getParent();
-        }
-        if (parent instanceof MainFrame) {
-            ((MainFrame) parent).showCard("PATIENT_ADD");
-        }
-    }
-
-    private void showStep(int step) {
-        currentStep = step;
-        String[] stepLabels = {"Select Patient", "Select Treatment", "Select Dentist", "Select Date & Time", "Confirm Booking"};
-        stepIndicator.setText("Step " + step + " of 5: " + stepLabels[step - 1]);
-        
-        cardLayout.show(contentPanel, "STEP_" + step);
-        
-        // Update navigation buttons
-        backButton.setVisible(step > 1);
-        nextButton.setVisible(step < 5);
-        confirmButton.setVisible(step == 5);
-        
-        // Update confirmation details if on step 5
-        if (step == 5) {
-            updateConfirmation();
-        }
-        
-        // Update time slots if on step 4
-        if (step == 4) {
-            updateTimeSlots();
-        }
-    }
-
-    private void navigateBack() {
-        if (currentStep > 1) {
-            showStep(currentStep - 1);
-        }
-    }
-
-    private void navigateNext() {
-        if (currentStep < 5) {
-            showStep(currentStep + 1);
-        }
-    }
-
-    private void updateConfirmation() {
-        if (selectedPatient != null) {
-            confirmationPatient.setText(selectedPatient.getPatientName() + " (ID: " + selectedPatient.getPatientId() + ")");
-        }
-        if (selectedTreatment != null) {
-            confirmationTreatment.setText(selectedTreatment.getName() + " - Rs. " + selectedTreatment.getCost());
-        }
-        if (selectedDentist != null) {
-            confirmationDentist.setText(selectedDentist.getName() + " (" + selectedDentist.getSpecialization() + ")");
-        }
-        if (selectedDate != null && selectedTime != null) {
-            confirmationDateTime.setText(selectedDate + " at " + selectedTime);
-        }
-    }
-
-    private void confirmBooking() {
-        // Validate all selections
-        if (selectedPatient == null || selectedTreatment == null || 
-            selectedDentist == null || selectedDate == null || selectedTime == null) {
-            JOptionPane.showMessageDialog(this, 
-                "Please complete all steps before confirming.",
-                "Incomplete Booking",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        int confirm = JOptionPane.showConfirmDialog(
-            this,
-            "Confirm appointment for " + selectedPatient.getPatientName() + 
-            "\nTreatment: " + selectedTreatment.getName() +
-            "\nDentist: " + selectedDentist.getName() +
-            "\nDate: " + selectedDate + " at " + selectedTime,
-            "Confirm Appointment",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE
-        );
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            // Save appointment
-            boolean success = controller.bookAppointment(
-                selectedPatient.getPatientId(),
-                selectedDentist.getId(),
-                selectedTreatment.getId(),
-                selectedDate,
-                selectedTime,
-                notesArea.getText()
-            );
-
-            if (success) {
-                JOptionPane.showMessageDialog(this,
-                    "Appointment booked successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Navigate back to appointment list
-                Container parent = getParent();
-                while (parent != null && !(parent instanceof MainFrame)) {
-                    parent = parent.getParent();
-                }
-                if (parent instanceof MainFrame) {
-                    ((MainFrame) parent).showCard("APPOINTMENT_LIST");
-                }
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Failed to book appointment. Please try again.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    private String getInitials(String name) {
-        if (name == null || name.isEmpty()) return "";
-        String[] parts = name.split(" ");
-        if (parts.length == 1) return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
-        return (parts[0].charAt(0) + "" + parts[parts.length - 1].charAt(0)).toUpperCase();
+        area.setBackground(Color.WHITE);
+        return area;
     }
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
@@ -1122,6 +499,8 @@ public class BookAppointmentPanel extends JPanel {
 
             if (bg.equals(PRIMARY_DARK)) {
                 hoverColor = new Color(40, 55, 53);
+            } else if (bg.equals(ERROR_COLOR)) {
+                hoverColor = new Color(180, 60, 60);
             } else {
                 hoverColor = new Color(220, 220, 210);
             }
@@ -1166,4 +545,259 @@ public class BookAppointmentPanel extends JPanel {
     private static class MouseAdapter extends java.awt.event.MouseAdapter {
         // Empty implementation
     }
+
+    // ========================
+    // Data Loading Methods
+    // ========================
+
+    private void loadData() {
+        loadPatients();
+        loadDentists();
+    }
+
+    private void loadPatients() {
+        List<Patient> patients = controller.getAllPatients();
+        patientCombo.removeAllItems();
+        if (patients != null) {
+            for (Patient patient : patients) {
+                patientCombo.addItem(patient);
+            }
+        }
+    }
+
+    private void loadDentists() {
+        List<Dentist> dentists = controller.getAllDentists();
+        dentistCombo.removeAllItems();
+        if (dentists != null) {
+            for (Dentist dentist : dentists) {
+                dentistCombo.addItem(dentist);
+            }
+        }
+    }
+
+    private void loadPatientDetails() {
+        Patient selected = (Patient) patientCombo.getSelectedItem();
+        if (selected != null) {
+            patientPhoneLabel.setText(selected.getContactNumber() != null ? selected.getContactNumber() : "--");
+            patientEmailLabel.setText(selected.getEmail() != null ? selected.getEmail() : "--");
+        } else {
+            patientPhoneLabel.setText("--");
+            patientEmailLabel.setText("--");
+        }
+    }
+
+    private void loadDentistDetails() {
+        Dentist selected = (Dentist) dentistCombo.getSelectedItem();
+        if (selected != null) {
+            dentistSpecializationLabel.setText(selected.getSpecialization() != null ? selected.getSpecialization() : "--");
+            consultationFeeLabel.setText(selected.getConsultationFee() > 0 ? "$" + selected.getConsultationFee() : "--");
+        } else {
+            dentistSpecializationLabel.setText("--");
+            consultationFeeLabel.setText("--");
+        }
+    }
+
+    private void checkAvailability() {
+        Dentist dentist = (Dentist) dentistCombo.getSelectedItem();
+        String date = dateField.getText().trim();
+        String time = (String) timeCombo.getSelectedItem();
+
+        if (dentist == null) {
+            showError("Please select a dentist.");
+            return;
+        }
+
+        if (date.isEmpty()) {
+            showError("Please enter a date.");
+            return;
+        }
+
+        if (time == null || time.isEmpty()) {
+            showError("Please select a time.");
+            return;
+        }
+
+        // Check availability
+        boolean available = controller.checkAvailability(dentist.getDentistId(), date, time);
+        
+        if (available) {
+            showSuccess("The dentist is available at " + time + " on " + date);
+        } else {
+            showError("The dentist is not available at " + time + " on " + date + ". Please select another time.");
+        }
+    }
+
+    // ========================
+    // Core Actions
+    // ========================
+
+    private void bookAppointment() {
+        // Validate selections
+        Patient patient = (Patient) patientCombo.getSelectedItem();
+        Dentist dentist = (Dentist) dentistCombo.getSelectedItem();
+        String date = dateField.getText().trim();
+        String time = (String) timeCombo.getSelectedItem();
+        String duration = (String) durationCombo.getSelectedItem();
+        String reason = reasonArea.getText().trim();
+        String notes = notesArea.getText().trim();
+        String status = (String) statusCombo.getSelectedItem();
+
+        // Validate all fields
+        if (patient == null) {
+            showError("Please select a patient.");
+            return;
+        }
+
+        if (dentist == null) {
+            showError("Please select a dentist.");
+            return;
+        }
+
+        if (date.isEmpty()) {
+            showError("Please enter a date.");
+            return;
+        }
+
+        // Validate date format
+        Date appointmentDate = null;
+        try {
+            LocalDate localDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            appointmentDate = Date.valueOf(localDate);
+            
+            if (localDate.isBefore(LocalDate.now())) {
+                showError("Appointment date cannot be in the past.");
+                return;
+            }
+        } catch (Exception e) {
+            showError("Invalid date format. Please use YYYY-MM-DD.");
+            return;
+        }
+
+        if (time == null || time.isEmpty()) {
+            showError("Please select a time.");
+            return;
+        }
+
+        // Parse time
+        Time appointmentTime = null;
+        try {
+            LocalTime localTime = LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm"));
+            appointmentTime = Time.valueOf(localTime);
+        } catch (Exception e) {
+            showError("Invalid time format.");
+            return;
+        }
+
+        // Parse duration
+        int durationMinutes = 30; // default
+        if (duration != null) {
+            durationMinutes = Integer.parseInt(duration.replace(" min", ""));
+        }
+
+        // Calculate end time
+        LocalTime endTime = LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm")).plusMinutes(durationMinutes);
+
+        // Create appointment object
+        Appointment appointment = new Appointment(
+            patient.getPatientId(),
+            dentist.getDentistId(),
+            appointmentDate,
+            appointmentTime,
+            Time.valueOf(endTime),
+            status,
+            reason,
+            notes
+        );
+
+        // Show loading message
+        showInfo("Booking appointment... Please wait.");
+        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+
+        // Use SwingWorker to book in background
+        SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                return controller.bookAppointment(appointment);
+            }
+
+            @Override
+            protected void done() {
+                setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                try {
+                    boolean success = get();
+                    if (success) {
+                        showSuccess("Appointment booked successfully!");
+                        clearForm();
+                        
+                        // Navigate back after delay
+                        Timer timer = new Timer(1500, e -> navigateBack());
+                        timer.setRepeats(false);
+                        timer.start();
+                    } else {
+                        showError("Failed to book appointment. Please try again.");
+                    }
+                } catch (Exception e) {
+                    showError("Error booking appointment: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void clearForm() {
+        patientCombo.setSelectedIndex(0);
+        dentistCombo.setSelectedIndex(0);
+        dateField.setText(LocalDate.now().toString());
+        timeCombo.setSelectedIndex(0);
+        durationCombo.setSelectedIndex(1); // 30 min
+        reasonArea.setText("");
+        notesArea.setText("");
+        statusCombo.setSelectedIndex(0);
+        statusLabel.setText("Form cleared");
+        statusLabel.setForeground(SECONDARY_TEXT);
+        loadPatientDetails();
+        loadDentistDetails();
+    }
+
+    private void navigateBack() {
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            ((MainFrame) parent).showCard("APPOINTMENT_LIST");
+        }
+    }
+
+    // ========================
+    // Public methods for Controller
+    // ========================
+
+    public void showError(String message) {
+        statusLabel.setText("❌ " + message);
+        statusLabel.setForeground(ERROR_COLOR);
+        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void showSuccess(String message) {
+        statusLabel.setText("✅ " + message);
+        statusLabel.setForeground(SUCCESS_COLOR);
+        JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void showInfo(String message) {
+        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setForeground(new Color(0, 120, 215));
+    }
+
+    // Getters for Controller
+    public JComboBox<Patient> getPatientCombo() { return patientCombo; }
+    public JComboBox<Dentist> getDentistCombo() { return dentistCombo; }
+    public JTextField getDateField() { return dateField; }
+    public JComboBox<String> getTimeCombo() { return timeCombo; }
+    public JComboBox<String> getDurationCombo() { return durationCombo; }
+    public JTextArea getReasonArea() { return reasonArea; }
+    public JTextArea getNotesArea() { return notesArea; }
+    public JComboBox<String> getStatusCombo() { return statusCombo; }
 }

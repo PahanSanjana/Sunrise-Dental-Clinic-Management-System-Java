@@ -7,7 +7,6 @@ public class Appointment {
     private int appointmentId;
     private int patientId;
     private int dentistId;
-    private int treatmentId;
     private Date appointmentDate;
     private Time appointmentTime;
     private Time endTime;
@@ -16,28 +15,35 @@ public class Appointment {
     private String notes;
     private String createdAt;
     private String updatedAt;
-    
-    // Additional fields for display
-    private String patientName;
-    private String dentistName;
-    private String treatmentName;
-    private double treatmentCost;
-    private int treatmentDuration;
 
     public Appointment() {}
 
-    // Constructor for new appointment
-    public Appointment(int patientId, int dentistId, int treatmentId, 
-                       Date appointmentDate, Time appointmentTime, 
-                       String reason, String notes) {
+    public Appointment(int patientId, int dentistId, Date appointmentDate, Time appointmentTime,
+                       Time endTime, String status, String reason, String notes) {
         this.patientId = patientId;
         this.dentistId = dentistId;
-        this.treatmentId = treatmentId;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
+        this.endTime = endTime;
+        this.status = status;
         this.reason = reason;
         this.notes = notes;
-        this.status = "Scheduled";
+    }
+
+    public Appointment(int appointmentId, int patientId, int dentistId, Date appointmentDate,
+                       Time appointmentTime, Time endTime, String status, String reason,
+                       String notes, String createdAt, String updatedAt) {
+        this.appointmentId = appointmentId;
+        this.patientId = patientId;
+        this.dentistId = dentistId;
+        this.appointmentDate = appointmentDate;
+        this.appointmentTime = appointmentTime;
+        this.endTime = endTime;
+        this.status = status;
+        this.reason = reason;
+        this.notes = notes;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     // Getters and Setters
@@ -49,9 +55,6 @@ public class Appointment {
 
     public int getDentistId() { return dentistId; }
     public void setDentistId(int dentistId) { this.dentistId = dentistId; }
-
-    public int getTreatmentId() { return treatmentId; }
-    public void setTreatmentId(int treatmentId) { this.treatmentId = treatmentId; }
 
     public Date getAppointmentDate() { return appointmentDate; }
     public void setAppointmentDate(Date appointmentDate) { this.appointmentDate = appointmentDate; }
@@ -76,24 +79,4 @@ public class Appointment {
 
     public String getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
-
-    public String getPatientName() { return patientName; }
-    public void setPatientName(String patientName) { this.patientName = patientName; }
-
-    public String getDentistName() { return dentistName; }
-    public void setDentistName(String dentistName) { this.dentistName = dentistName; }
-
-    public String getTreatmentName() { return treatmentName; }
-    public void setTreatmentName(String treatmentName) { this.treatmentName = treatmentName; }
-
-    public double getTreatmentCost() { return treatmentCost; }
-    public void setTreatmentCost(double treatmentCost) { this.treatmentCost = treatmentCost; }
-
-    public int getTreatmentDuration() { return treatmentDuration; }
-    public void setTreatmentDuration(int treatmentDuration) { this.treatmentDuration = treatmentDuration; }
-
-    @Override
-    public String toString() {
-        return "Appointment #" + appointmentId + " - " + patientName + " with " + dentistName;
-    }
 }
