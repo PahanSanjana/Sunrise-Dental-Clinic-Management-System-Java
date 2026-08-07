@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.Date;
@@ -54,8 +55,8 @@ public class BookAppointmentPanel extends JPanel {
     private AppointmentController controller;
 
     public BookAppointmentPanel() {
-        this.controller = new AppointmentController(this);
         initComponents();
+        this.controller = new AppointmentController(this);
         loadData();
     }
 
@@ -443,19 +444,24 @@ public class BookAppointmentPanel extends JPanel {
     // Helper Methods
     // ========================
 
+    // FIXED: generateTimeSlots method - Fixed array bounds
     private String[] generateTimeSlots() {
-        String[] slots = new String[24];
+        // Maximum slots: 8:00 to 20:00 with 30-min intervals = 25 slots
+        String[] tempSlots = new String[25];
         int index = 0;
         for (int hour = 8; hour <= 20; hour++) {
             for (int minute = 0; minute < 60; minute += 30) {
+                // Skip 20:30 and beyond
                 if (hour == 20 && minute > 0) break;
+                // Safety check to prevent array overflow
+                if (index >= tempSlots.length) break;
                 String time = String.format("%02d:%02d", hour, minute);
-                slots[index++] = time;
+                tempSlots[index++] = time;
             }
         }
-        // Trim the array
+        // Create array with exact size
         String[] result = new String[index];
-        System.arraycopy(slots, 0, result, 0, index);
+        System.arraycopy(tempSlots, 0, result, 0, index);
         return result;
     }
 
@@ -746,14 +752,14 @@ public class BookAppointmentPanel extends JPanel {
     }
 
     private void clearForm() {
-        patientCombo.setSelectedIndex(0);
-        dentistCombo.setSelectedIndex(0);
+        if (patientCombo.getItemCount() > 0) patientCombo.setSelectedIndex(0);
+        if (dentistCombo.getItemCount() > 0) dentistCombo.setSelectedIndex(0);
         dateField.setText(LocalDate.now().toString());
-        timeCombo.setSelectedIndex(0);
-        durationCombo.setSelectedIndex(1); // 30 min
+        if (timeCombo.getItemCount() > 0) timeCombo.setSelectedIndex(0);
+        if (durationCombo.getItemCount() > 0) durationCombo.setSelectedIndex(1); // 30 min
         reasonArea.setText("");
         notesArea.setText("");
-        statusCombo.setSelectedIndex(0);
+        if (statusCombo.getItemCount() > 0) statusCombo.setSelectedIndex(0);
         statusLabel.setText("Form cleared");
         statusLabel.setForeground(SECONDARY_TEXT);
         loadPatientDetails();

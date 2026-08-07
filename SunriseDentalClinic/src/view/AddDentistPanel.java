@@ -39,8 +39,9 @@ public class AddDentistPanel extends JPanel {
     private DentistController controller;
 
     public AddDentistPanel() {
-        this.controller = new DentistController(this);
         initComponents();
+        // Initialize controller AFTER all components are created
+        this.controller = new DentistController(this);
     }
 
     private void initComponents() {
@@ -364,14 +365,6 @@ public class AddDentistPanel extends JPanel {
         return button;
     }
 
-    public String getLastName() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    public String getFirstName() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
     // Inner class for RoundedButton
     private static class RoundedButton extends JButton {
         private Color bg;
@@ -512,14 +505,20 @@ public class AddDentistPanel extends JPanel {
     }
 
     public void addSaveListener(ActionListener listener) {
-        saveButton.addActionListener(listener);
+        if (saveButton != null) {
+            saveButton.addActionListener(listener);
+        }
     }
 
     public void addClearListener(ActionListener listener) {
-        clearButton.addActionListener(listener);
+        if (clearButton != null) {
+            clearButton.addActionListener(listener);
+        }
     }
 
     public void addCancelListener(ActionListener listener) {
-        cancelButton.addActionListener(listener);
+        if (cancelButton != null) {
+            cancelButton.addActionListener(listener);
+        }
     }
 }
