@@ -4,8 +4,6 @@ import java.awt.*;
 import javax.swing.*;
 import model.User;
 import model.User.UserRole;
-import view.AddPatientPanel;
-import view.PatientListPanel;
 
 public class MainFrame extends JFrame {
 
@@ -59,7 +57,6 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating PatientListPanel: " + e.getMessage());
             e.printStackTrace();
-            // Add placeholder instead
             JPanel placeholder = createPlaceholderPanel("Patient List");
             placeholder.setName("PATIENT_LIST");
             contentPanel.add(placeholder, "PATIENT_LIST");
@@ -78,11 +75,12 @@ public class MainFrame extends JFrame {
             contentPanel.add(placeholder, "PATIENT_ADD");
         }
 
-        // Patient Details placeholder
+        // Patient Details - Will be dynamically added when viewing a patient
+        // We'll add a placeholder for now
         JPanel patientDetailsPlaceholder = createPlaceholderPanel("Patient Details");
         patientDetailsPlaceholder.setName("PATIENT_DETAILS");
         contentPanel.add(patientDetailsPlaceholder, "PATIENT_DETAILS");
-        System.out.println("MainFrame: Added PATIENT_DETAILS card");
+        System.out.println("MainFrame: Added PATIENT_DETAILS placeholder");
 
         // Appointment placeholders
         JPanel appointmentList = createPlaceholderPanel("Appointment List");
@@ -237,9 +235,34 @@ public class MainFrame extends JFrame {
     }
 
     public void addScreen(String cardName, JPanel screen) {
+        // Remove existing card if it exists
+        for (Component comp : contentPanel.getComponents()) {
+            if (comp.getName() != null && comp.getName().equals(cardName)) {
+                contentPanel.remove(comp);
+                break;
+            }
+        }
         screen.setName(cardName);
         contentPanel.add(screen, cardName);
-        System.out.println("MainFrame: Added new screen: " + cardName);
+        contentPanel.revalidate();
+        contentPanel.repaint();
+        System.out.println("MainFrame: Added/Updated screen: " + cardName);
+    }
+
+    public void removeScreen(String cardName) {
+        for (Component comp : contentPanel.getComponents()) {
+            if (comp.getName() != null && comp.getName().equals(cardName)) {
+                contentPanel.remove(comp);
+                contentPanel.revalidate();
+                contentPanel.repaint();
+                System.out.println("MainFrame: Removed screen: " + cardName);
+                break;
+            }
+        }
+    }
+
+    public JPanel getContentPanel() {
+        return contentPanel;
     }
 
     private void handleLogout() {

@@ -441,23 +441,54 @@ public class PatientListPanel extends JPanel {
         int patientId = (int) tableModel.getValueAt(row, 0);
         String patientName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open patient details view
-        // For now, show a message
-        JOptionPane.showMessageDialog(this, 
-            "Viewing Patient: " + patientName + "\nID: " + patientId,
-            "Patient Details",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to patient details
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the patient from database
+            Patient patient = controller.getPatientById(patientId);
+            if (patient != null) {
+                // Create a new details panel with the patient
+                PatientDetailsPanel detailsPanel = new PatientDetailsPanel(patient);
+                detailsPanel.setName("PATIENT_DETAILS");
+                mainFrame.addScreen("PATIENT_DETAILS", detailsPanel);
+                mainFrame.showCard("PATIENT_DETAILS");
+            } else {
+                showError("Patient not found.");
+            }
+        }
     }
 
     public void editPatient(int row) {
         int patientId = (int) tableModel.getValueAt(row, 0);
         String patientName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open patient edit form
-        JOptionPane.showMessageDialog(this, 
-            "Editing Patient: " + patientName + "\nID: " + patientId,
-            "Edit Patient",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to patient details in edit mode
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the patient from database
+            Patient patient = controller.getPatientById(patientId);
+            if (patient != null) {
+                // Create a new details panel with the patient
+                PatientDetailsPanel detailsPanel = new PatientDetailsPanel(patient);
+                detailsPanel.setName("PATIENT_DETAILS");
+                mainFrame.addScreen("PATIENT_DETAILS", detailsPanel);
+                mainFrame.showCard("PATIENT_DETAILS");
+                // Switch to edit mode
+                detailsPanel.toggleEditMode();
+            } else {
+                showError("Patient not found.");
+            }
+        }
     }
 
     public void deletePatient(int row) {
@@ -488,6 +519,7 @@ public class PatientListPanel extends JPanel {
     public void showSuccess(String message) {
         statusLabel.setText("✅ " + message);
         statusLabel.setForeground(SUCCESS_COLOR);
+        JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {

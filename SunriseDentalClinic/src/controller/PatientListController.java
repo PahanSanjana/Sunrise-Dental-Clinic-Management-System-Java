@@ -87,4 +87,105 @@ public class PatientListController {
         };
         worker.execute();
     }
+
+    /**
+     * Get patient by ID
+     * @param patientId The patient ID
+     * @return Patient object if found, null otherwise
+     */
+    public Patient getPatientById(int patientId) {
+        return patientDAO.getPatientById(patientId);
+    }
+
+    /**
+     * Update patient information
+     * @param patient The patient to update
+     * @return true if successful, false otherwise
+     */
+    public boolean updatePatient(Patient patient) {
+        return patientDAO.updatePatient(patient);
+    }
+
+    /**
+     * Get all patients
+     * @return List of all patients
+     */
+    public List<Patient> getAllPatients() {
+        return patientDAO.getAllPatients();
+    }
+
+    /**
+     * Search patients by term
+     * @param searchTerm The search term
+     * @return List of matching patients
+     */
+    public List<Patient> searchPatients(String searchTerm) {
+        return patientDAO.searchPatients(searchTerm);
+    }
+
+    /**
+     * Get total patient count
+     * @return Total number of patients
+     */
+    public int getPatientCount() {
+        return patientDAO.getPatientCount();
+    }
+
+    /**
+     * Get patients with pagination
+     * @param offset The offset (starting point)
+     * @param limit The number of records to fetch
+     * @return List of patients
+     */
+    public List<Patient> getPatientsPaginated(int offset, int limit) {
+        return patientDAO.getPatientsPaginated(offset, limit);
+    }
+
+    /**
+     * Get recent patients
+     * @param limit Number of recent patients to get
+     * @return List of recent patients
+     */
+    public List<Patient> getRecentPatients(int limit) {
+        return patientDAO.getRecentPatients(limit);
+    }
+
+    /**
+     * Add a new patient
+     * @param patient The patient to add
+     * @return true if successful, false otherwise
+     */
+    public boolean addPatient(Patient patient) {
+        return patientDAO.addPatient(patient);
+    }
+
+    /**
+     * Link a patient to a user account
+     * @param patientId The patient ID
+     * @param userId The user ID to link
+     * @return true if successful, false otherwise
+     */
+    public boolean linkPatientToUser(int patientId, int userId) {
+        return patientDAO.linkPatientToUser(patientId, userId);
+    }
+
+    /**
+     * Check if email exists
+     * @param email The email to check
+     * @param excludePatientId Patient ID to exclude from check
+     * @return true if email exists, false otherwise
+     */
+    public boolean emailExists(String email, int excludePatientId) {
+        return patientDAO.emailExists(email, excludePatientId);
+    }
+
+    /**
+     * Check if contact number exists
+     * @param contactNumber The contact number to check
+     * @param excludePatientId Patient ID to exclude from check
+     * @return true if contact number exists, false otherwise
+     */
+    public boolean contactNumberExists(String contactNumber, int excludePatientId) {
+        return patientDAO.contactNumberExists(contactNumber, excludePatientId);
+    }
 }
