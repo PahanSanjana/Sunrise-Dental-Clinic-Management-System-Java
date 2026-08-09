@@ -3,6 +3,7 @@ package controller;
 import dao.DentistDAO;
 import model.Dentist;
 import view.AddDentistPanel;
+import view.DentistListPanel;
 import view.MainFrame;
 
 import javax.swing.*;
@@ -10,126 +11,157 @@ import java.awt.*;
 import java.util.List;
 
 public class DentistController {
-    private AddDentistPanel view;
+    private AddDentistPanel addView;
+    private DentistListPanel listView;
     private DentistDAO dentistDAO;
 
+    // =====================================================
+    // CONSTRUCTORS
+    // =====================================================
+
+    /**
+     * Constructor for AddDentistPanel
+     * @param view The AddDentistPanel instance
+     */
     public DentistController(AddDentistPanel view) {
-        this.view = view;
+        this.addView = view;
         this.dentistDAO = new DentistDAO();
-        initController();
+        initAddController();
     }
 
-    private void initController() {
-        view.addSaveListener(e -> handleSaveDentist());
-        view.addClearListener(e -> view.clearForm());
-        view.addCancelListener(e -> {
-            Container parent = view.getParent();
-            while (parent != null && !(parent instanceof MainFrame)) {
-                parent = parent.getParent();
-            }
-            if (parent instanceof MainFrame) {
-                ((MainFrame) parent).showCard("DENTIST_LIST");
-            }
-        });
+    /**
+     * Constructor for DentistListPanel
+     * @param view The DentistListPanel instance
+     */
+    public DentistController(DentistListPanel view) {
+        this.listView = view;
+        this.dentistDAO = new DentistDAO();
+        // No initialization needed for list view
     }
+
+    // =====================================================
+    // INITIALIZATION METHODS
+    // =====================================================
+
+    private void initAddController() {
+        if (addView != null) {
+            addView.addSaveListener(e -> handleSaveDentist());
+            addView.addClearListener(e -> addView.clearForm());
+            addView.addCancelListener(e -> {
+                Container parent = addView.getParent();
+                while (parent != null && !(parent instanceof MainFrame)) {
+                    parent = parent.getParent();
+                }
+                if (parent instanceof MainFrame) {
+                    ((MainFrame) parent).showCard("DENTIST_LIST");
+                }
+            });
+        }
+    }
+
+    // =====================================================
+    // ADD DENTIST METHODS
+    // =====================================================
 
     private void handleSaveDentist() {
+        if (addView == null) return;
+        
         // Get all form values
-        String dentistName = view.getDentistName();
-        String specialization = view.getSpecialization();
-        String licenseNumber = view.getLicenseNumber();
-        String workingHours = view.getWorkingHours();
-        String phone = view.getPhone();
-        String email = view.getEmail();
-        String experienceStr = view.getExperience();
-        String feeStr = view.getConsultationFee();
-        boolean isAvailable = view.isAvailable();
+        String dentistName = addView.getDentistName();
+        String specialization = addView.getSpecialization();
+        String licenseNumber = addView.getLicenseNumber();
+        String workingHours = addView.getWorkingHours();
+        String phone = addView.getPhone();
+        String email = addView.getEmail();
+        String experienceStr = addView.getExperience();
+        String feeStr = addView.getConsultationFee();
+        boolean isAvailable = addView.isAvailable();
 
         // Validate required fields
         if (dentistName.isEmpty()) {
-            view.showError("Dentist Name is required.");
+            addView.showError("Dentist Name is required.");
             return;
         }
 
         if (dentistName.length() < 2) {
-            view.showError("Dentist Name must be at least 2 characters.");
+            addView.showError("Dentist Name must be at least 2 characters.");
             return;
         }
 
         if (!dentistName.matches("^[a-zA-Z\\s.]+$")) {
-            view.showError("Dentist Name can only contain letters, spaces, and dots.");
+            addView.showError("Dentist Name can only contain letters, spaces, and dots.");
             return;
         }
 
         // Validate specialization
         if (specialization.isEmpty()) {
-            view.showError("Specialization is required.");
+            addView.showError("Specialization is required.");
             return;
         }
 
         // Validate license number
         if (licenseNumber.isEmpty()) {
-            view.showError("License Number is required.");
+            addView.showError("License Number is required.");
             return;
         }
 
         if (dentistDAO.licenseNumberExists(licenseNumber)) {
-            view.showError("License Number already exists. Please enter a unique license number.");
+            addView.showError("License Number already exists. Please enter a unique license number.");
             return;
         }
 
         // Validate phone
         if (phone.isEmpty()) {
-            view.showError("Phone number is required.");
+            addView.showError("Phone number is required.");
             return;
         }
         String phoneDigits = phone.replaceAll("[^0-9]", "");
         if (phoneDigits.length() < 10) {
-            view.showError("Please enter a valid phone number (at least 10 digits).");
+            addView.showError("Please enter a valid phone number (at least 10 digits).");
             return;
         }
 
         // Validate email
         if (email.isEmpty()) {
-            view.showError("Email is required.");
+            addView.showError("Email is required.");
             return;
         }
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            view.showError("Please enter a valid email address.");
+            addView.showError("Please enter a valid email address.");
             return;
         }
 
         // Validate years of experience
         int yearsOfExperience = 0;
         if (experienceStr.isEmpty()) {
-            view.showError("Years of experience is required.");
+            addView.showError("Years of experience is required.");
             return;
         }
         try {
             yearsOfExperience = Integer.parseInt(experienceStr);
             if (yearsOfExperience < 0) {
-                view.showError("Years of experience cannot be negative.");
+                addView.showError("Years of experience cannot be negative.");
                 return;
             }
         } catch (NumberFormatException e) {
-            view.showError("Please enter a valid number for years of experience.");
+            addView.showError("Please enter a valid number for years of experience.");
             return;
         }
 
         // Validate consultation fee
         double consultationFee = 0;
         if (feeStr.isEmpty()) {
-            view.showError("Consultation fee is required.");
+            addView.showError("Consultation fee is required.");
             return;
         }
         try {
             consultationFee = Double.parseDouble(feeStr);
             if (consultationFee < 0) {
-                view.showError("Consultation fee cannot be negative.");
+                addView.showError("Consultation fee cannot be negative.");
                 return;
             }
         } catch (NumberFormatException e) {
-            view.showError("Please enter a valid number for consultation fee.");
+            addView.showError("Please enter a valid number for consultation fee.");
             return;
         }
 
@@ -147,8 +179,8 @@ public class DentistController {
         );
 
         // Show loading message
-        view.showSuccess("Saving dentist... Please wait.");
-        view.setCursor(new Cursor(Cursor.WAIT_CURSOR));
+        addView.showSuccess("Saving dentist... Please wait.");
+        addView.setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
         // Use SwingWorker to save in background
         SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
@@ -159,16 +191,16 @@ public class DentistController {
 
             @Override
             protected void done() {
-                view.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                addView.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
                 try {
                     boolean success = get();
                     if (success) {
-                        view.showSuccess("Dentist saved successfully!");
-                        view.clearForm();
+                        addView.showSuccess("Dentist saved successfully!");
+                        addView.clearForm();
                         
                         // Show success and navigate back after delay
                         Timer timer = new Timer(1500, e -> {
-                            Container parent = view.getParent();
+                            Container parent = addView.getParent();
                             while (parent != null && !(parent instanceof MainFrame)) {
                                 parent = parent.getParent();
                             }
@@ -179,10 +211,10 @@ public class DentistController {
                         timer.setRepeats(false);
                         timer.start();
                     } else {
-                        view.showError("Failed to save dentist. Please try again.");
+                        addView.showError("Failed to save dentist. Please try again.");
                     }
                 } catch (Exception e) {
-                    view.showError("Error saving dentist: " + e.getMessage());
+                    addView.showError("Error saving dentist: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -247,7 +279,7 @@ public class DentistController {
     }
 
     /**
-     * Search dentists
+     * Search dentists by name or specialization
      * @param searchTerm The search term
      * @return List of matching dentists
      */
@@ -399,5 +431,29 @@ public class DentistController {
      */
     public int getDentistCountBySpecialization(String specialization) {
         return dentistDAO.getDentistCountBySpecialization(specialization);
+    }
+
+    // =====================================================
+    // HELPER METHODS FOR LIST VIEW
+    // =====================================================
+
+    /**
+     * Load dentists for the list view
+     * @param searchText The search text
+     * @param filter The filter (All, Available, Unavailable)
+     */
+    public void loadDentists(String searchText, String filter) {
+        if (listView != null) {
+            listView.loadDentists();
+        }
+    }
+
+    /**
+     * Refresh the dentist list
+     */
+    public void refreshDentistList() {
+        if (listView != null) {
+            listView.loadDentists();
+        }
     }
 }

@@ -140,11 +140,32 @@ public class MainFrame extends JFrame {
         // =====================================================
         // STAFF SCREENS (Admin only)
         // =====================================================
-        contentPanel.add(createPlaceholderPanel("Staff List"), "STAFF_LIST");
-        contentPanel.add(createPlaceholderPanel("Add Staff"), "STAFF_ADD");
-        contentPanel.add(createPlaceholderPanel("Staff Details"), "STAFF_DETAILS");
-        System.out.println("MainFrame: Added STAFF cards");
+        
+       // Staff screens (Admin only)
+try {
+    AddStaffPanel addStaffPanel = new AddStaffPanel();
+    addStaffPanel.setName("STAFF_ADD");
+    contentPanel.add(addStaffPanel, "STAFF_ADD");
+    System.out.println("MainFrame: Added STAFF_ADD card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating AddStaffPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Add Staff");
+    placeholder.setName("STAFF_ADD");
+    contentPanel.add(placeholder, "STAFF_ADD");
+}
 
+// Staff List - Placeholder for now
+JPanel staffListPlaceholder = createPlaceholderPanel("Staff List");
+staffListPlaceholder.setName("STAFF_LIST");
+contentPanel.add(staffListPlaceholder, "STAFF_LIST");
+System.out.println("MainFrame: Added STAFF_LIST card");
+
+// Staff Details - Placeholder
+JPanel staffDetailsPlaceholder = createPlaceholderPanel("Staff Details");
+staffDetailsPlaceholder.setName("STAFF_DETAILS");
+contentPanel.add(staffDetailsPlaceholder, "STAFF_DETAILS");
+System.out.println("MainFrame: Added STAFF_DETAILS card");
         // =====================================================
         // DENTIST SCREENS (Admin only) - FIXED
         // =====================================================
@@ -163,11 +184,19 @@ public class MainFrame extends JFrame {
             contentPanel.add(placeholder, "DENTIST_ADD");
         }
 
-        // Dentist List - Placeholder (will be replaced with real implementation later)
-        JPanel dentistListPlaceholder = createPlaceholderPanel("Dentist List");
-        dentistListPlaceholder.setName("DENTIST_LIST");
-        contentPanel.add(dentistListPlaceholder, "DENTIST_LIST");
-        System.out.println("MainFrame: Added DENTIST_LIST card");
+       // Dentist List - Real Implementation
+try {
+    DentistListPanel dentistListPanel = new DentistListPanel();
+    dentistListPanel.setName("DENTIST_LIST");
+    contentPanel.add(dentistListPanel, "DENTIST_LIST");
+    System.out.println("MainFrame: Added DENTIST_LIST card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating DentistListPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Dentist List");
+    placeholder.setName("DENTIST_LIST");
+    contentPanel.add(placeholder, "DENTIST_LIST");
+}
 
         // =====================================================
         // TREATMENT SCREENS
