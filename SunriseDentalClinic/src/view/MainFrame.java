@@ -156,10 +156,19 @@ try {
 }
 
 // Staff List - Placeholder for now
-JPanel staffListPlaceholder = createPlaceholderPanel("Staff List");
-staffListPlaceholder.setName("STAFF_LIST");
-contentPanel.add(staffListPlaceholder, "STAFF_LIST");
-System.out.println("MainFrame: Added STAFF_LIST card");
+// Staff List - Real Implementation
+try {
+    StaffListPanel staffListPanel = new StaffListPanel();
+    staffListPanel.setName("STAFF_LIST");
+    contentPanel.add(staffListPanel, "STAFF_LIST");
+    System.out.println("MainFrame: Added STAFF_LIST card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating StaffListPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Staff List");
+    placeholder.setName("STAFF_LIST");
+    contentPanel.add(placeholder, "STAFF_LIST");
+}
 
 // Staff Details - Placeholder
 JPanel staffDetailsPlaceholder = createPlaceholderPanel("Staff Details");
