@@ -4,6 +4,7 @@ import dao.DentistDAO;
 import model.Dentist;
 import view.AddDentistPanel;
 import view.DentistListPanel;
+import view.DentistDetailsPanel;
 import view.MainFrame;
 
 import javax.swing.*;
@@ -13,6 +14,7 @@ import java.util.List;
 public class DentistController {
     private AddDentistPanel addView;
     private DentistListPanel listView;
+    private DentistDetailsPanel detailsView;
     private DentistDAO dentistDAO;
 
     // =====================================================
@@ -36,7 +38,15 @@ public class DentistController {
     public DentistController(DentistListPanel view) {
         this.listView = view;
         this.dentistDAO = new DentistDAO();
-        // No initialization needed for list view
+    }
+
+    /**
+     * Constructor for DentistDetailsPanel
+     * @param view The DentistDetailsPanel instance
+     */
+    public DentistController(DentistDetailsPanel view) {
+        this.detailsView = view;
+        this.dentistDAO = new DentistDAO();
     }
 
     // =====================================================

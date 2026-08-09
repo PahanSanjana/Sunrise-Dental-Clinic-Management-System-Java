@@ -510,24 +510,54 @@ public class DentistListPanel extends JPanel {
 
     public void viewDentist(int row) {
         int dentistId = (int) tableModel.getValueAt(row, 0);
-        String dentistName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open dentist details view
-        JOptionPane.showMessageDialog(this, 
-            "Viewing Dentist: " + dentistName + "\nID: " + dentistId,
-            "Dentist Details",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to dentist details
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the dentist from database
+            Dentist dentist = controller.getDentistById(dentistId);
+            if (dentist != null) {
+                // Create a new details panel with the dentist
+                DentistDetailsPanel detailsPanel = new DentistDetailsPanel(dentist);
+                detailsPanel.setName("DENTIST_DETAILS");
+                mainFrame.addScreen("DENTIST_DETAILS", detailsPanel);
+                mainFrame.showCard("DENTIST_DETAILS");
+            } else {
+                showError("Dentist not found.");
+            }
+        }
     }
 
     public void editDentist(int row) {
         int dentistId = (int) tableModel.getValueAt(row, 0);
-        String dentistName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open dentist edit form
-        JOptionPane.showMessageDialog(this, 
-            "Editing Dentist: " + dentistName + "\nID: " + dentistId,
-            "Edit Dentist",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to dentist details in edit mode
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the dentist from database
+            Dentist dentist = controller.getDentistById(dentistId);
+            if (dentist != null) {
+                // Create a new details panel with the dentist
+                DentistDetailsPanel detailsPanel = new DentistDetailsPanel(dentist);
+                detailsPanel.setName("DENTIST_DETAILS");
+                mainFrame.addScreen("DENTIST_DETAILS", detailsPanel);
+                mainFrame.showCard("DENTIST_DETAILS");
+                // Switch to edit mode
+                detailsPanel.toggleEditMode();
+            } else {
+                showError("Dentist not found.");
+            }
+        }
     }
 
     public void toggleAvailability(int row) {
@@ -594,9 +624,5 @@ public class DentistListPanel extends JPanel {
     public void showInfo(String message) {
         statusLabel.setText("ℹ️ " + message);
         statusLabel.setForeground(new Color(107, 123, 121));
-    }
-
-    private static class MouseAdapter extends java.awt.event.MouseAdapter {
-        // Empty implementation
     }
 }
