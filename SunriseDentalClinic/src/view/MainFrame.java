@@ -233,10 +233,21 @@ try {
 }
 
 // Treatment List - Placeholder for now
-JPanel treatmentListPlaceholder = createPlaceholderPanel("Treatment List");
-treatmentListPlaceholder.setName("TREATMENT_LIST");
-contentPanel.add(treatmentListPlaceholder, "TREATMENT_LIST");
-System.out.println("MainFrame: Added TREATMENT_LIST card");
+// Treatment List - Real Implementation
+try {
+    TreatmentListPanel treatmentListPanel = new TreatmentListPanel();
+    treatmentListPanel.setName("TREATMENT_LIST");
+    contentPanel.add(treatmentListPanel, "TREATMENT_LIST");
+    System.out.println("MainFrame: Added TREATMENT_LIST card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating TreatmentListPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Treatment List");
+    placeholder.setName("TREATMENT_LIST");
+    contentPanel.add(placeholder, "TREATMENT_LIST");
+}
+
+
         // =====================================================
         // AUDIT SCREENS (Admin only)
         // =====================================================
