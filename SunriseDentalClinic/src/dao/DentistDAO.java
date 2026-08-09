@@ -20,7 +20,7 @@ public class DentistDAO {
     public boolean addDentist(Dentist dentist) {
         String sql = "INSERT INTO dentists (dentist_name, specialization, license_number, "
                    + "working_hours, phone, email, years_of_experience, consultation_fee, "
-                   + "is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                   + "is_available, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -34,6 +34,13 @@ public class DentistDAO {
             pstmt.setInt(7, dentist.getYearsOfExperience());
             pstmt.setDouble(8, dentist.getConsultationFee());
             pstmt.setBoolean(9, dentist.isAvailable());
+            
+            // Handle user_id - if -1 or 0, set to NULL
+            if (dentist.getUserId() > 0) {
+                pstmt.setInt(10, dentist.getUserId());
+            } else {
+                pstmt.setNull(10, Types.INTEGER);
+            }
             
             int affectedRows = pstmt.executeUpdate();
             
@@ -290,7 +297,7 @@ public class DentistDAO {
     public boolean updateDentist(Dentist dentist) {
         String sql = "UPDATE dentists SET dentist_name=?, specialization=?, license_number=?, "
                    + "working_hours=?, phone=?, email=?, years_of_experience=?, consultation_fee=?, "
-                   + "is_available=? WHERE dentist_id=?";
+                   + "is_available=?, user_id=? WHERE dentist_id=?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -304,7 +311,15 @@ public class DentistDAO {
             pstmt.setInt(7, dentist.getYearsOfExperience());
             pstmt.setDouble(8, dentist.getConsultationFee());
             pstmt.setBoolean(9, dentist.isAvailable());
-            pstmt.setInt(10, dentist.getDentistId());
+            
+            // Handle user_id - if -1 or 0, set to NULL
+            if (dentist.getUserId() > 0) {
+                pstmt.setInt(10, dentist.getUserId());
+            } else {
+                pstmt.setNull(10, Types.INTEGER);
+            }
+            
+            pstmt.setInt(11, dentist.getDentistId());
             
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
