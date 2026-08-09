@@ -171,6 +171,7 @@ try {
 }
 
 // Staff Details - Placeholder
+// Staff Details - Placeholder (will be replaced dynamically)
 JPanel staffDetailsPlaceholder = createPlaceholderPanel("Staff Details");
 staffDetailsPlaceholder.setName("STAFF_DETAILS");
 contentPanel.add(staffDetailsPlaceholder, "STAFF_DETAILS");

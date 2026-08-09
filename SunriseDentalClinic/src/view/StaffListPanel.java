@@ -529,24 +529,54 @@ public class StaffListPanel extends JPanel {
 
     public void viewStaff(int row) {
         int staffId = (int) tableModel.getValueAt(row, 0);
-        String staffName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open staff details view
-        JOptionPane.showMessageDialog(this, 
-            "Viewing Staff: " + staffName + "\nID: " + staffId,
-            "Staff Details",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to staff details
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the staff from database
+            Staff staff = controller.getStaffById(staffId);
+            if (staff != null) {
+                // Create a new details panel with the staff
+                StaffDetailsPanel detailsPanel = new StaffDetailsPanel(staff);
+                detailsPanel.setName("STAFF_DETAILS");
+                mainFrame.addScreen("STAFF_DETAILS", detailsPanel);
+                mainFrame.showCard("STAFF_DETAILS");
+            } else {
+                showError("Staff member not found.");
+            }
+        }
     }
 
     public void editStaff(int row) {
         int staffId = (int) tableModel.getValueAt(row, 0);
-        String staffName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open staff edit form
-        JOptionPane.showMessageDialog(this, 
-            "Editing Staff: " + staffName + "\nID: " + staffId,
-            "Edit Staff",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to staff details in edit mode
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the staff from database
+            Staff staff = controller.getStaffById(staffId);
+            if (staff != null) {
+                // Create a new details panel with the staff
+                StaffDetailsPanel detailsPanel = new StaffDetailsPanel(staff);
+                detailsPanel.setName("STAFF_DETAILS");
+                mainFrame.addScreen("STAFF_DETAILS", detailsPanel);
+                mainFrame.showCard("STAFF_DETAILS");
+                // Switch to edit mode
+                detailsPanel.toggleEditMode();
+            } else {
+                showError("Staff member not found.");
+            }
+        }
     }
 
     public void toggleStatus(int row) {
@@ -619,9 +649,5 @@ public class StaffListPanel extends JPanel {
     public void showInfo(String message) {
         statusLabel.setText("ℹ️ " + message);
         statusLabel.setForeground(new Color(107, 123, 121));
-    }
-
-    private static class MouseAdapter extends java.awt.event.MouseAdapter {
-        // Empty implementation
     }
 }

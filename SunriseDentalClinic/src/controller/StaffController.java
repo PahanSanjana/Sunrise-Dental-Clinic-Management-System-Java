@@ -4,6 +4,7 @@ import dao.StaffDAO;
 import model.Staff;
 import view.AddStaffPanel;
 import view.StaffListPanel;
+import view.StaffDetailsPanel;
 import view.MainFrame;
 
 import javax.swing.*;
@@ -16,6 +17,7 @@ import java.util.List;
 public class StaffController {
     private AddStaffPanel addView;
     private StaffListPanel listView;
+    private StaffDetailsPanel detailsView;
     private StaffDAO staffDAO;
 
     // =====================================================
@@ -39,7 +41,15 @@ public class StaffController {
     public StaffController(StaffListPanel view) {
         this.listView = view;
         this.staffDAO = new StaffDAO();
-        // No initialization needed for list view
+    }
+
+    /**
+     * Constructor for StaffDetailsPanel
+     * @param view The StaffDetailsPanel instance
+     */
+    public StaffController(StaffDetailsPanel view) {
+        this.detailsView = view;
+        this.staffDAO = new StaffDAO();
     }
 
     // =====================================================
@@ -279,18 +289,6 @@ public class StaffController {
      */
     public List<Staff> searchStaff(String searchTerm) {
         return staffDAO.searchStaff(searchTerm);
-    }
-
-    /**
-     * Get staff with pagination
-     * @param offset The offset (starting point)
-     * @param limit The number of records to fetch
-     * @return List of staff
-     */
-    public List<Staff> getStaffPaginated(int offset, int limit) {
-        // This would need to be implemented in StaffDAO
-        // For now, return all staff
-        return staffDAO.getAllStaff();
     }
 
     // =====================================================
