@@ -118,10 +118,12 @@ try {
             contentPanel.add(placeholder, "APPOINTMENT_BOOK");
         }
         
-        // Appointment Details - Placeholder
-        JPanel appointmentDetails = createPlaceholderPanel("Appointment Details");
-        appointmentDetails.setName("APPOINTMENT_DETAILS");
-        contentPanel.add(appointmentDetails, "APPOINTMENT_DETAILS");
+     // Appointment Details - Placeholder (will be replaced dynamically)
+JPanel appointmentDetailsPlaceholder = createPlaceholderPanel("Appointment Details");
+appointmentDetailsPlaceholder.setName("APPOINTMENT_DETAILS");
+contentPanel.add(appointmentDetailsPlaceholder, "APPOINTMENT_DETAILS");
+System.out.println("MainFrame: Added APPOINTMENT_DETAILS card");
+
         
         // Daily Schedule - Placeholder
         JPanel dailySchedule = createPlaceholderPanel("Daily Schedule");

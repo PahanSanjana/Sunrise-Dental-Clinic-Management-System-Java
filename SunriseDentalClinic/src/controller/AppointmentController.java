@@ -8,6 +8,7 @@ import model.Patient;
 import model.Dentist;
 import view.BookAppointmentPanel;
 import view.AppointmentListPanel;
+import view.AppointmentDetailsPanel;
 import view.MainFrame;
 
 import javax.swing.*;
@@ -17,6 +18,7 @@ import java.util.List;
 public class AppointmentController {
     private BookAppointmentPanel bookView;
     private AppointmentListPanel listView;
+    private AppointmentDetailsPanel detailsView;
     private AppointmentDAO appointmentDAO;
     private PatientDAO patientDAO;
     private DentistDAO dentistDAO;
@@ -42,6 +44,17 @@ public class AppointmentController {
      */
     public AppointmentController(AppointmentListPanel view) {
         this.listView = view;
+        this.appointmentDAO = new AppointmentDAO();
+        this.patientDAO = new PatientDAO();
+        this.dentistDAO = new DentistDAO();
+    }
+
+    /**
+     * Constructor for AppointmentDetailsPanel
+     * @param view The AppointmentDetailsPanel instance
+     */
+    public AppointmentController(AppointmentDetailsPanel view) {
+        this.detailsView = view;
         this.appointmentDAO = new AppointmentDAO();
         this.patientDAO = new PatientDAO();
         this.dentistDAO = new DentistDAO();

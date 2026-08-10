@@ -609,24 +609,54 @@ public class AppointmentListPanel extends JPanel {
 
     public void viewAppointment(int row) {
         int appointmentId = (int) tableModel.getValueAt(row, 0);
-        String patientName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open appointment details view
-        JOptionPane.showMessageDialog(this, 
-            "Viewing Appointment\nPatient: " + patientName + "\nID: " + appointmentId,
-            "Appointment Details",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to appointment details
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the appointment from database
+            Appointment appointment = controller.getAppointmentById(appointmentId);
+            if (appointment != null) {
+                // Create a new details panel with the appointment
+                AppointmentDetailsPanel detailsPanel = new AppointmentDetailsPanel(appointment);
+                detailsPanel.setName("APPOINTMENT_DETAILS");
+                mainFrame.addScreen("APPOINTMENT_DETAILS", detailsPanel);
+                mainFrame.showCard("APPOINTMENT_DETAILS");
+            } else {
+                showError("Appointment not found.");
+            }
+        }
     }
 
     public void editAppointment(int row) {
         int appointmentId = (int) tableModel.getValueAt(row, 0);
-        String patientName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open appointment edit form
-        JOptionPane.showMessageDialog(this, 
-            "Editing Appointment\nPatient: " + patientName + "\nID: " + appointmentId,
-            "Edit Appointment",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to appointment details in edit mode
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the appointment from database
+            Appointment appointment = controller.getAppointmentById(appointmentId);
+            if (appointment != null) {
+                // Create a new details panel with the appointment
+                AppointmentDetailsPanel detailsPanel = new AppointmentDetailsPanel(appointment);
+                detailsPanel.setName("APPOINTMENT_DETAILS");
+                mainFrame.addScreen("APPOINTMENT_DETAILS", detailsPanel);
+                mainFrame.showCard("APPOINTMENT_DETAILS");
+                // Switch to edit mode
+                detailsPanel.toggleEditMode();
+            } else {
+                showError("Appointment not found.");
+            }
+        }
     }
 
     public void cancelAppointment(int row) {
