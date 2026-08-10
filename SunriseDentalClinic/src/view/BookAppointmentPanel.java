@@ -444,7 +444,6 @@ public class BookAppointmentPanel extends JPanel {
     // Helper Methods
     // ========================
 
-    // FIXED: generateTimeSlots method - Fixed array bounds
     private String[] generateTimeSlots() {
         // Maximum slots: 8:00 to 20:00 with 30-min intervals = 25 slots
         String[] tempSlots = new String[25];

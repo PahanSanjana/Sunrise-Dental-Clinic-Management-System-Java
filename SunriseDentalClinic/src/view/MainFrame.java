@@ -90,11 +90,20 @@ public class MainFrame extends JFrame {
         // APPOINTMENT SCREENS
         // =====================================================
         
-        // Appointment List - Placeholder
-        JPanel appointmentList = createPlaceholderPanel("Appointment List");
-        appointmentList.setName("APPOINTMENT_LIST");
-        contentPanel.add(appointmentList, "APPOINTMENT_LIST");
-        
+        // Appointment List - Real Implementation
+try {
+    AppointmentListPanel appointmentListPanel = new AppointmentListPanel();
+    appointmentListPanel.setName("APPOINTMENT_LIST");
+    contentPanel.add(appointmentListPanel, "APPOINTMENT_LIST");
+    System.out.println("MainFrame: Added APPOINTMENT_LIST card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating AppointmentListPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Appointment List");
+    placeholder.setName("APPOINTMENT_LIST");
+    contentPanel.add(placeholder, "APPOINTMENT_LIST");
+}
+
         // Book Appointment - Real Implementation
         try {
             BookAppointmentPanel bookAppointmentPanel = new BookAppointmentPanel();
@@ -246,6 +255,12 @@ try {
     placeholder.setName("TREATMENT_LIST");
     contentPanel.add(placeholder, "TREATMENT_LIST");
 }
+
+// Treatment Details - Placeholder (will be replaced dynamically)
+JPanel treatmentDetailsPlaceholder = createPlaceholderPanel("Treatment Details");
+treatmentDetailsPlaceholder.setName("TREATMENT_DETAILS");
+contentPanel.add(treatmentDetailsPlaceholder, "TREATMENT_DETAILS");
+System.out.println("MainFrame: Added TREATMENT_DETAILS card");
 
 
         // =====================================================

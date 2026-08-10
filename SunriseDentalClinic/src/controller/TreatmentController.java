@@ -4,6 +4,7 @@ import dao.TreatmentDAO;
 import model.Treatment;
 import view.AddTreatmentPanel;
 import view.TreatmentListPanel;
+import view.TreatmentDetailsPanel;
 import view.MainFrame;
 
 import javax.swing.*;
@@ -13,6 +14,7 @@ import java.util.List;
 public class TreatmentController {
     private AddTreatmentPanel addView;
     private TreatmentListPanel listView;
+    private TreatmentDetailsPanel detailsView;
     private TreatmentDAO treatmentDAO;
 
     // =====================================================
@@ -35,6 +37,15 @@ public class TreatmentController {
      */
     public TreatmentController(TreatmentListPanel view) {
         this.listView = view;
+        this.treatmentDAO = new TreatmentDAO();
+    }
+
+    /**
+     * Constructor for TreatmentDetailsPanel
+     * @param view The TreatmentDetailsPanel instance
+     */
+    public TreatmentController(TreatmentDetailsPanel view) {
+        this.detailsView = view;
         this.treatmentDAO = new TreatmentDAO();
     }
 

@@ -525,24 +525,54 @@ public class TreatmentListPanel extends JPanel {
 
     public void viewTreatment(int row) {
         int treatmentId = (int) tableModel.getValueAt(row, 0);
-        String treatmentName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open treatment details view
-        JOptionPane.showMessageDialog(this, 
-            "Viewing Treatment: " + treatmentName + "\nID: " + treatmentId,
-            "Treatment Details",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to treatment details
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the treatment from database
+            Treatment treatment = controller.getTreatmentById(treatmentId);
+            if (treatment != null) {
+                // Create a new details panel with the treatment
+                TreatmentDetailsPanel detailsPanel = new TreatmentDetailsPanel(treatment);
+                detailsPanel.setName("TREATMENT_DETAILS");
+                mainFrame.addScreen("TREATMENT_DETAILS", detailsPanel);
+                mainFrame.showCard("TREATMENT_DETAILS");
+            } else {
+                showError("Treatment not found.");
+            }
+        }
     }
 
     public void editTreatment(int row) {
         int treatmentId = (int) tableModel.getValueAt(row, 0);
-        String treatmentName = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open treatment edit form
-        JOptionPane.showMessageDialog(this, 
-            "Editing Treatment: " + treatmentName + "\nID: " + treatmentId,
-            "Edit Treatment",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to treatment details in edit mode
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the treatment from database
+            Treatment treatment = controller.getTreatmentById(treatmentId);
+            if (treatment != null) {
+                // Create a new details panel with the treatment
+                TreatmentDetailsPanel detailsPanel = new TreatmentDetailsPanel(treatment);
+                detailsPanel.setName("TREATMENT_DETAILS");
+                mainFrame.addScreen("TREATMENT_DETAILS", detailsPanel);
+                mainFrame.showCard("TREATMENT_DETAILS");
+                // Switch to edit mode
+                detailsPanel.toggleEditMode();
+            } else {
+                showError("Treatment not found.");
+            }
+        }
     }
 
     public void toggleStatus(int row) {

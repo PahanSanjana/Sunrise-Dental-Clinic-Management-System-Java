@@ -22,7 +22,7 @@ public class DBconnection {
             Class.forName("com.mysql.cj.jdbc.Driver");
 
             // Updated database name to sunrise_dental
-            String url = "jdbc:mysql://127.0.0.1:3306/sunrise_dental?useSSL=false&serverTimezone=UTC";
+            String url = "jdbc:mysql://127.0.0.1:3306/sunrise_dental_db?useSSL=false&serverTimezone=UTC";
 
             con = DriverManager.getConnection(url, "root", "");
 
