@@ -125,19 +125,48 @@ contentPanel.add(appointmentDetailsPlaceholder, "APPOINTMENT_DETAILS");
 System.out.println("MainFrame: Added APPOINTMENT_DETAILS card");
 
         
-        // Daily Schedule - Placeholder
-        JPanel dailySchedule = createPlaceholderPanel("Daily Schedule");
-        dailySchedule.setName("APPOINTMENT_SCHEDULE");
-        contentPanel.add(dailySchedule, "APPOINTMENT_SCHEDULE");
-        System.out.println("MainFrame: Added APPOINTMENT cards");
+        // Daily Schedule - Real Implementation
+try {
+    DailySchedulePanel dailySchedulePanel = new DailySchedulePanel();
+    dailySchedulePanel.setName("APPOINTMENT_SCHEDULE");
+    contentPanel.add(dailySchedulePanel, "APPOINTMENT_SCHEDULE");
+    dailySchedulePanel.loadScheduleData();
+    System.out.println("MainFrame: Added APPOINTMENT_SCHEDULE card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating DailySchedulePanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Daily Schedule");
+    placeholder.setName("APPOINTMENT_SCHEDULE");
+    contentPanel.add(placeholder, "APPOINTMENT_SCHEDULE");
+}
+
 
         // =====================================================
-        // BILLING SCREENS
-        // =====================================================
-        contentPanel.add(createPlaceholderPanel("Bill List"), "BILL_LIST");
-        contentPanel.add(createPlaceholderPanel("Generate Bill"), "BILL_GENERATE");
-        contentPanel.add(createPlaceholderPanel("Bill Details"), "BILL_DETAILS");
-        System.out.println("MainFrame: Added BILLING cards");
+// BILLING SCREENS
+// =====================================================
+
+// Bill List - Placeholder (will be replaced with real implementation later)
+contentPanel.add(createPlaceholderPanel("Bill List"), "BILL_LIST");
+
+// Generate Bill - Real Implementation
+try {
+    GenerateBillPanel generateBillPanel = new GenerateBillPanel();
+    generateBillPanel.setName("BILL_GENERATE");
+    contentPanel.add(generateBillPanel, "BILL_GENERATE");
+    System.out.println("MainFrame: Added BILL_GENERATE card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating GenerateBillPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Generate Bill");
+    placeholder.setName("BILL_GENERATE");
+    contentPanel.add(placeholder, "BILL_GENERATE");
+}
+
+// Bill Details - Placeholder (will be replaced dynamically)
+contentPanel.add(createPlaceholderPanel("Bill Details"), "BILL_DETAILS");
+System.out.println("MainFrame: Added BILLING cards");
+
+
 
         // =====================================================
         // REPORTS SCREENS

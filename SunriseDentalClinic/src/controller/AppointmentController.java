@@ -9,7 +9,7 @@ import model.Dentist;
 import view.BookAppointmentPanel;
 import view.AppointmentListPanel;
 import view.AppointmentDetailsPanel;
-import view.MainFrame;
+import view.DailySchedulePanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,6 +19,7 @@ public class AppointmentController {
     private BookAppointmentPanel bookView;
     private AppointmentListPanel listView;
     private AppointmentDetailsPanel detailsView;
+    private DailySchedulePanel scheduleView;
     private AppointmentDAO appointmentDAO;
     private PatientDAO patientDAO;
     private DentistDAO dentistDAO;
@@ -55,6 +56,17 @@ public class AppointmentController {
      */
     public AppointmentController(AppointmentDetailsPanel view) {
         this.detailsView = view;
+        this.appointmentDAO = new AppointmentDAO();
+        this.patientDAO = new PatientDAO();
+        this.dentistDAO = new DentistDAO();
+    }
+
+    /**
+     * Constructor for DailySchedulePanel
+     * @param view The DailySchedulePanel instance
+     */
+    public AppointmentController(DailySchedulePanel view) {
+        this.scheduleView = view;
         this.appointmentDAO = new AppointmentDAO();
         this.patientDAO = new PatientDAO();
         this.dentistDAO = new DentistDAO();
@@ -100,6 +112,14 @@ public class AppointmentController {
      */
     public Dentist getDentistById(int dentistId) {
         return dentistDAO.getDentistById(dentistId);
+    }
+
+    /**
+     * Get all dentists for filter (alias for getAllDentists)
+     * @return List of all dentists
+     */
+    public List<Dentist> getAllDentistsForFilter() {
+        return dentistDAO.getAllDentists();
     }
 
     // =====================================================
@@ -171,6 +191,23 @@ public class AppointmentController {
     }
 
     /**
+     * Get appointments by status
+     * @param status The status to filter by
+     * @return List of appointments with the specified status
+     */
+    public List<Appointment> getAppointmentsByStatus(String status) {
+        return appointmentDAO.getAppointmentsByStatus(status);
+    }
+
+    /**
+     * Get today's appointments
+     * @return List of today's appointments
+     */
+    public List<Appointment> getTodayAppointments() {
+        return appointmentDAO.getTodayAppointments();
+    }
+
+    /**
      * Update an appointment
      * @param appointment The appointment to update
      * @return true if successful, false otherwise
@@ -205,23 +242,6 @@ public class AppointmentController {
         return appointmentDAO.getAppointmentCount();
     }
 
-    /**
-     * Get appointments by status
-     * @param status The status to filter by
-     * @return List of appointments with the specified status
-     */
-    public List<Appointment> getAppointmentsByStatus(String status) {
-        return appointmentDAO.getAppointmentsByStatus(status);
-    }
-
-    /**
-     * Get today's appointments
-     * @return List of today's appointments
-     */
-    public List<Appointment> getTodayAppointments() {
-        return appointmentDAO.getTodayAppointments();
-    }
-
     // =====================================================
     // HELPER METHODS FOR LIST VIEW
     // =====================================================
@@ -241,6 +261,28 @@ public class AppointmentController {
     public void refreshAppointmentList() {
         if (listView != null) {
             listView.loadAppointments();
+        }
+    }
+
+    // =====================================================
+    // HELPER METHODS FOR SCHEDULE VIEW
+    // =====================================================
+
+    /**
+     * Load schedule for the daily schedule view
+     */
+    public void loadSchedule() {
+        if (scheduleView != null) {
+            scheduleView.loadScheduleData();
+        }
+    }
+
+    /**
+     * Refresh the daily schedule
+     */
+    public void refreshSchedule() {
+        if (scheduleView != null) {
+            scheduleView.loadScheduleData();
         }
     }
 }

@@ -176,6 +176,33 @@ public class AppointmentDAO {
     }
 
     /**
+     * Get appointments by date range
+     * @param startDate The start date
+     * @param endDate The end date
+     * @return List of appointments in the date range
+     */
+    public List<Appointment> getAppointmentsByDateRange(String startDate, String endDate) {
+        List<Appointment> appointments = new ArrayList<>();
+        String sql = "SELECT * FROM appointments WHERE appointment_date BETWEEN ? AND ? ORDER BY appointment_date, appointment_time";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, startDate);
+            pstmt.setString(2, endDate);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                appointments.add(mapResultSetToAppointment(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting appointments by date range: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return appointments;
+    }
+
+    /**
      * Get appointments by status
      * @param status The status to filter by
      * @return List of appointments with the specified status
@@ -217,6 +244,28 @@ public class AppointmentDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error getting today's appointments: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return appointments;
+    }
+
+    /**
+     * Get upcoming appointments (from today onwards)
+     * @return List of upcoming appointments
+     */
+    public List<Appointment> getUpcomingAppointments() {
+        List<Appointment> appointments = new ArrayList<>();
+        String sql = "SELECT * FROM appointments WHERE appointment_date >= CURDATE() AND status NOT IN ('Cancelled', 'Completed', 'No Show') ORDER BY appointment_date, appointment_time";
+        
+        try (Connection conn = DBconnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            while (rs.next()) {
+                appointments.add(mapResultSetToAppointment(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting upcoming appointments: " + e.getMessage());
             e.printStackTrace();
         }
         return appointments;
