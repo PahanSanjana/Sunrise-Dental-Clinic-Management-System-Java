@@ -3,6 +3,7 @@ package view;
 import controller.BillController;
 import model.Bill;
 import model.Patient;
+import model.BillItem;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -455,50 +456,7 @@ public class BillListPanel extends JPanel {
         SwingWorker<List<Bill>, Void> worker = new SwingWorker<List<Bill>, Void>() {
             @Override
             protected List<Bill> doInBackground() throws Exception {
-                List<Bill> bills = controller.getAllBills();
-                
-                // Apply status filter
-                if (status != null && !status.equals("All Status") && bills != null) {
-                    bills.removeIf(b -> !b.getStatus().equals(status));
-                }
-                
-                // Apply date filter
-                if (dateFilter != null && !dateFilter.equals("All Dates") && bills != null) {
-                    java.time.LocalDate today = java.time.LocalDate.now();
-                    switch (dateFilter) {
-                        case "Today":
-                            bills.removeIf(b -> !b.getBillDate().toLocalDate().equals(today));
-                            break;
-                        case "This Week":
-                            java.time.LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
-                            java.time.LocalDate weekEnd = weekStart.plusDays(6);
-                            bills.removeIf(b -> {
-                                java.time.LocalDate date = b.getBillDate().toLocalDate();
-                                return date.isBefore(weekStart) || date.isAfter(weekEnd);
-                            });
-                            break;
-                        case "This Month":
-                            java.time.LocalDate monthStart = today.withDayOfMonth(1);
-                            java.time.LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
-                            bills.removeIf(b -> {
-                                java.time.LocalDate date = b.getBillDate().toLocalDate();
-                                return date.isBefore(monthStart) || date.isAfter(monthEnd);
-                            });
-                            break;
-                    }
-                }
-                
-                // Apply search filter
-                if (searchText != null && !searchText.isEmpty() && bills != null) {
-                    bills.removeIf(b -> {
-                        String patientName = getPatientName(b.getPatientId());
-                        return !patientName.toLowerCase().contains(searchText.toLowerCase()) &&
-                               !b.getBillNumber().toLowerCase().contains(searchText.toLowerCase()) &&
-                               !b.getStatus().toLowerCase().contains(searchText.toLowerCase());
-                    });
-                }
-                
-                return bills;
+                return controller.getFilteredBills(searchText, status, dateFilter);
             }
 
             @Override
@@ -516,11 +474,6 @@ public class BillListPanel extends JPanel {
         worker.execute();
     }
 
-    private String getPatientName(int patientId) {
-        Patient patient = controller.getPatientById(patientId);
-        return patient != null ? patient.getPatientName() : "Unknown";
-    }
-
     public void displayBills(List<Bill> bills) {
         if (tableModel == null) return;
         
@@ -536,7 +489,7 @@ public class BillListPanel extends JPanel {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         
         for (Bill bill : bills) {
-            String patientName = getPatientName(bill.getPatientId());
+            String patientName = controller.getPatientName(bill.getPatientId());
             String date = bill.getBillDate() != null ? dateFormat.format(bill.getBillDate()) : "N/A";
             String dueDate = bill.getDueDate() != null ? dateFormat.format(bill.getDueDate()) : "N/A";
             
@@ -563,35 +516,62 @@ public class BillListPanel extends JPanel {
             return;
         }
         
-        double totalRevenue = 0;
-        for (Bill bill : bills) {
-            if ("Paid".equals(bill.getStatus()) || "Partial".equals(bill.getStatus())) {
-                totalRevenue += bill.getTotalAmount();
-            }
-        }
+        double totalRevenue = controller.getTotalRevenueFromBills(bills);
         totalRevenueLabel.setText("Total Revenue: $" + df.format(totalRevenue));
     }
 
     public void viewBill(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
-        String billNumber = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open bill details view
-        JOptionPane.showMessageDialog(this, 
-            "Viewing Bill\nBill Number: " + billNumber + "\nID: " + billId,
-            "Bill Details",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to bill details
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the bill from database
+            Bill bill = controller.getBillById(billId);
+            if (bill != null) {
+                List<BillItem> items = controller.getBillItemsByBillId(billId);
+                // Create a new details panel with the bill
+                BillDetailsPanel detailsPanel = new BillDetailsPanel(bill, items);
+                detailsPanel.setName("BILL_DETAILS");
+                mainFrame.addScreen("BILL_DETAILS", detailsPanel);
+                mainFrame.showCard("BILL_DETAILS");
+            } else {
+                showError("Bill not found.");
+            }
+        }
     }
 
     public void editBill(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
-        String billNumber = (String) tableModel.getValueAt(row, 1);
         
-        // TODO: Open bill edit form
-        JOptionPane.showMessageDialog(this, 
-            "Editing Bill\nBill Number: " + billNumber + "\nID: " + billId,
-            "Edit Bill",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Navigate to bill details in edit mode
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            MainFrame mainFrame = (MainFrame) parent;
+            
+            // Get the bill from database
+            Bill bill = controller.getBillById(billId);
+            if (bill != null) {
+                List<BillItem> items = controller.getBillItemsByBillId(billId);
+                // Create a new details panel with the bill
+                BillDetailsPanel detailsPanel = new BillDetailsPanel(bill, items);
+                detailsPanel.setName("BILL_DETAILS");
+                mainFrame.addScreen("BILL_DETAILS", detailsPanel);
+                mainFrame.showCard("BILL_DETAILS");
+                // Switch to edit mode
+                detailsPanel.toggleEditMode();
+            } else {
+                showError("Bill not found.");
+            }
+        }
     }
 
     public void deleteBill(int row) {
