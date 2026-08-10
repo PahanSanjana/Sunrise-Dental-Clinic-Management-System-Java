@@ -1,9 +1,9 @@
 package view;
 
-import java.awt.*;
-import javax.swing.*;
 import model.User;
 import model.User.UserRole;
+import java.awt.*;
+import javax.swing.*;
 
 public class MainFrame extends JFrame {
 
@@ -90,21 +90,21 @@ public class MainFrame extends JFrame {
         // APPOINTMENT SCREENS
         // =====================================================
         
-        // Appointment List - Real Implementation
-try {
-    AppointmentListPanel appointmentListPanel = new AppointmentListPanel();
-    appointmentListPanel.setName("APPOINTMENT_LIST");
-    contentPanel.add(appointmentListPanel, "APPOINTMENT_LIST");
-    System.out.println("MainFrame: Added APPOINTMENT_LIST card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating AppointmentListPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Appointment List");
-    placeholder.setName("APPOINTMENT_LIST");
-    contentPanel.add(placeholder, "APPOINTMENT_LIST");
-}
-
-        // Book Appointment - Real Implementation
+        // Appointment List
+        try {
+            AppointmentListPanel appointmentListPanel = new AppointmentListPanel();
+            appointmentListPanel.setName("APPOINTMENT_LIST");
+            contentPanel.add(appointmentListPanel, "APPOINTMENT_LIST");
+            System.out.println("MainFrame: Added APPOINTMENT_LIST card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating AppointmentListPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Appointment List");
+            placeholder.setName("APPOINTMENT_LIST");
+            contentPanel.add(placeholder, "APPOINTMENT_LIST");
+        }
+        
+        // Book Appointment
         try {
             BookAppointmentPanel bookAppointmentPanel = new BookAppointmentPanel();
             bookAppointmentPanel.setName("APPOINTMENT_BOOK");
@@ -118,66 +118,65 @@ try {
             contentPanel.add(placeholder, "APPOINTMENT_BOOK");
         }
         
-     // Appointment Details - Placeholder (will be replaced dynamically)
-JPanel appointmentDetailsPlaceholder = createPlaceholderPanel("Appointment Details");
-appointmentDetailsPlaceholder.setName("APPOINTMENT_DETAILS");
-contentPanel.add(appointmentDetailsPlaceholder, "APPOINTMENT_DETAILS");
-System.out.println("MainFrame: Added APPOINTMENT_DETAILS card");
-
+        // Appointment Details - Placeholder (will be replaced dynamically)
+        JPanel appointmentDetails = createPlaceholderPanel("Appointment Details");
+        appointmentDetails.setName("APPOINTMENT_DETAILS");
+        contentPanel.add(appointmentDetails, "APPOINTMENT_DETAILS");
         
-        // Daily Schedule - Real Implementation
-try {
-    DailySchedulePanel dailySchedulePanel = new DailySchedulePanel();
-    dailySchedulePanel.setName("APPOINTMENT_SCHEDULE");
-    contentPanel.add(dailySchedulePanel, "APPOINTMENT_SCHEDULE");
-    dailySchedulePanel.loadScheduleData();
-    System.out.println("MainFrame: Added APPOINTMENT_SCHEDULE card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating DailySchedulePanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Daily Schedule");
-    placeholder.setName("APPOINTMENT_SCHEDULE");
-    contentPanel.add(placeholder, "APPOINTMENT_SCHEDULE");
-}
-
+        // Daily Schedule
+        try {
+            DailySchedulePanel dailySchedulePanel = new DailySchedulePanel();
+            dailySchedulePanel.setName("APPOINTMENT_SCHEDULE");
+            contentPanel.add(dailySchedulePanel, "APPOINTMENT_SCHEDULE");
+            dailySchedulePanel.loadScheduleData();
+            System.out.println("MainFrame: Added APPOINTMENT_SCHEDULE card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating DailySchedulePanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Daily Schedule");
+            placeholder.setName("APPOINTMENT_SCHEDULE");
+            contentPanel.add(placeholder, "APPOINTMENT_SCHEDULE");
+        }
+        System.out.println("MainFrame: Added APPOINTMENT cards");
 
         // =====================================================
-// BILLING SCREENS
-// =====================================================
+        // BILLING SCREENS
+        // =====================================================
 
-// Bill List - Real Implementation
-try {
-    BillListPanel billListPanel = new BillListPanel();
-    billListPanel.setName("BILL_LIST");
-    contentPanel.add(billListPanel, "BILL_LIST");
-    System.out.println("MainFrame: Added BILL_LIST card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating BillListPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Bill List");
-    placeholder.setName("BILL_LIST");
-    contentPanel.add(placeholder, "BILL_LIST");
-}
+        // Bill List
+        try {
+            BillListPanel billListPanel = new BillListPanel();
+            billListPanel.setName("BILL_LIST");
+            contentPanel.add(billListPanel, "BILL_LIST");
+            System.out.println("MainFrame: Added BILL_LIST card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating BillListPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Bill List");
+            placeholder.setName("BILL_LIST");
+            contentPanel.add(placeholder, "BILL_LIST");
+        }
 
-// Generate Bill - Real Implementation
-try {
-    GenerateBillPanel generateBillPanel = new GenerateBillPanel();
-    generateBillPanel.setName("BILL_GENERATE");
-    contentPanel.add(generateBillPanel, "BILL_GENERATE");
-    System.out.println("MainFrame: Added BILL_GENERATE card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating GenerateBillPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Generate Bill");
-    placeholder.setName("BILL_GENERATE");
-    contentPanel.add(placeholder, "BILL_GENERATE");
-}
+        // Generate Bill
+        try {
+            GenerateBillPanel generateBillPanel = new GenerateBillPanel();
+            generateBillPanel.setName("BILL_GENERATE");
+            contentPanel.add(generateBillPanel, "BILL_GENERATE");
+            System.out.println("MainFrame: Added BILL_GENERATE card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating GenerateBillPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Generate Bill");
+            placeholder.setName("BILL_GENERATE");
+            contentPanel.add(placeholder, "BILL_GENERATE");
+        }
 
-// Bill Details - Placeholder (will be replaced dynamically)
-contentPanel.add(createPlaceholderPanel("Bill Details"), "BILL_DETAILS");
-System.out.println("MainFrame: Added BILLING cards");
-
-
+        // Bill Details - Placeholder (will be replaced dynamically)
+        JPanel billDetailsPlaceholder = createPlaceholderPanel("Bill Details");
+        billDetailsPlaceholder.setName("BILL_DETAILS");
+        contentPanel.add(billDetailsPlaceholder, "BILL_DETAILS");
+        System.out.println("MainFrame: Added BILL_DETAILS card");
+        System.out.println("MainFrame: Added BILLING cards");
 
         // =====================================================
         // REPORTS SCREENS
@@ -192,46 +191,46 @@ System.out.println("MainFrame: Added BILLING cards");
         // STAFF SCREENS (Admin only)
         // =====================================================
         
-       // Staff screens (Admin only)
-try {
-    AddStaffPanel addStaffPanel = new AddStaffPanel();
-    addStaffPanel.setName("STAFF_ADD");
-    contentPanel.add(addStaffPanel, "STAFF_ADD");
-    System.out.println("MainFrame: Added STAFF_ADD card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating AddStaffPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Add Staff");
-    placeholder.setName("STAFF_ADD");
-    contentPanel.add(placeholder, "STAFF_ADD");
-}
+        // Staff List
+        try {
+            StaffListPanel staffListPanel = new StaffListPanel();
+            staffListPanel.setName("STAFF_LIST");
+            contentPanel.add(staffListPanel, "STAFF_LIST");
+            System.out.println("MainFrame: Added STAFF_LIST card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating StaffListPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Staff List");
+            placeholder.setName("STAFF_LIST");
+            contentPanel.add(placeholder, "STAFF_LIST");
+        }
+        
+        // Add Staff
+        try {
+            AddStaffPanel addStaffPanel = new AddStaffPanel();
+            addStaffPanel.setName("STAFF_ADD");
+            contentPanel.add(addStaffPanel, "STAFF_ADD");
+            System.out.println("MainFrame: Added STAFF_ADD card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating AddStaffPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Add Staff");
+            placeholder.setName("STAFF_ADD");
+            contentPanel.add(placeholder, "STAFF_ADD");
+        }
+        
+        // Staff Details - Placeholder (will be replaced dynamically)
+        JPanel staffDetailsPlaceholder = createPlaceholderPanel("Staff Details");
+        staffDetailsPlaceholder.setName("STAFF_DETAILS");
+        contentPanel.add(staffDetailsPlaceholder, "STAFF_DETAILS");
+        System.out.println("MainFrame: Added STAFF_DETAILS card");
+        System.out.println("MainFrame: Added STAFF cards");
 
-// Staff List - Placeholder for now
-// Staff List - Real Implementation
-try {
-    StaffListPanel staffListPanel = new StaffListPanel();
-    staffListPanel.setName("STAFF_LIST");
-    contentPanel.add(staffListPanel, "STAFF_LIST");
-    System.out.println("MainFrame: Added STAFF_LIST card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating StaffListPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Staff List");
-    placeholder.setName("STAFF_LIST");
-    contentPanel.add(placeholder, "STAFF_LIST");
-}
-
-// Staff Details - Placeholder
-// Staff Details - Placeholder (will be replaced dynamically)
-JPanel staffDetailsPlaceholder = createPlaceholderPanel("Staff Details");
-staffDetailsPlaceholder.setName("STAFF_DETAILS");
-contentPanel.add(staffDetailsPlaceholder, "STAFF_DETAILS");
-System.out.println("MainFrame: Added STAFF_DETAILS card");
         // =====================================================
-        // DENTIST SCREENS (Admin only) - FIXED
+        // DENTIST SCREENS (Admin only)
         // =====================================================
         
-        // Add Dentist - Real Implementation
+        // Add Dentist
         try {
             AddDentistPanel addDentistPanel = new AddDentistPanel();
             addDentistPanel.setName("DENTIST_ADD");
@@ -245,65 +244,65 @@ System.out.println("MainFrame: Added STAFF_DETAILS card");
             contentPanel.add(placeholder, "DENTIST_ADD");
         }
 
-       // Dentist List - Real Implementation
-try {
-    DentistListPanel dentistListPanel = new DentistListPanel();
-    dentistListPanel.setName("DENTIST_LIST");
-    contentPanel.add(dentistListPanel, "DENTIST_LIST");
-    System.out.println("MainFrame: Added DENTIST_LIST card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating DentistListPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Dentist List");
-    placeholder.setName("DENTIST_LIST");
-    contentPanel.add(placeholder, "DENTIST_LIST");
-}
+        // Dentist List
+        try {
+            DentistListPanel dentistListPanel = new DentistListPanel();
+            dentistListPanel.setName("DENTIST_LIST");
+            contentPanel.add(dentistListPanel, "DENTIST_LIST");
+            System.out.println("MainFrame: Added DENTIST_LIST card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating DentistListPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Dentist List");
+            placeholder.setName("DENTIST_LIST");
+            contentPanel.add(placeholder, "DENTIST_LIST");
+        }
 
-// Dentist Details - Placeholder (will be replaced dynamically)
-JPanel dentistDetailsPlaceholder = createPlaceholderPanel("Dentist Details");
-dentistDetailsPlaceholder.setName("DENTIST_DETAILS");
-contentPanel.add(dentistDetailsPlaceholder, "DENTIST_DETAILS");
-System.out.println("MainFrame: Added DENTIST_DETAILS card");
-
+        // Dentist Details - Placeholder (will be replaced dynamically)
+        JPanel dentistDetailsPlaceholder = createPlaceholderPanel("Dentist Details");
+        dentistDetailsPlaceholder.setName("DENTIST_DETAILS");
+        contentPanel.add(dentistDetailsPlaceholder, "DENTIST_DETAILS");
+        System.out.println("MainFrame: Added DENTIST_DETAILS card");
+        System.out.println("MainFrame: Added DENTIST cards");
 
         // =====================================================
         // TREATMENT SCREENS
         // =====================================================
-       // Treatment screens
-try {
-    AddTreatmentPanel addTreatmentPanel = new AddTreatmentPanel();
-    addTreatmentPanel.setName("TREATMENT_ADD");
-    contentPanel.add(addTreatmentPanel, "TREATMENT_ADD");
-    System.out.println("MainFrame: Added TREATMENT_ADD card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating AddTreatmentPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Add Treatment");
-    placeholder.setName("TREATMENT_ADD");
-    contentPanel.add(placeholder, "TREATMENT_ADD");
-}
+        
+        // Add Treatment
+        try {
+            AddTreatmentPanel addTreatmentPanel = new AddTreatmentPanel();
+            addTreatmentPanel.setName("TREATMENT_ADD");
+            contentPanel.add(addTreatmentPanel, "TREATMENT_ADD");
+            System.out.println("MainFrame: Added TREATMENT_ADD card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating AddTreatmentPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Add Treatment");
+            placeholder.setName("TREATMENT_ADD");
+            contentPanel.add(placeholder, "TREATMENT_ADD");
+        }
 
-// Treatment List - Placeholder for now
-// Treatment List - Real Implementation
-try {
-    TreatmentListPanel treatmentListPanel = new TreatmentListPanel();
-    treatmentListPanel.setName("TREATMENT_LIST");
-    contentPanel.add(treatmentListPanel, "TREATMENT_LIST");
-    System.out.println("MainFrame: Added TREATMENT_LIST card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating TreatmentListPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Treatment List");
-    placeholder.setName("TREATMENT_LIST");
-    contentPanel.add(placeholder, "TREATMENT_LIST");
-}
+        // Treatment List
+        try {
+            TreatmentListPanel treatmentListPanel = new TreatmentListPanel();
+            treatmentListPanel.setName("TREATMENT_LIST");
+            contentPanel.add(treatmentListPanel, "TREATMENT_LIST");
+            System.out.println("MainFrame: Added TREATMENT_LIST card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating TreatmentListPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Treatment List");
+            placeholder.setName("TREATMENT_LIST");
+            contentPanel.add(placeholder, "TREATMENT_LIST");
+        }
 
-// Treatment Details - Placeholder (will be replaced dynamically)
-JPanel treatmentDetailsPlaceholder = createPlaceholderPanel("Treatment Details");
-treatmentDetailsPlaceholder.setName("TREATMENT_DETAILS");
-contentPanel.add(treatmentDetailsPlaceholder, "TREATMENT_DETAILS");
-System.out.println("MainFrame: Added TREATMENT_DETAILS card");
-
+        // Treatment Details - Placeholder (will be replaced dynamically)
+        JPanel treatmentDetailsPlaceholder = createPlaceholderPanel("Treatment Details");
+        treatmentDetailsPlaceholder.setName("TREATMENT_DETAILS");
+        contentPanel.add(treatmentDetailsPlaceholder, "TREATMENT_DETAILS");
+        System.out.println("MainFrame: Added TREATMENT_DETAILS card");
+        System.out.println("MainFrame: Added TREATMENT cards");
 
         // =====================================================
         // AUDIT SCREENS (Admin only)
@@ -379,10 +378,6 @@ System.out.println("MainFrame: Added TREATMENT_DETAILS card");
         return panel;
     }
 
-    /**
-     * Configure sidebar for a specific user role
-     * @param role The user role
-     */
     public void configureSidebarForRole(UserRole role) {
         sidebarPanel.configureForRole(role);
         
@@ -393,10 +388,6 @@ System.out.println("MainFrame: Added TREATMENT_DETAILS card");
         }
     }
 
-    /**
-     * Show a specific card in the content panel
-     * @param cardName The name of the card to show
-     */
     public void showCard(String cardName) {
         System.out.println("MainFrame: Attempting to show card: " + cardName);
         
@@ -420,11 +411,6 @@ System.out.println("MainFrame: Added TREATMENT_DETAILS card");
         }
     }
 
-    /**
-     * Add a new screen dynamically to the content panel
-     * @param cardName The name of the card
-     * @param screen The panel to add
-     */
     public void addScreen(String cardName, JPanel screen) {
         // Remove existing card if it exists
         for (Component comp : contentPanel.getComponents()) {
@@ -440,10 +426,6 @@ System.out.println("MainFrame: Added TREATMENT_DETAILS card");
         System.out.println("MainFrame: Added/Updated screen: " + cardName);
     }
 
-    /**
-     * Remove a screen from the content panel
-     * @param cardName The name of the card to remove
-     */
     public void removeScreen(String cardName) {
         for (Component comp : contentPanel.getComponents()) {
             if (comp.getName() != null && comp.getName().equals(cardName)) {
@@ -456,17 +438,10 @@ System.out.println("MainFrame: Added TREATMENT_DETAILS card");
         }
     }
 
-    /**
-     * Get the content panel
-     * @return The content panel
-     */
     public JPanel getContentPanel() {
         return contentPanel;
     }
 
-    /**
-     * Handle logout action
-     */
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(
             this,
