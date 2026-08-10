@@ -145,8 +145,19 @@ try {
 // BILLING SCREENS
 // =====================================================
 
-// Bill List - Placeholder (will be replaced with real implementation later)
-contentPanel.add(createPlaceholderPanel("Bill List"), "BILL_LIST");
+// Bill List - Real Implementation
+try {
+    BillListPanel billListPanel = new BillListPanel();
+    billListPanel.setName("BILL_LIST");
+    contentPanel.add(billListPanel, "BILL_LIST");
+    System.out.println("MainFrame: Added BILL_LIST card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating BillListPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Bill List");
+    placeholder.setName("BILL_LIST");
+    contentPanel.add(placeholder, "BILL_LIST");
+}
 
 // Generate Bill - Real Implementation
 try {

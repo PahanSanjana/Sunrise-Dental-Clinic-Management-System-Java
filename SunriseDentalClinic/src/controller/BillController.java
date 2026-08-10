@@ -10,14 +10,19 @@ import model.Patient;
 import model.Appointment;
 import model.Treatment;
 import view.GenerateBillPanel;
+import view.BillListPanel;
+import view.BillDetailsPanel;
 import view.MainFrame;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.ArrayList;
 
 public class BillController {
-    private GenerateBillPanel view;
+    private GenerateBillPanel generateView;
+    private BillListPanel listView;
+    private BillDetailsPanel detailsView;
     private BillDAO billDAO;
     private PatientDAO patientDAO;
     private AppointmentDAO appointmentDAO;
@@ -32,7 +37,31 @@ public class BillController {
      * @param view The GenerateBillPanel instance
      */
     public BillController(GenerateBillPanel view) {
-        this.view = view;
+        this.generateView = view;
+        this.billDAO = new BillDAO();
+        this.patientDAO = new PatientDAO();
+        this.appointmentDAO = new AppointmentDAO();
+        this.treatmentDAO = new TreatmentDAO();
+    }
+
+    /**
+     * Constructor for BillListPanel
+     * @param view The BillListPanel instance
+     */
+    public BillController(BillListPanel view) {
+        this.listView = view;
+        this.billDAO = new BillDAO();
+        this.patientDAO = new PatientDAO();
+        this.appointmentDAO = new AppointmentDAO();
+        this.treatmentDAO = new TreatmentDAO();
+    }
+
+    /**
+     * Constructor for BillDetailsPanel
+     * @param view The BillDetailsPanel instance
+     */
+    public BillController(BillDetailsPanel view) {
+        this.detailsView = view;
         this.billDAO = new BillDAO();
         this.patientDAO = new PatientDAO();
         this.appointmentDAO = new AppointmentDAO();
@@ -58,6 +87,16 @@ public class BillController {
      */
     public Patient getPatientById(int patientId) {
         return patientDAO.getPatientById(patientId);
+    }
+
+    /**
+     * Get patient name by patient ID
+     * @param patientId The patient ID
+     * @return Patient name
+     */
+    public String getPatientName(int patientId) {
+        Patient patient = getPatientById(patientId);
+        return patient != null ? patient.getPatientName() : "Unknown";
     }
 
     // =====================================================
@@ -170,6 +209,25 @@ public class BillController {
     }
 
     /**
+     * Get bills by date range
+     * @param startDate The start date
+     * @param endDate The end date
+     * @return List of bills in the date range
+     */
+    public List<Bill> getBillsByDateRange(String startDate, String endDate) {
+        return billDAO.getBillsByDateRange(startDate, endDate);
+    }
+
+    /**
+     * Get bills by payment method
+     * @param paymentMethod The payment method to filter by
+     * @return List of bills with the specified payment method
+     */
+    public List<Bill> getBillsByPaymentMethod(String paymentMethod) {
+        return billDAO.getBillsByPaymentMethod(paymentMethod);
+    }
+
+    /**
      * Get bill items by bill ID
      * @param billId The bill ID
      * @return List of bill items
@@ -241,6 +299,33 @@ public class BillController {
         return billDAO.getPendingBillCount();
     }
 
+    /**
+     * Get count of bills by status
+     * @param status The status to count
+     * @return Number of bills with the specified status
+     */
+    public int getBillCountByStatus(String status) {
+        return billDAO.getBillCountByStatus(status);
+    }
+
+    /**
+     * Get count of bills by date
+     * @param date The date
+     * @return Number of bills on the specified date
+     */
+    public int getBillCountByDate(String date) {
+        return billDAO.getBillCountByDate(date);
+    }
+
+    /**
+     * Check if bill number exists
+     * @param billNumber The bill number to check
+     * @return true if exists, false otherwise
+     */
+    public boolean billNumberExists(String billNumber) {
+        return billDAO.billNumberExists(billNumber);
+    }
+
     // =====================================================
     // HELPER METHODS
     // =====================================================
@@ -254,7 +339,7 @@ public class BillController {
     }
 
     /**
-     * Calculate total amount for a bill
+     * Calculate total amount for a list of bill items
      * @param items The bill items
      * @return The total amount
      */
@@ -326,5 +411,136 @@ public class BillController {
             return "Total price cannot be negative.";
         }
         return null;
+    }
+
+    // =====================================================
+    // HELPER METHODS FOR LIST VIEW
+    // =====================================================
+
+    /**
+     * Load bills for the list view
+     */
+    public void loadBills() {
+        if (listView != null) {
+            listView.loadBills();
+        }
+    }
+
+    /**
+     * Refresh the bill list
+     */
+    public void refreshBillList() {
+        if (listView != null) {
+            listView.loadBills();
+        }
+    }
+
+    /**
+     * Get bills with filters
+     * @param searchText The search text
+     * @param status The status filter
+     * @param dateFilter The date filter
+     * @return List of filtered bills
+     */
+    public List<Bill> getFilteredBills(String searchText, String status, String dateFilter) {
+        List<Bill> bills = billDAO.getAllBills();
+        
+        if (bills == null) return new ArrayList<>();
+        
+        // Apply status filter
+        if (status != null && !status.equals("All Status")) {
+            bills.removeIf(b -> !b.getStatus().equals(status));
+        }
+        
+        // Apply date filter
+        if (dateFilter != null && !dateFilter.equals("All Dates")) {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            switch (dateFilter) {
+                case "Today":
+                    bills.removeIf(b -> !b.getBillDate().toLocalDate().equals(today));
+                    break;
+                case "This Week":
+                    java.time.LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
+                    java.time.LocalDate weekEnd = weekStart.plusDays(6);
+                    bills.removeIf(b -> {
+                        java.time.LocalDate date = b.getBillDate().toLocalDate();
+                        return date.isBefore(weekStart) || date.isAfter(weekEnd);
+                    });
+                    break;
+                case "This Month":
+                    java.time.LocalDate monthStart = today.withDayOfMonth(1);
+                    java.time.LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
+                    bills.removeIf(b -> {
+                        java.time.LocalDate date = b.getBillDate().toLocalDate();
+                        return date.isBefore(monthStart) || date.isAfter(monthEnd);
+                    });
+                    break;
+            }
+        }
+        
+        // Apply search filter
+        if (searchText != null && !searchText.isEmpty()) {
+            bills.removeIf(b -> {
+                String patientName = getPatientName(b.getPatientId());
+                return !patientName.toLowerCase().contains(searchText.toLowerCase()) &&
+                       !b.getBillNumber().toLowerCase().contains(searchText.toLowerCase()) &&
+                       !b.getStatus().toLowerCase().contains(searchText.toLowerCase());
+            });
+        }
+        
+        return bills;
+    }
+
+    /**
+     * Get total revenue from a list of bills
+     * @param bills The list of bills
+     * @return Total revenue
+     */
+    public double getTotalRevenueFromBills(List<Bill> bills) {
+        double total = 0;
+        if (bills != null) {
+            for (Bill bill : bills) {
+                if ("Paid".equals(bill.getStatus()) || "Partial".equals(bill.getStatus())) {
+                    total += bill.getTotalAmount();
+                }
+            }
+        }
+        return total;
+    }
+
+    // =====================================================
+    // HELPER METHODS FOR DETAILS VIEW
+    // =====================================================
+
+    /**
+     * Load bill details
+     * @param billId The bill ID
+     */
+    public void loadBillDetails(int billId) {
+        if (detailsView != null) {
+            Bill bill = getBillById(billId);
+            if (bill != null) {
+                List<BillItem> items = getBillItemsByBillId(billId);
+                detailsView.displayBill(bill, items);
+            }
+        }
+    }
+
+    /**
+     * Print bill
+     * @param billId The bill ID
+     */
+    public void printBill(int billId) {
+        // TODO: Implement bill printing functionality
+        System.out.println("Printing bill: " + billId);
+    }
+
+    /**
+     * Send bill via email
+     * @param billId The bill ID
+     */
+    public void sendBillEmail(int billId) {
+        // TODO: Implement email sending functionality
+        System.out.println("Sending bill email: " + billId);
     }
 }
