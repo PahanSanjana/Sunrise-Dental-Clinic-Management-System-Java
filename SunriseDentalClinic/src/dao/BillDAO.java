@@ -30,14 +30,19 @@ public class BillDAO {
             conn = DBconnection.getConnection();
             conn.setAutoCommit(false);
             
-            // Insert bill
             String billSql = "INSERT INTO billing (patient_id, appointment_id, bill_number, bill_date, "
                            + "due_date, subtotal, tax, discount, total_amount, amount_paid, balance, "
                            + "status, payment_method, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             pstmt = conn.prepareStatement(billSql, Statement.RETURN_GENERATED_KEYS);
             pstmt.setInt(1, bill.getPatientId());
-            pstmt.setInt(2, bill.getAppointmentId());
+            
+            if (bill.getAppointmentId() > 0) {
+                pstmt.setInt(2, bill.getAppointmentId());
+            } else {
+                pstmt.setNull(2, Types.INTEGER);
+            }
+            
             pstmt.setString(3, bill.getBillNumber());
             pstmt.setDate(4, bill.getBillDate());
             pstmt.setDate(5, bill.getDueDate());
@@ -51,7 +56,12 @@ public class BillDAO {
             pstmt.setString(13, bill.getPaymentMethod());
             pstmt.setString(14, bill.getNotes());
             
-            pstmt.executeUpdate();
+            int affectedRows = pstmt.executeUpdate();
+            
+            if (affectedRows == 0) {
+                conn.rollback();
+                return false;
+            }
             
             rs = pstmt.getGeneratedKeys();
             int billId = 0;
@@ -70,7 +80,13 @@ public class BillDAO {
             for (BillItem item : items) {
                 pstmt = conn.prepareStatement(itemSql);
                 pstmt.setInt(1, billId);
-                pstmt.setInt(2, item.getTreatmentId());
+                
+                if (item.getTreatmentId() > 0) {
+                    pstmt.setInt(2, item.getTreatmentId());
+                } else {
+                    pstmt.setNull(2, Types.INTEGER);
+                }
+                
                 pstmt.setString(3, item.getDescription());
                 pstmt.setInt(4, item.getQuantity());
                 pstmt.setDouble(5, item.getUnitPrice());
@@ -108,11 +124,6 @@ public class BillDAO {
     // READ METHODS
     // =====================================================
 
-    /**
-     * Get bill by ID
-     * @param billId The bill ID
-     * @return Bill object if found, null otherwise
-     */
     public Bill getBillById(int billId) {
         String sql = "SELECT * FROM billing WHERE bill_id = ?";
         
@@ -132,11 +143,6 @@ public class BillDAO {
         return null;
     }
 
-    /**
-     * Get bill by bill number
-     * @param billNumber The bill number
-     * @return Bill object if found, null otherwise
-     */
     public Bill getBillByNumber(String billNumber) {
         String sql = "SELECT * FROM billing WHERE bill_number = ?";
         
@@ -156,10 +162,6 @@ public class BillDAO {
         return null;
     }
 
-    /**
-     * Get all bills
-     * @return List of all bills
-     */
     public List<Bill> getAllBills() {
         List<Bill> bills = new ArrayList<>();
         String sql = "SELECT * FROM billing ORDER BY bill_date DESC, bill_id DESC";
@@ -178,11 +180,6 @@ public class BillDAO {
         return bills;
     }
 
-    /**
-     * Get bills by patient ID
-     * @param patientId The patient ID
-     * @return List of bills for the patient
-     */
     public List<Bill> getBillsByPatient(int patientId) {
         List<Bill> bills = new ArrayList<>();
         String sql = "SELECT * FROM billing WHERE patient_id = ? ORDER BY bill_date DESC";
@@ -203,11 +200,6 @@ public class BillDAO {
         return bills;
     }
 
-    /**
-     * Get bills by status
-     * @param status The status to filter by
-     * @return List of bills with the specified status
-     */
     public List<Bill> getBillsByStatus(String status) {
         List<Bill> bills = new ArrayList<>();
         String sql = "SELECT * FROM billing WHERE status = ? ORDER BY bill_date DESC";
@@ -228,11 +220,47 @@ public class BillDAO {
         return bills;
     }
 
-    /**
-     * Get bill items by bill ID
-     * @param billId The bill ID
-     * @return List of bill items
-     */
+    public List<Bill> getBillsByDateRange(String startDate, String endDate) {
+        List<Bill> bills = new ArrayList<>();
+        String sql = "SELECT * FROM billing WHERE bill_date BETWEEN ? AND ? ORDER BY bill_date DESC";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, startDate);
+            pstmt.setString(2, endDate);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                bills.add(mapResultSetToBill(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting bills by date range: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return bills;
+    }
+
+    public List<Bill> getBillsByPaymentMethod(String paymentMethod) {
+        List<Bill> bills = new ArrayList<>();
+        String sql = "SELECT * FROM billing WHERE payment_method = ? ORDER BY bill_date DESC";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, paymentMethod);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                bills.add(mapResultSetToBill(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting bills by payment method: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return bills;
+    }
+
     public List<BillItem> getBillItemsByBillId(int billId) {
         List<BillItem> items = new ArrayList<>();
         String sql = "SELECT * FROM billing_items WHERE bill_id = ?";
@@ -257,11 +285,6 @@ public class BillDAO {
     // UPDATE METHODS
     // =====================================================
 
-    /**
-     * Update bill information
-     * @param bill The bill to update
-     * @return true if successful, false otherwise
-     */
     public boolean updateBill(Bill bill) {
         String sql = "UPDATE billing SET patient_id=?, appointment_id=?, bill_number=?, bill_date=?, "
                    + "due_date=?, subtotal=?, tax=?, discount=?, total_amount=?, amount_paid=?, "
@@ -271,7 +294,13 @@ public class BillDAO {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setInt(1, bill.getPatientId());
-            pstmt.setInt(2, bill.getAppointmentId());
+            
+            if (bill.getAppointmentId() > 0) {
+                pstmt.setInt(2, bill.getAppointmentId());
+            } else {
+                pstmt.setNull(2, Types.INTEGER);
+            }
+            
             pstmt.setString(3, bill.getBillNumber());
             pstmt.setDate(4, bill.getBillDate());
             pstmt.setDate(5, bill.getDueDate());
@@ -294,12 +323,6 @@ public class BillDAO {
         return false;
     }
 
-    /**
-     * Update bill status
-     * @param billId The bill ID
-     * @param status The new status
-     * @return true if successful, false otherwise
-     */
     public boolean updateBillStatus(int billId, String status) {
         String sql = "UPDATE billing SET status = ? WHERE bill_id = ?";
         
@@ -316,13 +339,6 @@ public class BillDAO {
         return false;
     }
 
-    /**
-     * Update bill payment
-     * @param billId The bill ID
-     * @param amountPaid The amount paid
-     * @param paymentMethod The payment method
-     * @return true if successful, false otherwise
-     */
     public boolean updateBillPayment(int billId, double amountPaid, String paymentMethod) {
         String sql = "UPDATE billing SET amount_paid = ?, balance = total_amount - ?, payment_method = ?, "
                    + "status = CASE WHEN total_amount - ? <= 0 THEN 'Paid' ELSE 'Partial' END WHERE bill_id = ?";
@@ -349,25 +365,26 @@ public class BillDAO {
     // =====================================================
 
     /**
-     * Delete a bill
+     * Delete a bill (hard delete)
      * @param billId The bill ID to delete
      * @return true if successful, false otherwise
      */
     public boolean deleteBill(int billId) {
-        // First delete bill items
-        String itemSql = "DELETE FROM billing_items WHERE bill_id = ?";
-        String billSql = "DELETE FROM billing WHERE bill_id = ?";
+        Connection conn = null;
         
-        try (Connection conn = DBconnection.getConnection()) {
+        try {
+            conn = DBconnection.getConnection();
             conn.setAutoCommit(false);
             
-            // Delete items
+            // Delete items first
+            String itemSql = "DELETE FROM billing_items WHERE bill_id = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(itemSql)) {
                 pstmt.setInt(1, billId);
                 pstmt.executeUpdate();
             }
             
             // Delete bill
+            String billSql = "DELETE FROM billing WHERE bill_id = ?";
             try (PreparedStatement pstmt = conn.prepareStatement(billSql)) {
                 pstmt.setInt(1, billId);
                 int affected = pstmt.executeUpdate();
@@ -375,20 +392,30 @@ public class BillDAO {
                 return affected > 0;
             }
         } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
             System.err.println("Error deleting bill: " + e.getMessage());
             e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
-        return false;
     }
 
     // =====================================================
     // COUNT METHODS
     // =====================================================
 
-    /**
-     * Get total bill count
-     * @return Total number of bills
-     */
     public int getBillCount() {
         String sql = "SELECT COUNT(*) FROM billing";
         
@@ -406,10 +433,6 @@ public class BillDAO {
         return 0;
     }
 
-    /**
-     * Get total revenue from all bills
-     * @return Total revenue
-     */
     public double getTotalRevenue() {
         String sql = "SELECT SUM(total_amount) FROM billing WHERE status IN ('Paid', 'Partial')";
         
@@ -427,10 +450,6 @@ public class BillDAO {
         return 0;
     }
 
-    /**
-     * Get pending bills count
-     * @return Number of pending bills
-     */
     public int getPendingBillCount() {
         String sql = "SELECT COUNT(*) FROM billing WHERE status IN ('Pending', 'Partial', 'Overdue')";
         
@@ -448,17 +467,50 @@ public class BillDAO {
         return 0;
     }
 
+    public int getBillCountByStatus(String status) {
+        String sql = "SELECT COUNT(*) FROM billing WHERE status = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, status);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting bills by status: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public int getBillCountByDate(String date) {
+        String sql = "SELECT COUNT(*) FROM billing WHERE bill_date = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, date);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting bills by date: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     // =====================================================
     // HELPER METHODS
     // =====================================================
 
-    /**
-     * Generate a unique bill number
-     * @return A unique bill number
-     */
     public String generateBillNumber() {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        // Get the count of bills for today to create sequential number
         int count = 0;
         String sql = "SELECT COUNT(*) FROM billing WHERE bill_number LIKE ?";
         
@@ -478,12 +530,25 @@ public class BillDAO {
         return "BILL-" + dateStr + "-" + String.format("%04d", count);
     }
 
-    /**
-     * Map ResultSet to Bill object
-     * @param rs The ResultSet
-     * @return Bill object
-     * @throws SQLException if there's an error accessing the ResultSet
-     */
+    public boolean billNumberExists(String billNumber) {
+        String sql = "SELECT COUNT(*) FROM billing WHERE bill_number = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, billNumber);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking bill number existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     private Bill mapResultSetToBill(ResultSet rs) throws SQLException {
         return new Bill(
             rs.getInt("bill_id"),
@@ -506,12 +571,6 @@ public class BillDAO {
         );
     }
 
-    /**
-     * Map ResultSet to BillItem object
-     * @param rs The ResultSet
-     * @return BillItem object
-     * @throws SQLException if there's an error accessing the ResultSet
-     */
     private BillItem mapResultSetToBillItem(ResultSet rs) throws SQLException {
         return new BillItem(
             rs.getInt("billing_item_id"),
