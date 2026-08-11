@@ -355,8 +355,20 @@ try {
         // =====================================================
         // AUDIT SCREENS (Admin only)
         // =====================================================
-        contentPanel.add(createPlaceholderPanel("Activity Log"), "AUDIT_ACTIVITY");
-        contentPanel.add(createPlaceholderPanel("Login History"), "AUDIT_LOGIN");
+// Activity Log - Real Implementation
+try {
+    ActivityLogPanel activityLogPanel = new ActivityLogPanel();
+    activityLogPanel.setName("AUDIT_ACTIVITY");
+    contentPanel.add(activityLogPanel, "AUDIT_ACTIVITY");
+    System.out.println("MainFrame: Added AUDIT_ACTIVITY card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating ActivityLogPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Activity Log");
+    placeholder.setName("AUDIT_ACTIVITY");
+    contentPanel.add(placeholder, "AUDIT_ACTIVITY");
+}        contentPanel.add(createPlaceholderPanel("Login History"), "AUDIT_LOGIN");
+
         System.out.println("MainFrame: Added AUDIT cards");
 
         // Show dashboard by default

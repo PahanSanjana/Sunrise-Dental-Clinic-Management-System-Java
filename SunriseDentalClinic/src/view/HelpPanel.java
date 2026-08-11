@@ -2,13 +2,12 @@ package view;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class HelpPanel extends JPanel {
-
+    
     // Color Palette
     private static final Color PRIMARY_DARK = new Color(0x2F3E3C);
     private static final Color MINT = new Color(0xBDDBD1);
@@ -19,19 +18,18 @@ public class HelpPanel extends JPanel {
 
     private JPanel contentPanel;
     private JButton[] navButtons;
-    private JPanel[] contentPanels;
     private String[] sectionTitles = {
-            "Getting Started",
-            "User Roles",
-            "Patient Management",
-            "Appointment Management",
-            "Dentist Management",
-            "Staff Management",
-            "Treatment Management",
-            "Billing & Payments",
-            "Reports",
-            "FAQ",
-            "Support"
+        "Getting Started",
+        "User Roles",
+        "Patient Management",
+        "Appointment Management",
+        "Dentist Management",
+        "Staff Management",
+        "Treatment Management",
+        "Billing & Payments",
+        "Reports",
+        "FAQ",
+        "Support"
     };
 
     public HelpPanel() {
@@ -47,20 +45,20 @@ public class HelpPanel extends JPanel {
 
         // Header
         add(createHeaderPanel(), BorderLayout.NORTH);
-
+        
         // Main Content
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
-
+        
         // Navigation Sidebar
         mainPanel.add(createNavigationPanel(), BorderLayout.WEST);
-
+        
         // Content Area
         contentPanel = new JPanel(new CardLayout());
         contentPanel.setBackground(Color.WHITE);
         mainPanel.add(contentPanel, BorderLayout.CENTER);
-
+        
         add(mainPanel, BorderLayout.CENTER);
     }
 
@@ -72,15 +70,15 @@ public class HelpPanel extends JPanel {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setOpaque(false);
-
+        
         JLabel titleLabel = new JLabel("Help Center");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
-
+        
         JLabel subtitleLabel = new JLabel("Learn how to use Sunrise Dental Clinic Management System");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
-
+        
         titlePanel.add(titleLabel);
         titlePanel.add(subtitleLabel);
 
@@ -117,7 +115,12 @@ public class HelpPanel extends JPanel {
         scrollPane.setPreferredSize(new Dimension(220, 0));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        return scrollPane;
+        // Wrap scroll pane in a panel
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(SOFT_SURFACE);
+        wrapperPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        return wrapperPanel;
     }
 
     private JButton createNavButton(String text) {
@@ -134,7 +137,6 @@ public class HelpPanel extends JPanel {
             public void mouseEntered(MouseEvent e) {
                 btn.setBackground(HOVER_SURFACE);
             }
-
             @Override
             public void mouseExited(MouseEvent e) {
                 btn.setBackground(SOFT_SURFACE);
@@ -146,7 +148,7 @@ public class HelpPanel extends JPanel {
     private void showSection(int index) {
         CardLayout cl = (CardLayout) contentPanel.getLayout();
         cl.show(contentPanel, String.valueOf(index));
-
+        
         // Update button styles
         for (int i = 0; i < navButtons.length; i++) {
             if (i == index) {
@@ -160,11 +162,8 @@ public class HelpPanel extends JPanel {
     }
 
     private void loadContent() {
-        contentPanels = new JPanel[sectionTitles.length];
-
         for (int i = 0; i < sectionTitles.length; i++) {
             JPanel panel = createSectionPanel(i);
-            contentPanels[i] = panel;
             contentPanel.add(panel, String.valueOf(i));
         }
     }
@@ -214,7 +213,7 @@ public class HelpPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(panel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-
+        
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
         wrapper.add(scrollPane, BorderLayout.CENTER);
@@ -233,25 +232,24 @@ public class HelpPanel extends JPanel {
 
         panel.add(createSectionTitle("Welcome to Sunrise Dental Clinic Management System"));
         panel.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        panel.add(createParagraph(
-                "Sunrise Dental Clinic Management System is a comprehensive solution designed to streamline dental clinic operations. This guide will help you understand the key features and functionalities of the system."));
-
+        
+        panel.add(createParagraph("Sunrise Dental Clinic Management System is a comprehensive solution designed to streamline dental clinic operations. This guide will help you understand the key features and functionalities of the system."));
+        
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
         panel.add(createSubSectionTitle("System Overview"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-
+        
         String[] overviewItems = {
-                "• Dashboard - View clinic statistics and key metrics at a glance",
-                "• Patient Management - Add, view, edit, and manage patient records",
-                "• Appointment Management - Schedule, view, and manage appointments",
-                "• Dentist Management - Manage dentist profiles and availability",
-                "• Staff Management - Manage staff members and their roles",
-                "• Treatment Management - Create and manage treatment catalog",
-                "• Billing & Payments - Generate and manage bills and payments",
-                "• Reports - Generate various reports for analysis"
+            "• Dashboard - View clinic statistics and key metrics at a glance",
+            "• Patient Management - Add, view, edit, and manage patient records",
+            "• Appointment Management - Schedule, view, and manage appointments",
+            "• Dentist Management - Manage dentist profiles and availability",
+            "• Staff Management - Manage staff members and their roles",
+            "• Treatment Management - Create and manage treatment catalog",
+            "• Billing & Payments - Generate and manage bills and payments",
+            "• Reports - Generate various reports for analysis"
         };
-
+        
         for (String item : overviewItems) {
             panel.add(createListItem(item));
             panel.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -271,56 +269,56 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("The system has four different user roles with specific permissions:"));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         // Admin
         panel.add(createSubSectionTitle("1. Administrator"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
         panel.add(createParagraph("Full access to all system features."));
-        panel.add(createBulletList(new String[] {
-                "Manage all users and roles",
-                "Access all reports and analytics",
-                "Configure system settings",
-                "View audit logs",
-                "Full CRUD operations on all modules"
+        panel.add(createBulletList(new String[]{
+            "Manage all users and roles",
+            "Access all reports and analytics",
+            "Configure system settings",
+            "View audit logs",
+            "Full CRUD operations on all modules"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         // Receptionist
         panel.add(createSubSectionTitle("2. Receptionist"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
         panel.add(createParagraph("Front desk staff with patient management responsibilities."));
-        panel.add(createBulletList(new String[] {
-                "Manage patient records (Add, Edit, View)",
-                "Schedule and manage appointments",
-                "Generate bills",
-                "View patient history"
+        panel.add(createBulletList(new String[]{
+            "Manage patient records (Add, Edit, View)",
+            "Schedule and manage appointments",
+            "Generate bills",
+            "View patient history"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         // Dentist
         panel.add(createSubSectionTitle("3. Dentist"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
         panel.add(createParagraph("Dental professionals with clinical access."));
-        panel.add(createBulletList(new String[] {
-                "View patient records",
-                "Manage appointments",
-                "View treatment plans",
-                "Access patient reports"
+        panel.add(createBulletList(new String[]{
+            "View patient records",
+            "Manage appointments",
+            "View treatment plans",
+            "Access patient reports"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         // Patient
         panel.add(createSubSectionTitle("4. Patient"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
         panel.add(createParagraph("Patients with self-service access."));
-        panel.add(createBulletList(new String[] {
-                "Book appointments",
-                "View appointment details",
-                "View treatment history",
-                "View billing details"
+        panel.add(createBulletList(new String[]{
+            "Book appointments",
+            "View appointment details",
+            "View treatment history",
+            "View billing details"
         }));
 
         return panel;
@@ -337,26 +335,26 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("Comprehensive patient management system to handle all patient-related operations."));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Features"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Add New Patient - Register new patients with complete information",
-                "Patient List - View and search all patients",
-                "Patient Details - View complete patient profile",
-                "Edit Patient - Update patient information",
-                "Patient History - View appointments, treatments, and bills"
+        panel.add(createBulletList(new String[]{
+            "Add New Patient - Register new patients with complete information",
+            "Patient List - View and search all patients",
+            "Patient Details - View complete patient profile",
+            "Edit Patient - Update patient information",
+            "Patient History - View appointments, treatments, and bills"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Patient Information Fields"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Personal Information: Name, Gender, Date of Birth",
-                "Contact Information: Phone, Email, Address",
-                "Emergency Contact: Name and Phone",
-                "Medical Information: Medical History, Allergies"
+        panel.add(createBulletList(new String[]{
+            "Personal Information: Name, Gender, Date of Birth",
+            "Contact Information: Phone, Email, Address",
+            "Emergency Contact: Name and Phone",
+            "Medical Information: Medical History, Allergies"
         }));
 
         return panel;
@@ -373,28 +371,28 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("Efficiently manage all appointments with the scheduling system."));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Features"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Book Appointment - Schedule new appointments",
-                "Appointment List - View and search all appointments",
-                "Daily Schedule - View appointments by day",
-                "Appointment Details - View complete appointment information",
-                "Edit/Cancel Appointment - Modify or cancel appointments"
+        panel.add(createBulletList(new String[]{
+            "Book Appointment - Schedule new appointments",
+            "Appointment List - View and search all appointments",
+            "Daily Schedule - View appointments by day",
+            "Appointment Details - View complete appointment information",
+            "Edit/Cancel Appointment - Modify or cancel appointments"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Appointment Status"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Scheduled - Appointment is booked",
-                "Confirmed - Appointment is confirmed",
-                "In Progress - Appointment is ongoing",
-                "Completed - Appointment is finished",
-                "Cancelled - Appointment is cancelled",
-                "No Show - Patient didn't attend"
+        panel.add(createBulletList(new String[]{
+            "Scheduled - Appointment is booked",
+            "Confirmed - Appointment is confirmed",
+            "In Progress - Appointment is ongoing",
+            "Completed - Appointment is finished",
+            "Cancelled - Appointment is cancelled",
+            "No Show - Patient didn't attend"
         }));
 
         return panel;
@@ -411,27 +409,27 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("Manage dentist profiles, specializations, and availability."));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Features"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Add Dentist - Register new dentists",
-                "Dentist List - View and search all dentists",
-                "Dentist Details - View complete dentist profile",
-                "Edit Dentist - Update dentist information",
-                "Toggle Availability - Change dentist availability status"
+        panel.add(createBulletList(new String[]{
+            "Add Dentist - Register new dentists",
+            "Dentist List - View and search all dentists",
+            "Dentist Details - View complete dentist profile",
+            "Edit Dentist - Update dentist information",
+            "Toggle Availability - Change dentist availability status"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Dentist Information"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Personal Information: Name, Specialization",
-                "Professional: License Number, Years of Experience",
-                "Contact: Phone, Email",
-                "Schedule: Working Hours, Consultation Fee",
-                "Availability: Available/Unavailable status"
+        panel.add(createBulletList(new String[]{
+            "Personal Information: Name, Specialization",
+            "Professional: License Number, Years of Experience",
+            "Contact: Phone, Email",
+            "Schedule: Working Hours, Consultation Fee",
+            "Availability: Available/Unavailable status"
         }));
 
         return panel;
@@ -448,26 +446,26 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("Manage all staff members and their roles in the clinic."));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Features"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Add Staff - Register new staff members",
-                "Staff List - View and search all staff",
-                "Staff Details - View complete staff profile",
-                "Edit Staff - Update staff information",
-                "Toggle Status - Change staff active/inactive status"
+        panel.add(createBulletList(new String[]{
+            "Add Staff - Register new staff members",
+            "Staff List - View and search all staff",
+            "Staff Details - View complete staff profile",
+            "Edit Staff - Update staff information",
+            "Toggle Status - Change staff active/inactive status"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Staff Information"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Personal Information: Name, Position, Department",
-                "Employment: Hire Date, Salary",
-                "Contact: Phone, Email",
-                "Status: Active/Inactive"
+        panel.add(createBulletList(new String[]{
+            "Personal Information: Name, Position, Department",
+            "Employment: Hire Date, Salary",
+            "Contact: Phone, Email",
+            "Status: Active/Inactive"
         }));
 
         return panel;
@@ -484,39 +482,39 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("Create and manage the treatment catalog."));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Features"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Add Treatment - Create new treatments",
-                "Treatment List - View and search all treatments",
-                "Treatment Details - View complete treatment information",
-                "Edit Treatment - Update treatment information",
-                "Toggle Status - Change treatment active/inactive status"
+        panel.add(createBulletList(new String[]{
+            "Add Treatment - Create new treatments",
+            "Treatment List - View and search all treatments",
+            "Treatment Details - View complete treatment information",
+            "Edit Treatment - Update treatment information",
+            "Toggle Status - Change treatment active/inactive status"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Treatment Information"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Treatment Name, Description, Category",
-                "Cost and Duration",
-                "Active/Inactive Status"
+        panel.add(createBulletList(new String[]{
+            "Treatment Name, Description, Category",
+            "Cost and Duration",
+            "Active/Inactive Status"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Treatment Categories"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Preventive - Cleanings, Fluoride treatments",
-                "Restorative - Fillings, Crowns",
-                "Endodontic - Root canals",
-                "Orthodontic - Braces, Aligners",
-                "Cosmetic - Whitening, Veneers",
-                "Surgical - Extractions, Implants",
-                "Periodontic - Gum treatments"
+        panel.add(createBulletList(new String[]{
+            "Preventive - Cleanings, Fluoride treatments",
+            "Restorative - Fillings, Crowns",
+            "Endodontic - Root canals",
+            "Orthodontic - Braces, Aligners",
+            "Cosmetic - Whitening, Veneers",
+            "Surgical - Extractions, Implants",
+            "Periodontic - Gum treatments"
         }));
 
         return panel;
@@ -533,42 +531,42 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("Complete billing and payment management system."));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Features"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Generate Bill - Create new bills with items",
-                "Bill List - View and search all bills",
-                "Bill Details - View complete bill information",
-                "Edit Bill - Update bill information",
-                "Mark as Paid - Update bill status",
-                "Print Bill - Print bill for patient"
+        panel.add(createBulletList(new String[]{
+            "Generate Bill - Create new bills with items",
+            "Bill List - View and search all bills",
+            "Bill Details - View complete bill information",
+            "Edit Bill - Update bill information",
+            "Mark as Paid - Update bill status",
+            "Print Bill - Print bill for patient"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Bill Status"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Draft - Bill in draft mode",
-                "Pending - Bill awaiting payment",
-                "Partial - Partially paid",
-                "Paid - Fully paid",
-                "Overdue - Payment past due",
-                "Cancelled - Bill cancelled"
+        panel.add(createBulletList(new String[]{
+            "Draft - Bill in draft mode",
+            "Pending - Bill awaiting payment",
+            "Partial - Partially paid",
+            "Paid - Fully paid",
+            "Overdue - Payment past due",
+            "Cancelled - Bill cancelled"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Payment Methods"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Cash",
-                "Credit Card",
-                "Debit Card",
-                "Insurance",
-                "Bank Transfer",
-                "Other"
+        panel.add(createBulletList(new String[]{
+            "Cash",
+            "Credit Card",
+            "Debit Card",
+            "Insurance",
+            "Bank Transfer",
+            "Other"
         }));
 
         return panel;
@@ -585,26 +583,26 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("Generate various reports for analysis and decision making."));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Report Types"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Patient Report - Complete patient history and statistics",
-                "Schedule Report - Appointment statistics and analysis",
-                "Revenue Report - Financial overview and revenue analysis"
+        panel.add(createBulletList(new String[]{
+            "Patient Report - Complete patient history and statistics",
+            "Schedule Report - Appointment statistics and analysis",
+            "Revenue Report - Financial overview and revenue analysis"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Dashboard Metrics"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "Total Patients - Number of registered patients",
-                "Total Appointments - All appointments in the system",
-                "Total Revenue - Sum of all paid/partial bills",
-                "Active Dentists - Number of available dentists",
-                "Total Treatments - Number of treatments in catalog",
-                "Recent Activity - Latest appointments and bills"
+        panel.add(createBulletList(new String[]{
+            "Total Patients - Number of registered patients",
+            "Total Appointments - All appointments in the system",
+            "Total Revenue - Sum of all paid/partial bills",
+            "Active Dentists - Number of available dentists",
+            "Total Treatments - Number of treatments in catalog",
+            "Recent Activity - Latest appointments and bills"
         }));
 
         return panel;
@@ -620,21 +618,14 @@ public class HelpPanel extends JPanel {
         panel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         String[][] faqs = {
-                { "How do I add a new patient?",
-                        "Navigate to Patient Management → Add Patient. Fill in the patient details and click Save." },
-                { "How do I book an appointment?",
-                        "Go to Appointment Management → Book Appointment. Select patient, dentist, date, and time." },
-                { "How do I generate a bill?",
-                        "Go to Billing → Generate Bill. Select patient, add items, and click Generate Bill." },
-                { "How do I view a patient's history?",
-                        "Go to Patient Management → Patient List → Select patient → View Details." },
-                { "How do I change a dentist's availability?",
-                        "Go to Dentist Management → Dentist List → Select dentist → Toggle Status." },
-                { "What do the different appointment statuses mean?",
-                        "Scheduled: Booked, Confirmed: Verified, In Progress: Ongoing, Completed: Done, Cancelled: Cancelled, No Show: Missed." },
-                { "How do I generate a report?",
-                        "Go to Reports → Select report type → Choose filters → Click Generate Report." },
-                { "How do I update staff information?", "Go to Staff Management → Staff List → Select staff → Edit." }
+            {"How do I add a new patient?", "Navigate to Patient Management → Add Patient. Fill in the patient details and click Save."},
+            {"How do I book an appointment?", "Go to Appointment Management → Book Appointment. Select patient, dentist, date, and time."},
+            {"How do I generate a bill?", "Go to Billing → Generate Bill. Select patient, add items, and click Generate Bill."},
+            {"How do I view a patient's history?", "Go to Patient Management → Patient List → Select patient → View Details."},
+            {"How do I change a dentist's availability?", "Go to Dentist Management → Dentist List → Select dentist → Toggle Status."},
+            {"What do the different appointment statuses mean?", "Scheduled: Booked, Confirmed: Verified, In Progress: Ongoing, Completed: Done, Cancelled: Cancelled, No Show: Missed."},
+            {"How do I generate a report?", "Go to Reports → Select report type → Choose filters → Click Generate Report."},
+            {"How do I update staff information?", "Go to Staff Management → Staff List → Select staff → Edit."}
         };
 
         for (String[] faq : faqs) {
@@ -656,7 +647,7 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("Need help? Contact our support team."));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Contact Information"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
         panel.add(createParagraph("📧 Email: support@sunrisedental.com"));
@@ -666,18 +657,18 @@ public class HelpPanel extends JPanel {
         panel.add(createParagraph("🕐 Hours: Monday - Friday, 8:00 AM - 6:00 PM"));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("Quick Links"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createBulletList(new String[] {
-                "User Manual (PDF)",
-                "Video Tutorials",
-                "System Requirements",
-                "Release Notes"
+        panel.add(createBulletList(new String[]{
+            "User Manual (PDF)",
+            "Video Tutorials",
+            "System Requirements",
+            "Release Notes"
         }));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        
         panel.add(createSubSectionTitle("System Information"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
         panel.add(createParagraph("Version: 1.0.0"));
@@ -728,12 +719,12 @@ public class HelpPanel extends JPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(Color.WHITE);
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
+        
         for (String item : items) {
             panel.add(createListItem("• " + item));
             panel.add(Box.createRigidArea(new Dimension(0, 5)));
         }
-
+        
         return panel;
     }
 
@@ -742,8 +733,9 @@ public class HelpPanel extends JPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(new Color(248, 249, 250));
         panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-                new EmptyBorder(12, 15, 12, 15)));
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(12, 15, 12, 15)
+        ));
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.setMaximumSize(new Dimension(700, 100));
 

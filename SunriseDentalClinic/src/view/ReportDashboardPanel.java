@@ -13,6 +13,7 @@ import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -25,10 +26,11 @@ public class ReportDashboardPanel extends JPanel {
     private static final Color MINT = new Color(0xBDDBD1);
     private static final Color SOFT_SURFACE = new Color(0xFBF9F1);
     private static final Color LIGHT_SURFACE = new Color(0xE7E9E3);
+    private static final Color HOVER_SURFACE = new Color(0xE8F0F1);
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
-    private static final Color HOVER_SURFACE = new Color(0xE8F0F1);
+    
     // Card Colors
     private static final Color COLOR_PATIENTS = new Color(52, 152, 219);
     private static final Color COLOR_APPOINTMENTS = new Color(46, 204, 113);
@@ -56,7 +58,6 @@ public class ReportDashboardPanel extends JPanel {
     
     private ReportController controller;
     private DecimalFormat df = new DecimalFormat("#.00");
-    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     public ReportDashboardPanel() {
         this.controller = new ReportController(this);
@@ -436,17 +437,13 @@ public class ReportDashboardPanel extends JPanel {
 
             @Override
             protected Void doInBackground() throws Exception {
-                // Get counts from controllers
                 patientCount = controller.getPatientCount();
                 appointmentCount = controller.getAppointmentCount();
                 revenue = controller.getTotalRevenue();
                 dentistCount = controller.getDentistCount();
                 treatmentCount = controller.getTreatmentCount();
                 staffCount = controller.getStaffCount();
-                
-                // Generate recent activities
                 activities = generateRecentActivities();
-                
                 return null;
             }
 
@@ -459,8 +456,10 @@ public class ReportDashboardPanel extends JPanel {
                     displayActivities(activities);
                     statusLabel.setText("Dashboard updated successfully!");
                     statusLabel.setForeground(SUCCESS_COLOR);
+                    
+                    // FIXED: Use LocalDateTime instead of LocalDate
                     lastUpdatedLabel.setText("Last updated: " + 
-                        LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
                 } catch (Exception e) {
                     showError("Error loading dashboard data: " + e.getMessage());
                     e.printStackTrace();
