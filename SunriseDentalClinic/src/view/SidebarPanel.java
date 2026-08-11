@@ -184,6 +184,10 @@ public class SidebarPanel extends JPanel {
             audit.children.add(new NavChild("Login History", "AUDIT_LOGIN"));
             groups.add(audit);
         }
+        
+        // Help
+NavGroup help = new NavGroup(IconType.HELP, "Help", "HELP");
+groups.add(help);
 
         return groups;
     }
@@ -572,6 +576,6 @@ public class SidebarPanel extends JPanel {
 
     // IconType enum
     private enum IconType {
-        DASHBOARD, PATIENTS, APPOINTMENTS, BILLING, REPORTS, STAFF, DENTISTS, TREATMENTS, AUDIT
+        DASHBOARD, PATIENTS, APPOINTMENTS, BILLING, REPORTS, STAFF, DENTISTS, TREATMENTS, AUDIT, HELP
     }
 }

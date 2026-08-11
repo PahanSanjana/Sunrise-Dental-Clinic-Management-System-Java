@@ -362,6 +362,21 @@ try {
         // Show dashboard by default
         cardLayout.show(contentPanel, "DASHBOARD");
         System.out.println("MainFrame: Content panel initialized, showing DASHBOARD");
+        
+        
+        // Help - Real Implementation
+try {
+    HelpPanel helpPanel = new HelpPanel();
+    helpPanel.setName("HELP");
+    contentPanel.add(helpPanel, "HELP");
+    System.out.println("MainFrame: Added HELP card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating HelpPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Help");
+    placeholder.setName("HELP");
+    contentPanel.add(placeholder, "HELP");
+}
     }
 
     private JPanel createDashboardPlaceholder() {
