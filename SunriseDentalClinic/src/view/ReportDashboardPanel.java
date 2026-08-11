@@ -28,7 +28,7 @@ public class ReportDashboardPanel extends JPanel {
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
-    
+    private static final Color HOVER_SURFACE = new Color(0xE8F0F1);
     // Card Colors
     private static final Color COLOR_PATIENTS = new Color(52, 152, 219);
     private static final Color COLOR_APPOINTMENTS = new Color(46, 204, 113);
