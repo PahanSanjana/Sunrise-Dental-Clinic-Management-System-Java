@@ -272,6 +272,58 @@ public class AppointmentDAO {
     }
 
     /**
+     * Get recent appointments
+     * @param limit Number of recent appointments to get
+     * @return List of recent appointments
+     */
+    public List<Appointment> getRecentAppointments(int limit) {
+        List<Appointment> appointments = new ArrayList<>();
+        String sql = "SELECT * FROM appointments ORDER BY created_at DESC LIMIT ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, limit);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                appointments.add(mapResultSetToAppointment(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting recent appointments: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return appointments;
+    }
+
+    /**
+     * Get appointments by dentist and date
+     * @param dentistId The dentist ID
+     * @param date The date
+     * @return List of appointments for the dentist on the specified date
+     */
+    public List<Appointment> getAppointmentsByDentistAndDate(int dentistId, String date) {
+        List<Appointment> appointments = new ArrayList<>();
+        String sql = "SELECT * FROM appointments WHERE dentist_id = ? AND appointment_date = ? ORDER BY appointment_time";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, dentistId);
+            pstmt.setString(2, date);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                appointments.add(mapResultSetToAppointment(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting appointments by dentist and date: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return appointments;
+    }
+
+    /**
      * Check if a dentist is available at a specific date and time
      * @param dentistId The dentist ID
      * @param date The date
@@ -446,6 +498,75 @@ public class AppointmentDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error counting appointments by date: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Get count of appointments by dentist
+     * @param dentistId The dentist ID
+     * @return Number of appointments for the dentist
+     */
+    public int getAppointmentCountByDentist(int dentistId) {
+        String sql = "SELECT COUNT(*) FROM appointments WHERE dentist_id = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, dentistId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting appointments by dentist: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Get count of appointments by patient
+     * @param patientId The patient ID
+     * @return Number of appointments for the patient
+     */
+    public int getAppointmentCountByPatient(int patientId) {
+        String sql = "SELECT COUNT(*) FROM appointments WHERE patient_id = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, patientId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting appointments by patient: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Get appointment count for today
+     * @return Number of appointments today
+     */
+    public int getTodayAppointmentCount() {
+        String sql = "SELECT COUNT(*) FROM appointments WHERE appointment_date = CURDATE()";
+        
+        try (Connection conn = DBconnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting today's appointments: " + e.getMessage());
             e.printStackTrace();
         }
         return 0;
