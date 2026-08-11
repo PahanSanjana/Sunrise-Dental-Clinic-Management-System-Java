@@ -183,8 +183,19 @@ public class MainFrame extends JFrame {
         // =====================================================
         contentPanel.add(createPlaceholderPanel("Report Dashboard"), "REPORT_DASHBOARD");
         contentPanel.add(createPlaceholderPanel("Revenue Report"), "REPORT_REVENUE");
-        contentPanel.add(createPlaceholderPanel("Schedule Report"), "REPORT_SCHEDULE");
-        // Patient Report - Real Implementation
+// Schedule Report - Real Implementation
+try {
+    ScheduleReportPanel scheduleReportPanel = new ScheduleReportPanel();
+    scheduleReportPanel.setName("REPORT_SCHEDULE");
+    contentPanel.add(scheduleReportPanel, "REPORT_SCHEDULE");
+    System.out.println("MainFrame: Added REPORT_SCHEDULE card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating ScheduleReportPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Schedule Report");
+    placeholder.setName("REPORT_SCHEDULE");
+    contentPanel.add(placeholder, "REPORT_SCHEDULE");
+}        // Patient Report - Real Implementation
 try {
     PatientReportPanel patientReportPanel = new PatientReportPanel();
     patientReportPanel.setName("REPORT_PATIENT");
