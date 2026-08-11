@@ -181,7 +181,19 @@ public class MainFrame extends JFrame {
         // =====================================================
         // REPORTS SCREENS
         // =====================================================
-        contentPanel.add(createPlaceholderPanel("Report Dashboard"), "REPORT_DASHBOARD");
+// Report Dashboard - Real Implementation
+try {
+    ReportDashboardPanel reportDashboardPanel = new ReportDashboardPanel();
+    reportDashboardPanel.setName("REPORT_DASHBOARD");
+    contentPanel.add(reportDashboardPanel, "REPORT_DASHBOARD");
+    System.out.println("MainFrame: Added REPORT_DASHBOARD card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating ReportDashboardPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Report Dashboard");
+    placeholder.setName("REPORT_DASHBOARD");
+    contentPanel.add(placeholder, "REPORT_DASHBOARD");
+}
 // Revenue Report - Real Implementation
 try {
     RevenueReportPanel revenueReportPanel = new RevenueReportPanel();
@@ -194,7 +206,8 @@ try {
     JPanel placeholder = createPlaceholderPanel("Revenue Report");
     placeholder.setName("REPORT_REVENUE");
     contentPanel.add(placeholder, "REPORT_REVENUE");
-}// Schedule Report - Real Implementation
+}
+// Schedule Report - Real Implementation
 try {
     ScheduleReportPanel scheduleReportPanel = new ScheduleReportPanel();
     scheduleReportPanel.setName("REPORT_SCHEDULE");
@@ -206,7 +219,8 @@ try {
     JPanel placeholder = createPlaceholderPanel("Schedule Report");
     placeholder.setName("REPORT_SCHEDULE");
     contentPanel.add(placeholder, "REPORT_SCHEDULE");
-}        // Patient Report - Real Implementation
+}       
+// Patient Report - Real Implementation
 try {
     PatientReportPanel patientReportPanel = new PatientReportPanel();
     patientReportPanel.setName("REPORT_PATIENT");

@@ -5,28 +5,35 @@ import dao.AppointmentDAO;
 import dao.TreatmentDAO;
 import dao.BillDAO;
 import dao.DentistDAO;
+import dao.StaffDAO;
 import model.Patient;
 import model.Appointment;
 import model.Treatment;
 import model.Bill;
 import model.Dentist;
+import model.Staff;
 import view.PatientReportPanel;
 import view.ScheduleReportPanel;
 import view.RevenueReportPanel;
+import view.ReportDashboardPanel;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class ReportController {
     private PatientReportPanel patientView;
     private ScheduleReportPanel scheduleView;
     private RevenueReportPanel revenueView;
+    private ReportDashboardPanel dashboardView;
     private PatientDAO patientDAO;
     private AppointmentDAO appointmentDAO;
     private TreatmentDAO treatmentDAO;
     private BillDAO billDAO;
     private DentistDAO dentistDAO;
+    private StaffDAO staffDAO;
 
     // =====================================================
     // CONSTRUCTORS
@@ -43,6 +50,7 @@ public class ReportController {
         this.treatmentDAO = new TreatmentDAO();
         this.billDAO = new BillDAO();
         this.dentistDAO = new DentistDAO();
+        this.staffDAO = new StaffDAO();
     }
 
     /**
@@ -56,6 +64,7 @@ public class ReportController {
         this.treatmentDAO = new TreatmentDAO();
         this.billDAO = new BillDAO();
         this.dentistDAO = new DentistDAO();
+        this.staffDAO = new StaffDAO();
     }
 
     /**
@@ -69,6 +78,21 @@ public class ReportController {
         this.treatmentDAO = new TreatmentDAO();
         this.billDAO = new BillDAO();
         this.dentistDAO = new DentistDAO();
+        this.staffDAO = new StaffDAO();
+    }
+
+    /**
+     * Constructor for ReportDashboardPanel
+     * @param view The ReportDashboardPanel instance
+     */
+    public ReportController(ReportDashboardPanel view) {
+        this.dashboardView = view;
+        this.patientDAO = new PatientDAO();
+        this.appointmentDAO = new AppointmentDAO();
+        this.treatmentDAO = new TreatmentDAO();
+        this.billDAO = new BillDAO();
+        this.dentistDAO = new DentistDAO();
+        this.staffDAO = new StaffDAO();
     }
 
     // =====================================================
@@ -373,6 +397,97 @@ public class ReportController {
     }
 
     // =====================================================
+    // DASHBOARD METHODS
+    // =====================================================
+
+    /**
+     * Get patient count
+     * @return Total number of patients
+     */
+    public int getPatientCount() {
+        return patientDAO.getPatientCount();
+    }
+
+    /**
+     * Get appointment count
+     * @return Total number of appointments
+     */
+    public int getAppointmentCount() {
+        return appointmentDAO.getAppointmentCount();
+    }
+
+    /**
+     * Get dentist count
+     * @return Total number of dentists
+     */
+    public int getDentistCount() {
+        return dentistDAO.getDentistCount();
+    }
+
+    /**
+     * Get treatment count
+     * @return Total number of treatments
+     */
+    public int getTreatmentCount() {
+        return treatmentDAO.getTreatmentCount();
+    }
+
+    /**
+     * Get staff count
+     * @return Total number of staff members
+     */
+    public int getStaffCount() {
+        if (staffDAO != null) {
+            return staffDAO.getStaffCount();
+        }
+        return 0;
+    }
+
+    /**
+     * Get total revenue from all bills
+     * @return Total revenue
+     */
+    public double getTotalRevenue() {
+        return billDAO.getTotalRevenue();
+    }
+
+    /**
+     * Get recent appointments
+     * @param limit Number of recent appointments to get
+     * @return List of recent appointments
+     */
+    public List<Appointment> getRecentAppointments(int limit) {
+        return appointmentDAO.getRecentAppointments(limit);
+    }
+
+    /**
+     * Get recent bills
+     * @param limit Number of recent bills to get
+     * @return List of recent bills
+     */
+    public List<Bill> getRecentBills(int limit) {
+        return billDAO.getRecentBills(limit);
+    }
+
+    /**
+     * Get appointment count by status
+     * @param status The status to count
+     * @return Number of appointments with the specified status
+     */
+    public int getAppointmentCountByStatus(String status) {
+        return appointmentDAO.getAppointmentCountByStatus(status);
+    }
+
+    /**
+     * Get bill count by status
+     * @param status The status to count
+     * @return Number of bills with the specified status
+     */
+    public int getBillCountByStatus(String status) {
+        return billDAO.getBillCountByStatus(status);
+    }
+
+    // =====================================================
     // HELPER METHODS
     // =====================================================
 
@@ -381,8 +496,8 @@ public class ReportController {
      * @param bills The list of bills
      * @return Map with revenue by status
      */
-    public java.util.Map<String, Double> getRevenueByStatus(List<Bill> bills) {
-        java.util.Map<String, Double> revenueByStatus = new java.util.HashMap<>();
+    public Map<String, Double> getRevenueByStatus(List<Bill> bills) {
+        Map<String, Double> revenueByStatus = new HashMap<>();
         
         if (bills != null) {
             for (Bill bill : bills) {
@@ -400,8 +515,8 @@ public class ReportController {
      * @param bills The list of bills
      * @return Map with revenue by payment method
      */
-    public java.util.Map<String, Double> getRevenueByPaymentMethod(List<Bill> bills) {
-        java.util.Map<String, Double> revenueByMethod = new java.util.HashMap<>();
+    public Map<String, Double> getRevenueByPaymentMethod(List<Bill> bills) {
+        Map<String, Double> revenueByMethod = new HashMap<>();
         
         if (bills != null) {
             for (Bill bill : bills) {
@@ -419,11 +534,11 @@ public class ReportController {
      * @param bills The list of bills
      * @return Map with monthly revenue
      */
-    public java.util.Map<String, Double> getMonthlyRevenueTrend(List<Bill> bills) {
-        java.util.Map<String, Double> monthlyRevenue = new java.util.LinkedHashMap<>();
+    public Map<String, Double> getMonthlyRevenueTrend(List<Bill> bills) {
+        Map<String, Double> monthlyRevenue = new LinkedHashMap<>();
         
         if (bills != null) {
-            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
             for (Bill bill : bills) {
                 if (bill.getBillDate() != null) {
                     String month = bill.getBillDate().toLocalDate().format(formatter);
@@ -441,12 +556,30 @@ public class ReportController {
      * @param bills The list of bills
      * @return Map with count by status
      */
-    public java.util.Map<String, Integer> getBillCountByStatus(List<Bill> bills) {
-        java.util.Map<String, Integer> countByStatus = new java.util.HashMap<>();
+    public Map<String, Integer> getBillCountByStatus(List<Bill> bills) {
+        Map<String, Integer> countByStatus = new HashMap<>();
         
         if (bills != null) {
             for (Bill bill : bills) {
                 String status = bill.getStatus() != null ? bill.getStatus() : "Unknown";
+                countByStatus.put(status, countByStatus.getOrDefault(status, 0) + 1);
+            }
+        }
+        
+        return countByStatus;
+    }
+
+    /**
+     * Get appointment count by status from list
+     * @param appointments The list of appointments
+     * @return Map with count by status
+     */
+    public Map<String, Integer> getAppointmentCountByStatus(List<Appointment> appointments) {
+        Map<String, Integer> countByStatus = new HashMap<>();
+        
+        if (appointments != null) {
+            for (Appointment appt : appointments) {
+                String status = appt.getStatus() != null ? appt.getStatus() : "Unknown";
                 countByStatus.put(status, countByStatus.getOrDefault(status, 0) + 1);
             }
         }
