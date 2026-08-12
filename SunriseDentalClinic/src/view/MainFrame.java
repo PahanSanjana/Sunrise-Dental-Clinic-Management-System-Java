@@ -528,11 +528,37 @@ public class MainFrame extends JFrame {
                 dashboardPanel = createDashboardPlaceholder();
                 dashboardPanel.setName("DASHBOARD");
             }
+        } else if (role == UserRole.DENTIST) {
+            // Dentist gets Dentist Dashboard
+            try {
+                DentistDashboardPanel dentistDashboard = new DentistDashboardPanel();
+                dentistDashboard.setName("DASHBOARD");
+                dashboardPanel = dentistDashboard;
+                System.out.println("MainFrame: Added Dentist Dashboard");
+            } catch (Exception e) {
+                System.err.println("MainFrame: Error creating DentistDashboardPanel: " + e.getMessage());
+                e.printStackTrace();
+                dashboardPanel = createDashboardPlaceholder();
+                dashboardPanel.setName("DASHBOARD");
+            }
+        } else if (role == UserRole.PATIENT) {
+            // Patient gets Patient Dashboard
+            try {
+                PatientDashboardPanel patientDashboard = new PatientDashboardPanel();
+                patientDashboard.setName("DASHBOARD");
+                dashboardPanel = patientDashboard;
+                System.out.println("MainFrame: Added Patient Dashboard");
+            } catch (Exception e) {
+                System.err.println("MainFrame: Error creating PatientDashboardPanel: " + e.getMessage());
+                e.printStackTrace();
+                dashboardPanel = createDashboardPlaceholder();
+                dashboardPanel.setName("DASHBOARD");
+            }
         } else {
-            // Dentist and Patient get simplified dashboard (placeholder for now)
+            // Default placeholder dashboard
             dashboardPanel = createDashboardPlaceholder();
             dashboardPanel.setName("DASHBOARD");
-            System.out.println("MainFrame: Added simplified dashboard for " + role);
+            System.out.println("MainFrame: Added default dashboard for " + role);
         }
         
         if (dashboardPanel != null) {
