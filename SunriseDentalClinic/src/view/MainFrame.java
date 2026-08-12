@@ -2,6 +2,7 @@ package view;
 
 import model.User;
 import model.User.UserRole;
+import model.LoginSession;
 import java.awt.*;
 import javax.swing.*;
 
@@ -42,22 +43,12 @@ public class MainFrame extends JFrame {
 
         System.out.println("MainFrame: Adding cards to content panel...");
 
-        // Dashboard
-        
-        
-   // Dashboard - Admin Dashboard
-try {
-    AdminDashboardPanel adminDashboardPanel = new AdminDashboardPanel();
-    adminDashboardPanel.setName("DASHBOARD");
-    contentPanel.add(adminDashboardPanel, "DASHBOARD");
-    System.out.println("MainFrame: Added DASHBOARD card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating AdminDashboardPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createDashboardPlaceholder();
-    placeholder.setName("DASHBOARD");
-    contentPanel.add(placeholder, "DASHBOARD");
-}
+        // Dashboard - Default (will be replaced based on role)
+        JPanel dashboardPlaceholder = createDashboardPlaceholder();
+        dashboardPlaceholder.setName("DASHBOARD");
+        contentPanel.add(dashboardPlaceholder, "DASHBOARD");
+        System.out.println("MainFrame: Added DASHBOARD placeholder");
+
         // =====================================================
         // PATIENT SCREENS
         // =====================================================
@@ -191,58 +182,62 @@ try {
         // =====================================================
         // REPORTS SCREENS
         // =====================================================
-// Report Dashboard - Real Implementation
-try {
-    ReportDashboardPanel reportDashboardPanel = new ReportDashboardPanel();
-    reportDashboardPanel.setName("REPORT_DASHBOARD");
-    contentPanel.add(reportDashboardPanel, "REPORT_DASHBOARD");
-    System.out.println("MainFrame: Added REPORT_DASHBOARD card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating ReportDashboardPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Report Dashboard");
-    placeholder.setName("REPORT_DASHBOARD");
-    contentPanel.add(placeholder, "REPORT_DASHBOARD");
-}
-// Revenue Report - Real Implementation
-try {
-    RevenueReportPanel revenueReportPanel = new RevenueReportPanel();
-    revenueReportPanel.setName("REPORT_REVENUE");
-    contentPanel.add(revenueReportPanel, "REPORT_REVENUE");
-    System.out.println("MainFrame: Added REPORT_REVENUE card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating RevenueReportPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Revenue Report");
-    placeholder.setName("REPORT_REVENUE");
-    contentPanel.add(placeholder, "REPORT_REVENUE");
-}
-// Schedule Report - Real Implementation
-try {
-    ScheduleReportPanel scheduleReportPanel = new ScheduleReportPanel();
-    scheduleReportPanel.setName("REPORT_SCHEDULE");
-    contentPanel.add(scheduleReportPanel, "REPORT_SCHEDULE");
-    System.out.println("MainFrame: Added REPORT_SCHEDULE card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating ScheduleReportPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Schedule Report");
-    placeholder.setName("REPORT_SCHEDULE");
-    contentPanel.add(placeholder, "REPORT_SCHEDULE");
-}       
-// Patient Report - Real Implementation
-try {
-    PatientReportPanel patientReportPanel = new PatientReportPanel();
-    patientReportPanel.setName("REPORT_PATIENT");
-    contentPanel.add(patientReportPanel, "REPORT_PATIENT");
-    System.out.println("MainFrame: Added REPORT_PATIENT card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating PatientReportPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Patient Report");
-    placeholder.setName("REPORT_PATIENT");
-    contentPanel.add(placeholder, "REPORT_PATIENT");
-}
+        
+        // Report Dashboard
+        try {
+            ReportDashboardPanel reportDashboardPanel = new ReportDashboardPanel();
+            reportDashboardPanel.setName("REPORT_DASHBOARD");
+            contentPanel.add(reportDashboardPanel, "REPORT_DASHBOARD");
+            System.out.println("MainFrame: Added REPORT_DASHBOARD card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating ReportDashboardPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Report Dashboard");
+            placeholder.setName("REPORT_DASHBOARD");
+            contentPanel.add(placeholder, "REPORT_DASHBOARD");
+        }
+        
+        // Patient Report
+        try {
+            PatientReportPanel patientReportPanel = new PatientReportPanel();
+            patientReportPanel.setName("REPORT_PATIENT");
+            contentPanel.add(patientReportPanel, "REPORT_PATIENT");
+            System.out.println("MainFrame: Added REPORT_PATIENT card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating PatientReportPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Patient Report");
+            placeholder.setName("REPORT_PATIENT");
+            contentPanel.add(placeholder, "REPORT_PATIENT");
+        }
+        
+        // Schedule Report
+        try {
+            ScheduleReportPanel scheduleReportPanel = new ScheduleReportPanel();
+            scheduleReportPanel.setName("REPORT_SCHEDULE");
+            contentPanel.add(scheduleReportPanel, "REPORT_SCHEDULE");
+            System.out.println("MainFrame: Added REPORT_SCHEDULE card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating ScheduleReportPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Schedule Report");
+            placeholder.setName("REPORT_SCHEDULE");
+            contentPanel.add(placeholder, "REPORT_SCHEDULE");
+        }
+        
+        // Revenue Report
+        try {
+            RevenueReportPanel revenueReportPanel = new RevenueReportPanel();
+            revenueReportPanel.setName("REPORT_REVENUE");
+            contentPanel.add(revenueReportPanel, "REPORT_REVENUE");
+            System.out.println("MainFrame: Added REPORT_REVENUE card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating RevenueReportPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Revenue Report");
+            placeholder.setName("REPORT_REVENUE");
+            contentPanel.add(placeholder, "REPORT_REVENUE");
+        }
         System.out.println("MainFrame: Added REPORTS cards");
 
         // =====================================================
@@ -365,52 +360,57 @@ try {
         // =====================================================
         // AUDIT SCREENS (Admin only)
         // =====================================================
-// Activity Log - Real Implementation
-try {
-    ActivityLogPanel activityLogPanel = new ActivityLogPanel();
-    activityLogPanel.setName("AUDIT_ACTIVITY");
-    contentPanel.add(activityLogPanel, "AUDIT_ACTIVITY");
-    System.out.println("MainFrame: Added AUDIT_ACTIVITY card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating ActivityLogPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Activity Log");
-    placeholder.setName("AUDIT_ACTIVITY");
-    contentPanel.add(placeholder, "AUDIT_ACTIVITY");
-}        
-// Login History - Real Implementation
-try {
-    LoginHistoryPanel loginHistoryPanel = new LoginHistoryPanel();
-    loginHistoryPanel.setName("AUDIT_LOGIN");
-    contentPanel.add(loginHistoryPanel, "AUDIT_LOGIN");
-    System.out.println("MainFrame: Added AUDIT_LOGIN card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating LoginHistoryPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Login History");
-    placeholder.setName("AUDIT_LOGIN");
-    contentPanel.add(placeholder, "AUDIT_LOGIN");
-}
+        
+        // Activity Log
+        try {
+            ActivityLogPanel activityLogPanel = new ActivityLogPanel();
+            activityLogPanel.setName("AUDIT_ACTIVITY");
+            contentPanel.add(activityLogPanel, "AUDIT_ACTIVITY");
+            System.out.println("MainFrame: Added AUDIT_ACTIVITY card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating ActivityLogPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Activity Log");
+            placeholder.setName("AUDIT_ACTIVITY");
+            contentPanel.add(placeholder, "AUDIT_ACTIVITY");
+        }
+        
+        // Login History
+        try {
+            LoginHistoryPanel loginHistoryPanel = new LoginHistoryPanel();
+            loginHistoryPanel.setName("AUDIT_LOGIN");
+            contentPanel.add(loginHistoryPanel, "AUDIT_LOGIN");
+            System.out.println("MainFrame: Added AUDIT_LOGIN card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating LoginHistoryPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Login History");
+            placeholder.setName("AUDIT_LOGIN");
+            contentPanel.add(placeholder, "AUDIT_LOGIN");
+        }
         System.out.println("MainFrame: Added AUDIT cards");
+
+        // =====================================================
+        // HELP SCREEN
+        // =====================================================
+        
+        // Help
+        try {
+            HelpPanel helpPanel = new HelpPanel();
+            helpPanel.setName("HELP");
+            contentPanel.add(helpPanel, "HELP");
+            System.out.println("MainFrame: Added HELP card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating HelpPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("Help");
+            placeholder.setName("HELP");
+            contentPanel.add(placeholder, "HELP");
+        }
 
         // Show dashboard by default
         cardLayout.show(contentPanel, "DASHBOARD");
         System.out.println("MainFrame: Content panel initialized, showing DASHBOARD");
-        
-        
-        // Help - Real Implementation
-try {
-    HelpPanel helpPanel = new HelpPanel();
-    helpPanel.setName("HELP");
-    contentPanel.add(helpPanel, "HELP");
-    System.out.println("MainFrame: Added HELP card");
-} catch (Exception e) {
-    System.err.println("MainFrame: Error creating HelpPanel: " + e.getMessage());
-    e.printStackTrace();
-    JPanel placeholder = createPlaceholderPanel("Help");
-    placeholder.setName("HELP");
-    contentPanel.add(placeholder, "HELP");
-}
     }
 
     private JPanel createDashboardPlaceholder() {
@@ -434,7 +434,7 @@ try {
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setBackground(Color.WHITE);
         
-        JLabel placeholderLabel = new JLabel("Welcome to Sunrise Dental Management System", SwingConstants.CENTER);
+        JLabel placeholderLabel = new JLabel("Loading dashboard...", SwingConstants.CENTER);
         placeholderLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         placeholderLabel.setForeground(new Color(122, 138, 135));
         centerPanel.add(placeholderLabel);
@@ -475,16 +475,90 @@ try {
         return panel;
     }
 
+    /**
+     * Configure sidebar for a specific user role and set appropriate dashboard
+     * @param role The user role
+     */
     public void configureSidebarForRole(UserRole role) {
         sidebarPanel.configureForRole(role);
         
         // Update top bar with user info
-        User currentUser = model.LoginSession.getInstance().getCurrentUser();
+        User currentUser = LoginSession.getInstance().getCurrentUser();
         if (currentUser != null) {
             topBarPanel.setUserInfo(currentUser.getUsername(), currentUser.getRole().name());
         }
+        
+        // Set appropriate dashboard based on role
+        setDashboardForRole(role);
     }
 
+    /**
+     * Set the appropriate dashboard based on user role
+     * @param role The user role
+     */
+    private void setDashboardForRole(UserRole role) {
+        // Remove existing dashboard
+        removeDashboardCard();
+        
+        JPanel dashboardPanel = null;
+        
+        if (role == UserRole.ADMIN) {
+            // Admin gets full Admin Dashboard
+            try {
+                AdminDashboardPanel adminDashboard = new AdminDashboardPanel();
+                adminDashboard.setName("DASHBOARD");
+                dashboardPanel = adminDashboard;
+                System.out.println("MainFrame: Added Admin Dashboard");
+            } catch (Exception e) {
+                System.err.println("MainFrame: Error creating AdminDashboardPanel: " + e.getMessage());
+                e.printStackTrace();
+                dashboardPanel = createDashboardPlaceholder();
+                dashboardPanel.setName("DASHBOARD");
+            }
+        } else if (role == UserRole.RECEPTION) {
+            // Reception gets Reception Dashboard
+            try {
+                ReceptionDashboardPanel receptionDashboard = new ReceptionDashboardPanel();
+                receptionDashboard.setName("DASHBOARD");
+                dashboardPanel = receptionDashboard;
+                System.out.println("MainFrame: Added Reception Dashboard");
+            } catch (Exception e) {
+                System.err.println("MainFrame: Error creating ReceptionDashboardPanel: " + e.getMessage());
+                e.printStackTrace();
+                dashboardPanel = createDashboardPlaceholder();
+                dashboardPanel.setName("DASHBOARD");
+            }
+        } else {
+            // Dentist and Patient get simplified dashboard (placeholder for now)
+            dashboardPanel = createDashboardPlaceholder();
+            dashboardPanel.setName("DASHBOARD");
+            System.out.println("MainFrame: Added simplified dashboard for " + role);
+        }
+        
+        if (dashboardPanel != null) {
+            contentPanel.add(dashboardPanel, "DASHBOARD");
+            contentPanel.revalidate();
+            contentPanel.repaint();
+            showCard("DASHBOARD");
+        }
+    }
+
+    /**
+     * Remove existing dashboard card from content panel
+     */
+    private void removeDashboardCard() {
+        for (Component comp : contentPanel.getComponents()) {
+            if (comp.getName() != null && comp.getName().equals("DASHBOARD")) {
+                contentPanel.remove(comp);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Show a specific card in the content panel
+     * @param cardName The name of the card to show
+     */
     public void showCard(String cardName) {
         System.out.println("MainFrame: Attempting to show card: " + cardName);
         
@@ -508,6 +582,11 @@ try {
         }
     }
 
+    /**
+     * Add a new screen dynamically to the content panel
+     * @param cardName The name of the card
+     * @param screen The panel to add
+     */
     public void addScreen(String cardName, JPanel screen) {
         // Remove existing card if it exists
         for (Component comp : contentPanel.getComponents()) {
@@ -523,6 +602,10 @@ try {
         System.out.println("MainFrame: Added/Updated screen: " + cardName);
     }
 
+    /**
+     * Remove a screen from the content panel
+     * @param cardName The name of the card to remove
+     */
     public void removeScreen(String cardName) {
         for (Component comp : contentPanel.getComponents()) {
             if (comp.getName() != null && comp.getName().equals(cardName)) {
@@ -535,10 +618,17 @@ try {
         }
     }
 
+    /**
+     * Get the content panel
+     * @return The content panel
+     */
     public JPanel getContentPanel() {
         return contentPanel;
     }
 
+    /**
+     * Handle logout action
+     */
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(
             this,
@@ -550,7 +640,7 @@ try {
         
         if (confirm == JOptionPane.YES_OPTION) {
             // Clear session
-            model.LoginSession.getInstance().logout();
+            LoginSession.getInstance().logout();
             
             // Close main frame
             this.dispose();
