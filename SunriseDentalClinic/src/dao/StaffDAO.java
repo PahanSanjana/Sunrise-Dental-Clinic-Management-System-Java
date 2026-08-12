@@ -8,6 +8,10 @@ import java.util.List;
 
 public class StaffDAO {
 
+    // =====================================================
+    // CREATE METHODS
+    // =====================================================
+
     /**
      * Add a new staff member to the database
      * @param staff The staff object to save
@@ -46,6 +50,10 @@ public class StaffDAO {
         }
         return false;
     }
+
+    // =====================================================
+    // READ METHODS
+    // =====================================================
 
     /**
      * Get staff by ID
@@ -221,6 +229,62 @@ public class StaffDAO {
     }
 
     /**
+     * Get staff with pagination
+     * @param offset The offset (starting point)
+     * @param limit The number of records to fetch
+     * @return List of staff
+     */
+    public List<Staff> getStaffPaginated(int offset, int limit) {
+        List<Staff> staffList = new ArrayList<>();
+        String sql = "SELECT * FROM staff ORDER BY last_name, first_name LIMIT ? OFFSET ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, limit);
+            pstmt.setInt(2, offset);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                staffList.add(mapResultSetToStaff(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting staff with pagination: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return staffList;
+    }
+
+    /**
+     * Get recent staff members
+     * @param limit Number of recent staff to get
+     * @return List of recent staff
+     */
+    public List<Staff> getRecentStaff(int limit) {
+        List<Staff> staffList = new ArrayList<>();
+        String sql = "SELECT * FROM staff ORDER BY created_at DESC LIMIT ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, limit);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                staffList.add(mapResultSetToStaff(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting recent staff: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return staffList;
+    }
+
+    // =====================================================
+    // UPDATE METHODS
+    // =====================================================
+
+    /**
      * Update staff information
      * @param staff The staff to update
      * @return true if successful, false otherwise
@@ -247,26 +311,6 @@ public class StaffDAO {
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error updating staff: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
-     * Delete a staff member
-     * @param staffId The staff ID to delete
-     * @return true if successful, false otherwise
-     */
-    public boolean deleteStaff(int staffId) {
-        String sql = "DELETE FROM staff WHERE staff_id = ?";
-        
-        try (Connection conn = DBconnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setInt(1, staffId);
-            return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Error deleting staff: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
@@ -313,6 +357,76 @@ public class StaffDAO {
     }
 
     /**
+     * Link staff to a user account
+     * @param staffId The staff ID
+     * @param userId The user ID to link
+     * @return true if successful, false otherwise
+     */
+    public boolean linkStaffToUser(int staffId, int userId) {
+        String sql = "UPDATE staff SET user_id = ? WHERE staff_id = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, staffId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error linking staff to user: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // =====================================================
+    // DELETE METHODS
+    // =====================================================
+
+    /**
+     * Delete a staff member
+     * @param staffId The staff ID to delete
+     * @return true if successful, false otherwise
+     */
+    public boolean deleteStaff(int staffId) {
+        String sql = "DELETE FROM staff WHERE staff_id = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, staffId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting staff: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Unlink staff from a user account
+     * @param staffId The staff ID
+     * @return true if successful, false otherwise
+     */
+    public boolean unlinkStaffFromUser(int staffId) {
+        String sql = "UPDATE staff SET user_id = NULL WHERE staff_id = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, staffId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error unlinking staff from user: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // =====================================================
+    // COUNT METHODS
+    // =====================================================
+
+    /**
      * Get staff count
      * @return Total number of staff
      */
@@ -355,26 +469,56 @@ public class StaffDAO {
     }
 
     /**
-     * Link staff to a user account
-     * @param staffId The staff ID
-     * @param userId The user ID to link
-     * @return true if successful, false otherwise
+     * Get staff count by position
+     * @param position The position to count
+     * @return Number of staff with the specified position
      */
-    public boolean linkStaffToUser(int staffId, int userId) {
-        String sql = "UPDATE staff SET user_id = ? WHERE staff_id = ?";
+    public int getStaffCountByPosition(String position) {
+        String sql = "SELECT COUNT(*) FROM staff WHERE position = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setInt(1, userId);
-            pstmt.setInt(2, staffId);
-            return pstmt.executeUpdate() > 0;
+            pstmt.setString(1, position);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
         } catch (SQLException e) {
-            System.err.println("Error linking staff to user: " + e.getMessage());
+            System.err.println("Error counting staff by position: " + e.getMessage());
             e.printStackTrace();
         }
-        return false;
+        return 0;
     }
+
+    /**
+     * Get staff count by department
+     * @param department The department to count
+     * @return Number of staff in the specified department
+     */
+    public int getStaffCountByDepartment(String department) {
+        String sql = "SELECT COUNT(*) FROM staff WHERE department = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, department);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting staff by department: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    // =====================================================
+    // HELPER METHODS
+    // =====================================================
 
     /**
      * Map ResultSet to Staff object

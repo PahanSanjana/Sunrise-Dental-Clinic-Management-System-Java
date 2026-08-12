@@ -43,11 +43,21 @@ public class MainFrame extends JFrame {
         System.out.println("MainFrame: Adding cards to content panel...");
 
         // Dashboard
-        JPanel dashboardPlaceholder = createDashboardPlaceholder();
-        dashboardPlaceholder.setName("DASHBOARD");
-        contentPanel.add(dashboardPlaceholder, "DASHBOARD");
-        System.out.println("MainFrame: Added DASHBOARD card");
-
+        
+        
+   // Dashboard - Admin Dashboard
+try {
+    AdminDashboardPanel adminDashboardPanel = new AdminDashboardPanel();
+    adminDashboardPanel.setName("DASHBOARD");
+    contentPanel.add(adminDashboardPanel, "DASHBOARD");
+    System.out.println("MainFrame: Added DASHBOARD card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating AdminDashboardPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createDashboardPlaceholder();
+    placeholder.setName("DASHBOARD");
+    contentPanel.add(placeholder, "DASHBOARD");
+}
         // =====================================================
         // PATIENT SCREENS
         // =====================================================
