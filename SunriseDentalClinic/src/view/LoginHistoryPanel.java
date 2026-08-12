@@ -354,7 +354,7 @@ public class LoginHistoryPanel extends JPanel {
     // Data Loading Methods
     // ========================
 
-    private void loadLoginHistory() {
+    public void loadLoginHistory() {
         String searchText = searchField != null ? searchField.getText().trim() : "";
         String status = statusCombo != null ? (String) statusCombo.getSelectedItem() : "All Status";
         String user = userCombo != null ? (String) userCombo.getSelectedItem() : "All Users";
@@ -379,7 +379,7 @@ public class LoginHistoryPanel extends JPanel {
                     history.removeIf(h -> !h.getUsername().equals(user));
                 }
                 
-                // Apply date filter - FIXED
+                // Apply date filter
                 if (dateFilter != null && !dateFilter.equals("All Dates") && history != null) {
                     LocalDate today = LocalDate.now();
                     switch (dateFilter) {
@@ -461,20 +461,10 @@ public class LoginHistoryPanel extends JPanel {
         if (history == null || history.isEmpty()) {
             statusLabel.setText("No login records found");
             countLabel.setText("Total: 0 records");
-            updateSummary(history);
             return;
         }
 
-        int successCount = 0;
-        int failedCount = 0;
-
         for (LoginHistory login : history) {
-            if ("Success".equals(login.getStatus())) {
-                successCount++;
-            } else {
-                failedCount++;
-            }
-            
             // Calculate duration
             String duration = "N/A";
             if (login.getLoginTime() != null && login.getLogoutTime() != null) {
@@ -498,19 +488,45 @@ public class LoginHistoryPanel extends JPanel {
             tableModel.addRow(row);
         }
 
+        // Update summary
+        updateSummary(history);
+        
         statusLabel.setText("Loaded " + history.size() + " records");
         countLabel.setText("Total: " + history.size() + " records");
-        updateSummary(history);
     }
 
     private void updateSummary(List<LoginHistory> history) {
         if (history == null || history.isEmpty()) {
-            // Update summary labels if they exist
             return;
         }
         
-        // Update summary labels if they exist in footer
-        // This is handled in the footer panel
+        int successCount = 0;
+        int failedCount = 0;
+        
+        for (LoginHistory login : history) {
+            if ("Success".equals(login.getStatus())) {
+                successCount++;
+            } else {
+                failedCount++;
+            }
+        }
+        
+        // Update summary labels
+        Component[] components = ((JPanel) ((BorderLayout) getLayout()).getLayoutComponent(BorderLayout.SOUTH)).getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JPanel) {
+                for (Component subComp : ((JPanel) comp).getComponents()) {
+                    if (subComp instanceof JLabel) {
+                        JLabel label = (JLabel) subComp;
+                        if (label.getText().startsWith("✅")) {
+                            label.setText("✅ Success: " + successCount);
+                        } else if (label.getText().startsWith("❌")) {
+                            label.setText("❌ Failed: " + failedCount);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void clearFilters() {

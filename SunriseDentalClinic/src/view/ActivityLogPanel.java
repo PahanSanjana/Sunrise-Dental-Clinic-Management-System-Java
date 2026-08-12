@@ -361,7 +361,7 @@ public class ActivityLogPanel extends JPanel {
     // Data Loading Methods
     // ========================
 
-    private void loadLogs() {
+    public void loadLogs() {
         String searchText = searchField != null ? searchField.getText().trim() : "";
         String action = actionCombo != null ? (String) actionCombo.getSelectedItem() : "All Actions";
         String user = userCombo != null ? (String) userCombo.getSelectedItem() : "All Users";
@@ -386,7 +386,7 @@ public class ActivityLogPanel extends JPanel {
                     logs.removeIf(l -> !l.getUsername().equals(user));
                 }
                 
-                // Apply date filter - FIXED
+                // Apply date filter
                 if (dateFilter != null && !dateFilter.equals("All Dates") && logs != null) {
                     LocalDate today = LocalDate.now();
                     switch (dateFilter) {

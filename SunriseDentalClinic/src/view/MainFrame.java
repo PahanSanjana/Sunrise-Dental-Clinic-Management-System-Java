@@ -367,8 +367,20 @@ try {
     JPanel placeholder = createPlaceholderPanel("Activity Log");
     placeholder.setName("AUDIT_ACTIVITY");
     contentPanel.add(placeholder, "AUDIT_ACTIVITY");
-}        contentPanel.add(createPlaceholderPanel("Login History"), "AUDIT_LOGIN");
-
+}        
+// Login History - Real Implementation
+try {
+    LoginHistoryPanel loginHistoryPanel = new LoginHistoryPanel();
+    loginHistoryPanel.setName("AUDIT_LOGIN");
+    contentPanel.add(loginHistoryPanel, "AUDIT_LOGIN");
+    System.out.println("MainFrame: Added AUDIT_LOGIN card");
+} catch (Exception e) {
+    System.err.println("MainFrame: Error creating LoginHistoryPanel: " + e.getMessage());
+    e.printStackTrace();
+    JPanel placeholder = createPlaceholderPanel("Login History");
+    placeholder.setName("AUDIT_LOGIN");
+    contentPanel.add(placeholder, "AUDIT_LOGIN");
+}
         System.out.println("MainFrame: Added AUDIT cards");
 
         // Show dashboard by default
