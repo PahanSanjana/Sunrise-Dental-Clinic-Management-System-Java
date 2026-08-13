@@ -7,6 +7,7 @@ import view.Login;
 import view.SunriseDentalWelcome;
 
 import javax.swing.*;
+import java.awt.*;
 
 public class SignupController {
     private Signup signupView;
@@ -131,14 +132,12 @@ public class SignupController {
         SwingWorker<User, Void> worker = new SwingWorker<User, Void>() {
             @Override
             protected User doInBackground() throws Exception {
-                // FIXED: Correct parameter order
-                // createPatientUser(String username, String passwordHash, String salt, 
-                //                   String fullName, String email, String phone)
                 return userDAO.createPatientUser(username, password, salt, fullName, email, phone);
             }
 
             @Override
             protected void done() {
+                // FIXED: Use Cursor.getDefaultCursor() or new Cursor(Cursor.DEFAULT_CURSOR)
                 signupView.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
                 try {
                     User newUser = get();
