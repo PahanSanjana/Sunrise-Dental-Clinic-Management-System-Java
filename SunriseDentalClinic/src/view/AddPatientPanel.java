@@ -1,12 +1,19 @@
 package view;
 
 import controller.PatientController;
+import model.Patient;
+import model.User;
+import model.User.UserRole;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import javax.swing.*;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class AddPatientPanel extends JPanel {
     
@@ -17,8 +24,9 @@ public class AddPatientPanel extends JPanel {
     private static final Color LIGHT_SURFACE = new Color(0xE7E9E3);
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
-    
-    // Form Fields
+    private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
+
+    // Form Fields - Patient Details
     private JTextField patientNameField;
     private JComboBox<String> genderCombo;
     private JTextArea addressArea;
@@ -30,15 +38,25 @@ public class AddPatientPanel extends JPanel {
     private JTextArea medicalHistoryArea;
     private JTextArea allergiesArea;
     
+    // Login Credentials Section (NEW)
+    private JCheckBox createLoginCheckBox;
+    private JPanel loginPanel;
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JPasswordField confirmPasswordField;
+    
+    // Buttons
     private RoundedButton saveButton;
     private RoundedButton clearButton;
     private RoundedButton cancelButton;
-    private JLabel messageLabel;
+    
+    private JLabel statusLabel;
     private PatientController controller;
 
     public AddPatientPanel() {
         initComponents();
         this.controller = new PatientController(this);
+        loginPanel.setVisible(false); // Initially hidden
     }
 
     private void initComponents() {
@@ -46,230 +64,449 @@ public class AddPatientPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header
-        JPanel headerPanel = createHeaderPanel();
-        add(headerPanel, BorderLayout.NORTH);
-
-        // Form
+        // Header Panel
+        add(createHeaderPanel(), BorderLayout.NORTH);
+        
+        // Form Panel
         JPanel formPanel = createFormPanel();
         JScrollPane scrollPane = new JScrollPane(formPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
-
-        // Footer
-        JPanel footerPanel = createFooterPanel();
-        add(footerPanel, BorderLayout.SOUTH);
+        
+        // Footer Panel
+        add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
-        header.setBorder(new EmptyBorder(0, 0, 20, 0));
+        header.setBorder(new EmptyBorder(0, 0, 15, 0));
 
+        JPanel titlePanel = new JPanel();
+        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
+        titlePanel.setOpaque(false);
+        
         JLabel titleLabel = new JLabel("Add New Patient");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
-
-        JLabel subtitleLabel = new JLabel("Enter patient information to register in the system");
+        
+        JLabel subtitleLabel = new JLabel("Register a new patient with optional login account");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
+        
+        titlePanel.add(titleLabel);
+        titlePanel.add(subtitleLabel);
 
-        JPanel textPanel = new JPanel();
-        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-        textPanel.setOpaque(false);
-        textPanel.add(titleLabel);
-        textPanel.add(subtitleLabel);
-
-        header.add(textPanel, BorderLayout.WEST);
+        header.add(titlePanel, BorderLayout.WEST);
         return header;
     }
 
     private JPanel createFormPanel() {
         JPanel formPanel = new JPanel();
-        formPanel.setLayout(new GridBagLayout());
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBackground(Color.WHITE);
-        formPanel.setBorder(new CompoundBorder(
+        formPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            new EmptyBorder(30, 30, 30, 30)
+            new EmptyBorder(20, 30, 20, 30)
         ));
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(8, 10, 8, 10);
-
-        int row = 0;
-
-        // Personal Information Section
-        JLabel sectionLabel1 = createSectionLabel("Personal Information");
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(10, 10, 15, 10);
-        formPanel.add(sectionLabel1, gbc);
-        row++;
-
-        // Patient Name
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 10, 5, 10);
-        addFormField(formPanel, gbc, "Patient Name:", patientNameField = createTextField(), row++, 0);
+        // Patient Information Section
+        formPanel.add(createSectionPanel("Personal Information", createPersonalInfoPanel()));
+        formPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        // Gender
-        JLabel genderLabel = new JLabel("Gender:");
-        genderLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        genderLabel.setForeground(PRIMARY_DARK);
-        genderCombo = new JComboBox<>(new String[]{"Male", "Female", "Other"});
-        genderCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        genderCombo.setPreferredSize(new Dimension(200, 35));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 1;
-        formPanel.add(genderLabel, gbc);
-        gbc.gridx = 1;
-        formPanel.add(genderCombo, gbc);
-        row++;
-
-        // Date of Birth
-        addFormField(formPanel, gbc, "Date of Birth (YYYY-MM-DD):", dobField = createTextField(), row++, 0);
-
         // Contact Information Section
-        JLabel sectionLabel2 = createSectionLabel("Contact Information");
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 10, 15, 10);
-        formPanel.add(sectionLabel2, gbc);
-        row++;
-
-        // Contact Number and Email
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 10, 5, 10);
-        addFormField(formPanel, gbc, "Contact Number:", contactNumberField = createTextField(), row++, 0);
-        addFormField(formPanel, gbc, "Email:", emailField = createTextField(), row++, 1);
-
-        // Address
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(5, 10, 5, 10);
-        JLabel addressLabel = new JLabel("Address:");
-        addressLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        addressLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(addressLabel, gbc);
-        row++;
-
-        addressArea = createTextArea();
-        JScrollPane addressScroll = new JScrollPane(addressArea);
-        addressScroll.setPreferredSize(new Dimension(400, 60));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(0, 10, 5, 10);
-        formPanel.add(addressScroll, gbc);
-        row++;
-
+        formPanel.add(createSectionPanel("Contact Information", createContactInfoPanel()));
+        formPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        
         // Emergency Contact Section
-        JLabel sectionLabel3 = createSectionLabel("Emergency Contact");
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 10, 15, 10);
-        formPanel.add(sectionLabel3, gbc);
-        row++;
-
-        // Emergency Contact
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 10, 5, 10);
-        addFormField(formPanel, gbc, "Contact Name:", emergencyContactField = createTextField(), row++, 0);
-        addFormField(formPanel, gbc, "Contact Phone:", emergencyPhoneField = createTextField(), row++, 1);
-
+        formPanel.add(createSectionPanel("Emergency Contact", createEmergencyContactPanel()));
+        formPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        
         // Medical Information Section
-        JLabel sectionLabel4 = createSectionLabel("Medical Information");
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 10, 15, 10);
-        formPanel.add(sectionLabel4, gbc);
-        row++;
-
-        // Medical History
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(5, 10, 5, 10);
-        JLabel historyLabel = new JLabel("Medical History:");
-        historyLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        historyLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(historyLabel, gbc);
-        row++;
-
-        medicalHistoryArea = createTextArea();
-        JScrollPane historyScroll = new JScrollPane(medicalHistoryArea);
-        historyScroll.setPreferredSize(new Dimension(400, 60));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(0, 10, 5, 10);
-        formPanel.add(historyScroll, gbc);
-        row++;
-
-        // Allergies
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(5, 10, 5, 10);
-        JLabel allergiesLabel = new JLabel("Allergies:");
-        allergiesLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        allergiesLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(allergiesLabel, gbc);
-        row++;
-
-        allergiesArea = createTextArea();
-        JScrollPane allergiesScroll = new JScrollPane(allergiesArea);
-        allergiesScroll.setPreferredSize(new Dimension(400, 60));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(0, 10, 10, 10);
-        formPanel.add(allergiesScroll, gbc);
-        row++;
-
-        // Message Label
-        messageLabel = new JLabel(" ");
-        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        messageLabel.setForeground(ERROR_COLOR);
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(10, 10, 5, 10);
-        formPanel.add(messageLabel, gbc);
-
+        formPanel.add(createSectionPanel("Medical Information", createMedicalInfoPanel()));
+        formPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        
+        // Login Credentials Section (NEW)
+        formPanel.add(createLoginSection());
+        
         return formPanel;
     }
 
-    private JLabel createSectionLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        label.setForeground(PRIMARY_DARK);
-        label.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, MINT));
-        return label;
+    private JPanel createLoginSection() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(MINT, 1),
+            "Login Account (Optional)",
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14),
+            PRIMARY_DARK
+        ));
+        
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        
+        // Checkbox
+        JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        checkPanel.setOpaque(false);
+        createLoginCheckBox = new JCheckBox("Create login account for this patient");
+        createLoginCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        createLoginCheckBox.setForeground(PRIMARY_DARK);
+        createLoginCheckBox.addActionListener(e -> loginPanel.setVisible(createLoginCheckBox.isSelected()));
+        checkPanel.add(createLoginCheckBox);
+        
+        mainPanel.add(checkPanel, BorderLayout.NORTH);
+        
+        // Login Credentials Panel (hidden by default)
+        loginPanel = new JPanel(new GridBagLayout());
+        loginPanel.setBackground(Color.WHITE);
+        loginPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(10, 10, 10, 10)
+        ));
+        loginPanel.setVisible(false);
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+        
+        // Row 0: Username
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel usernameLabel = new JLabel("Username:");
+        usernameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        usernameLabel.setForeground(PRIMARY_DARK);
+        loginPanel.add(usernameLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        usernameField = new JTextField();
+        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        usernameField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        loginPanel.add(usernameField, gbc);
+        
+        // Row 1: Password
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel passwordLabel = new JLabel("Password:");
+        passwordLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        passwordLabel.setForeground(PRIMARY_DARK);
+        loginPanel.add(passwordLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        passwordField = new JPasswordField();
+        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        loginPanel.add(passwordField, gbc);
+        
+        // Row 1: Confirm Password
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel confirmLabel = new JLabel("Confirm Password:");
+        confirmLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        confirmLabel.setForeground(PRIMARY_DARK);
+        loginPanel.add(confirmLabel, gbc);
+        
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        confirmPasswordField = new JPasswordField();
+        confirmPasswordField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        confirmPasswordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        loginPanel.add(confirmPasswordField, gbc);
+        
+        mainPanel.add(loginPanel, BorderLayout.CENTER);
+        
+        panel.add(mainPanel, BorderLayout.CENTER);
+        return panel;
     }
 
-    private void addFormField(JPanel panel, GridBagConstraints gbc, String labelText, 
-                              JComponent field, int row, int col) {
-        JLabel label = new JLabel(labelText);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        label.setForeground(PRIMARY_DARK);
-        
-        gbc.gridx = col;
-        gbc.gridy = row;
+    private JPanel createSectionPanel(String title, JPanel content) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(MINT, 1),
+            title,
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14),
+            PRIMARY_DARK
+        ));
+        panel.add(content, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createPersonalInfoPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+
+        // Patient Name
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         gbc.gridwidth = 1;
-        gbc.weightx = col == 0 ? 0.3 : 0.7;
-        panel.add(label, gbc);
-        
-        gbc.gridx = col + 1;
-        field.setPreferredSize(new Dimension(200, 35));
-        panel.add(field, gbc);
+        gbc.weightx = 0.2;
+        JLabel nameLabel = new JLabel("Patient Name:");
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        nameLabel.setForeground(PRIMARY_DARK);
+        panel.add(nameLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        patientNameField = createTextField();
+        panel.add(patientNameField, gbc);
+
+        // Gender
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel genderLabel = new JLabel("Gender:");
+        genderLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        genderLabel.setForeground(PRIMARY_DARK);
+        panel.add(genderLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        genderCombo = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+        genderCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        panel.add(genderCombo, gbc);
+
+        // Date of Birth
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel dobLabel = new JLabel("Date of Birth (YYYY-MM-DD):");
+        dobLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dobLabel.setForeground(PRIMARY_DARK);
+        panel.add(dobLabel, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        dobField = createTextField();
+        panel.add(dobField, gbc);
+
+        return panel;
+    }
+
+    private JPanel createContactInfoPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+
+        // Contact Number
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel contactLabel = new JLabel("Contact Number:");
+        contactLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        contactLabel.setForeground(PRIMARY_DARK);
+        panel.add(contactLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        contactNumberField = createTextField();
+        panel.add(contactNumberField, gbc);
+
+        // Email
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel emailLabel = new JLabel("Email:");
+        emailLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        emailLabel.setForeground(PRIMARY_DARK);
+        panel.add(emailLabel, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        emailField = createTextField();
+        panel.add(emailField, gbc);
+
+        // Address
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel addressLabel = new JLabel("Address:");
+        addressLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        addressLabel.setForeground(PRIMARY_DARK);
+        panel.add(addressLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        addressArea = createTextArea();
+        JScrollPane addressScroll = new JScrollPane(addressArea);
+        addressScroll.setPreferredSize(new Dimension(400, 60));
+        panel.add(addressScroll, gbc);
+
+        return panel;
+    }
+
+    private JPanel createEmergencyContactPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+
+        // Emergency Contact Name
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel contactNameLabel = new JLabel("Contact Name:");
+        contactNameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        contactNameLabel.setForeground(PRIMARY_DARK);
+        panel.add(contactNameLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        emergencyContactField = createTextField();
+        panel.add(emergencyContactField, gbc);
+
+        // Emergency Phone
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel phoneLabel = new JLabel("Contact Phone:");
+        phoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        phoneLabel.setForeground(PRIMARY_DARK);
+        panel.add(phoneLabel, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        emergencyPhoneField = createTextField();
+        panel.add(emergencyPhoneField, gbc);
+
+        return panel;
+    }
+
+    private JPanel createMedicalInfoPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+
+        // Medical History
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel historyLabel = new JLabel("Medical History:");
+        historyLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        historyLabel.setForeground(PRIMARY_DARK);
+        panel.add(historyLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        medicalHistoryArea = createTextArea();
+        JScrollPane historyScroll = new JScrollPane(medicalHistoryArea);
+        historyScroll.setPreferredSize(new Dimension(400, 60));
+        panel.add(historyScroll, gbc);
+
+        // Allergies
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel allergiesLabel = new JLabel("Allergies:");
+        allergiesLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        allergiesLabel.setForeground(PRIMARY_DARK);
+        panel.add(allergiesLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        allergiesArea = createTextArea();
+        JScrollPane allergiesScroll = new JScrollPane(allergiesArea);
+        allergiesScroll.setPreferredSize(new Dimension(400, 60));
+        panel.add(allergiesScroll, gbc);
+
+        return panel;
+    }
+
+    private JPanel createFooterPanel() {
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(SOFT_SURFACE);
+        footer.setBorder(new EmptyBorder(15, 0, 0, 0));
+
+        statusLabel = new JLabel(" ");
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setForeground(SECONDARY_TEXT);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
+
+        saveButton = createStyledButton("Save Patient", PRIMARY_DARK, Color.WHITE);
+        saveButton.setPreferredSize(new Dimension(160, 40));
+
+        clearButton = createStyledButton("Clear", SOFT_SURFACE, PRIMARY_DARK);
+        clearButton.setBorderColor(LIGHT_SURFACE);
+        clearButton.setPreferredSize(new Dimension(100, 40));
+
+        cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
+        cancelButton.setBorderColor(LIGHT_SURFACE);
+        cancelButton.setPreferredSize(new Dimension(100, 40));
+
+        buttonPanel.add(clearButton);
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(saveButton);
+
+        footer.add(statusLabel, BorderLayout.WEST);
+        footer.add(buttonPanel, BorderLayout.EAST);
+
+        return footer;
     }
 
     private JTextField createTextField() {
@@ -279,6 +516,7 @@ public class AddPatientPanel extends JPanel {
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
+        field.setPreferredSize(new Dimension(200, 35));
         return field;
     }
 
@@ -291,30 +529,13 @@ public class AddPatientPanel extends JPanel {
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(8, 10, 8, 10)
         ));
+        area.setBackground(Color.WHITE);
         return area;
-    }
-
-    private JPanel createFooterPanel() {
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
-        footer.setBackground(SOFT_SURFACE);
-
-        saveButton = createStyledButton("Save Patient", PRIMARY_DARK, Color.WHITE);
-        clearButton = createStyledButton("Clear Form", SOFT_SURFACE, PRIMARY_DARK);
-        clearButton.setBorderColor(LIGHT_SURFACE);
-        cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
-        cancelButton.setBorderColor(LIGHT_SURFACE);
-
-        footer.add(clearButton);
-        footer.add(cancelButton);
-        footer.add(saveButton);
-
-        return footer;
     }
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setPreferredSize(new Dimension(140, 40));
-        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
         return button;
     }
 
@@ -339,6 +560,8 @@ public class AddPatientPanel extends JPanel {
 
             if (bg.equals(PRIMARY_DARK)) {
                 hoverColor = new Color(40, 55, 53);
+            } else if (bg.equals(ERROR_COLOR)) {
+                hoverColor = new Color(180, 60, 60);
             } else {
                 hoverColor = new Color(220, 220, 210);
             }
@@ -368,11 +591,11 @@ public class AddPatientPanel extends JPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             g2.setColor(bg);
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
 
             if (borderColor != bg && borderColor != null) {
                 g2.setColor(borderColor);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
             }
 
             super.paintComponent(g);
@@ -380,10 +603,15 @@ public class AddPatientPanel extends JPanel {
         }
     }
 
+    private static class MouseAdapter extends java.awt.event.MouseAdapter {
+        // Empty implementation
+    }
+
     // ========================
     // Public methods for Controller
     // ========================
 
+    // Patient getters
     public String getPatientName() { return patientNameField.getText().trim(); }
     public String getGender() { return (String) genderCombo.getSelectedItem(); }
     public String getAddress() { return addressArea.getText().trim(); }
@@ -394,6 +622,12 @@ public class AddPatientPanel extends JPanel {
     public String getEmergencyPhone() { return emergencyPhoneField.getText().trim(); }
     public String getMedicalHistory() { return medicalHistoryArea.getText().trim(); }
     public String getAllergies() { return allergiesArea.getText().trim(); }
+    
+    // Login getters (NEW)
+    public boolean isCreateLogin() { return createLoginCheckBox.isSelected(); }
+    public String getUsername() { return usernameField != null ? usernameField.getText().trim() : ""; }
+    public String getPassword() { return passwordField != null ? new String(passwordField.getPassword()) : ""; }
+    public String getConfirmPassword() { return confirmPasswordField != null ? new String(confirmPasswordField.getPassword()) : ""; }
 
     public void clearForm() {
         patientNameField.setText("");
@@ -406,39 +640,41 @@ public class AddPatientPanel extends JPanel {
         emergencyPhoneField.setText("");
         medicalHistoryArea.setText("");
         allergiesArea.setText("");
-        messageLabel.setText(" ");
-        messageLabel.setForeground(ERROR_COLOR);
+        usernameField.setText("");
+        passwordField.setText("");
+        confirmPasswordField.setText("");
+        createLoginCheckBox.setSelected(false);
+        loginPanel.setVisible(false);
+        statusLabel.setText("Form cleared");
+        statusLabel.setForeground(SECONDARY_TEXT);
     }
 
     public void showError(String message) {
-        messageLabel.setText("⚠ " + message);
-        messageLabel.setForeground(ERROR_COLOR);
+        statusLabel.setText("❌ " + message);
+        statusLabel.setForeground(ERROR_COLOR);
+        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        messageLabel.setText("✓ " + message);
-        messageLabel.setForeground(SUCCESS_COLOR);
+        statusLabel.setText("✅ " + message);
+        statusLabel.setForeground(SUCCESS_COLOR);
+        JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void showInfo(String message) {
+        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setForeground(new Color(0, 120, 215));
     }
 
     public void addSaveListener(ActionListener listener) {
-        if (saveButton != null) {
-            saveButton.addActionListener(listener);
-        }
+        saveButton.addActionListener(listener);
     }
 
     public void addClearListener(ActionListener listener) {
-        if (clearButton != null) {
-            clearButton.addActionListener(listener);
-        }
+        clearButton.addActionListener(listener);
     }
 
     public void addCancelListener(ActionListener listener) {
-        if (cancelButton != null) {
-            cancelButton.addActionListener(listener);
-        }
-    }
-
-    private static class MouseAdapter extends java.awt.event.MouseAdapter {
-        // Empty implementation - used by RoundedButton
+        cancelButton.addActionListener(listener);
     }
 }

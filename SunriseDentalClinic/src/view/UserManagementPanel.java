@@ -10,38 +10,30 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.text.SimpleDateFormat;
 import java.util.List;
 
 public class UserManagementPanel extends JPanel {
     
-    // Color Palette
     private static final Color PRIMARY_DARK = new Color(0x2F3E3C);
     private static final Color MINT = new Color(0xBDDBD1);
     private static final Color SOFT_SURFACE = new Color(0xFBF9F1);
     private static final Color LIGHT_SURFACE = new Color(0xE7E9E3);
-    private static final Color HOVER_SURFACE = new Color(0xE8F0F1);
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
-    private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
 
-    // Components
     private JTable userTable;
     private DefaultTableModel tableModel;
     private JTextField searchField;
-    private RoundedButton addButton;
     private RoundedButton refreshButton;
     private RoundedButton editButton;
     private RoundedButton deactivateButton;
     private RoundedButton activateButton;
-    private RoundedButton deleteButton;
     private JLabel statusLabel;
     private JLabel countLabel;
     private JComboBox<String> roleFilterCombo;
     private JComboBox<String> statusFilterCombo;
     
     private UserController controller;
-    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
     public UserManagementPanel() {
         this.controller = new UserController(this);
@@ -54,13 +46,8 @@ public class UserManagementPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header Panel
         add(createHeaderPanel(), BorderLayout.NORTH);
-        
-        // Table Panel
         add(createTablePanel(), BorderLayout.CENTER);
-        
-        // Footer Panel
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
@@ -69,7 +56,6 @@ public class UserManagementPanel extends JPanel {
         header.setBackground(SOFT_SURFACE);
         header.setBorder(new EmptyBorder(0, 0, 15, 0));
 
-        // Title
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setOpaque(false);
@@ -78,14 +64,13 @@ public class UserManagementPanel extends JPanel {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
-        JLabel subtitleLabel = new JLabel("Manage all system users and their roles");
+        JLabel subtitleLabel = new JLabel("View and manage user accounts");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
         titlePanel.add(subtitleLabel);
 
-        // Search Panel
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         searchPanel.setOpaque(false);
 
@@ -112,9 +97,8 @@ public class UserManagementPanel extends JPanel {
         ));
         searchField.addActionListener(e -> loadUsers());
 
-        addButton = createStyledButton("Add User", PRIMARY_DARK, Color.WHITE);
-        addButton.setPreferredSize(new Dimension(120, 35));
-        addButton.addActionListener(e -> openAddUserDialog());
+        // REMOVED: Add User button (since users are created from other forms)
+        // Only kept refresh
 
         refreshButton = createStyledButton("Refresh", SOFT_SURFACE, PRIMARY_DARK);
         refreshButton.setBorderColor(LIGHT_SURFACE);
@@ -126,7 +110,6 @@ public class UserManagementPanel extends JPanel {
         searchPanel.add(new JLabel("Status:"));
         searchPanel.add(statusFilterCombo);
         searchPanel.add(searchField);
-        searchPanel.add(addButton);
         searchPanel.add(refreshButton);
 
         header.add(titlePanel, BorderLayout.WEST);
@@ -140,7 +123,6 @@ public class UserManagementPanel extends JPanel {
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
 
-        // Create table model
         String[] columns = {"ID", "Username", "Email", "Role", "Status", "Created"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -157,23 +139,12 @@ public class UserManagementPanel extends JPanel {
         userTable.setShowGrid(true);
         userTable.setGridColor(LIGHT_SURFACE);
 
-        // Set column widths
-        userTable.getColumnModel().getColumn(0).setMaxWidth(60);
-        userTable.getColumnModel().getColumn(0).setMinWidth(50);
-        userTable.getColumnModel().getColumn(1).setPreferredWidth(150);
-        userTable.getColumnModel().getColumn(2).setPreferredWidth(180);
-        userTable.getColumnModel().getColumn(3).setMaxWidth(120);
-        userTable.getColumnModel().getColumn(4).setMaxWidth(100);
-        userTable.getColumnModel().getColumn(5).setMaxWidth(120);
-
-        // Custom header
         JTableHeader header = userTable.getTableHeader();
         header.setFont(new Font("Segoe UI", Font.BOLD, 13));
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_DARK));
 
-        // Custom cell renderer for status column
         userTable.getColumnModel().getColumn(4).setCellRenderer(new StatusCellRenderer());
 
         JScrollPane scrollPane = new JScrollPane(userTable);
@@ -201,10 +172,10 @@ public class UserManagementPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
 
-        editButton = createStyledButton("Edit", SOFT_SURFACE, PRIMARY_DARK);
+        editButton = createStyledButton("Edit Role", SOFT_SURFACE, PRIMARY_DARK);
         editButton.setBorderColor(LIGHT_SURFACE);
-        editButton.setPreferredSize(new Dimension(80, 30));
-        editButton.addActionListener(e -> editUser());
+        editButton.setPreferredSize(new Dimension(100, 30));
+        editButton.addActionListener(e -> editUserRole());
 
         deactivateButton = createStyledButton("Deactivate", SOFT_SURFACE, ERROR_COLOR);
         deactivateButton.setBorderColor(LIGHT_SURFACE);
@@ -216,15 +187,9 @@ public class UserManagementPanel extends JPanel {
         activateButton.setPreferredSize(new Dimension(100, 30));
         activateButton.addActionListener(e -> activateUser());
 
-        deleteButton = createStyledButton("Delete", SOFT_SURFACE, ERROR_COLOR);
-        deleteButton.setBorderColor(LIGHT_SURFACE);
-        deleteButton.setPreferredSize(new Dimension(80, 30));
-        deleteButton.addActionListener(e -> deleteUser());
-
         buttonPanel.add(editButton);
         buttonPanel.add(deactivateButton);
         buttonPanel.add(activateButton);
-        buttonPanel.add(deleteButton);
 
         footer.add(statusLabel, BorderLayout.WEST);
         footer.add(buttonPanel, BorderLayout.CENTER);
@@ -232,10 +197,6 @@ public class UserManagementPanel extends JPanel {
 
         return footer;
     }
-
-    // ========================
-    // RoundedButton Helper
-    // ========================
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
@@ -308,7 +269,6 @@ public class UserManagementPanel extends JPanel {
         }
     }
 
-    // Status Cell Renderer
     private class StatusCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
@@ -353,12 +313,10 @@ public class UserManagementPanel extends JPanel {
             protected List<User> doInBackground() throws Exception {
                 List<User> users = controller.getAllUsers();
                 
-                // Apply role filter
                 if (role != null && !role.equals("All Roles") && users != null) {
                     users.removeIf(u -> !u.getRole().name().equals(role));
                 }
                 
-                // Apply status filter
                 if (status != null && !status.equals("All Status") && users != null) {
                     if (status.equals("Active")) {
                         users.removeIf(u -> !u.isActive());
@@ -367,7 +325,6 @@ public class UserManagementPanel extends JPanel {
                     }
                 }
                 
-                // Apply search filter
                 if (searchText != null && !searchText.isEmpty() && users != null) {
                     users.removeIf(u -> 
                         !u.getUsername().toLowerCase().contains(searchText.toLowerCase()) &&
@@ -417,13 +374,7 @@ public class UserManagementPanel extends JPanel {
         countLabel.setText("Total: " + users.size() + " users");
     }
 
-    private void openAddUserDialog() {
-        AddUserDialog dialog = new AddUserDialog((JFrame) SwingUtilities.getWindowAncestor(this), controller);
-        dialog.setVisible(true);
-        loadUsers(); // Refresh after dialog closes
-    }
-
-    private void editUser() {
+    private void editUserRole() {
         int row = userTable.getSelectedRow();
         if (row == -1) {
             showError("Please select a user to edit.");
@@ -432,9 +383,33 @@ public class UserManagementPanel extends JPanel {
         
         int userId = (int) tableModel.getValueAt(row, 0);
         String username = (String) tableModel.getValueAt(row, 1);
+        String currentRole = (String) tableModel.getValueAt(row, 3);
         
-        // TODO: Open edit user dialog
-        showInfo("Editing user: " + username + " (ID: " + userId + ")");
+        // Show role selection dialog
+        String[] roles = {"ADMIN", "RECEPTION", "DENTIST", "PATIENT"};
+        String newRole = (String) JOptionPane.showInputDialog(
+            this,
+            "Select new role for " + username + ":",
+            "Edit User Role",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            roles,
+            currentRole
+        );
+        
+        if (newRole != null && !newRole.equals(currentRole)) {
+            User user = controller.getUserById(userId);
+            if (user != null) {
+                user.setRole(UserRole.valueOf(newRole));
+                boolean success = controller.updateUser(user);
+                if (success) {
+                    showSuccess("User role updated to " + newRole + "!");
+                    loadUsers();
+                } else {
+                    showError("Failed to update user role.");
+                }
+            }
+        }
     }
 
     private void deactivateUser() {
@@ -494,39 +469,6 @@ public class UserManagementPanel extends JPanel {
             }
         }
     }
-
-    private void deleteUser() {
-        int row = userTable.getSelectedRow();
-        if (row == -1) {
-            showError("Please select a user to delete.");
-            return;
-        }
-        
-        int userId = (int) tableModel.getValueAt(row, 0);
-        String username = (String) tableModel.getValueAt(row, 1);
-        
-        int confirm = JOptionPane.showConfirmDialog(
-            this,
-            "Are you sure you want to delete user: " + username + "?\nThis action cannot be undone.",
-            "Confirm Delete",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE
-        );
-        
-        if (confirm == JOptionPane.YES_OPTION) {
-            boolean success = controller.deleteUser(userId);
-            if (success) {
-                showSuccess("User deleted successfully!");
-                loadUsers();
-            } else {
-                showError("Failed to delete user.");
-            }
-        }
-    }
-
-    // ========================
-    // Public methods
-    // ========================
 
     public void showError(String message) {
         statusLabel.setText("❌ " + message);

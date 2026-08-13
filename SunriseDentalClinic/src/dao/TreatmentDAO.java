@@ -14,7 +14,7 @@ public class TreatmentDAO {
      * @return true if successful, false otherwise
      */
     public boolean addTreatment(Treatment treatment) {
-        String sql = "INSERT INTO treatment (treatment_name, description, category, cost, estimated_duration, is_active) "
+        String sql = "INSERT INTO treatments (treatment_name, description, category, cost, estimated_duration, is_active) "
                    + "VALUES (?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DBconnection.getConnection();
@@ -24,7 +24,7 @@ public class TreatmentDAO {
             pstmt.setString(2, treatment.getDescription());
             pstmt.setString(3, treatment.getCategory());
             pstmt.setDouble(4, treatment.getCost());
-            pstmt.setInt(5, treatment.getDuration()); // Note: getDuration() should map to estimated_duration
+            pstmt.setInt(5, treatment.getDuration());
             pstmt.setBoolean(6, treatment.isActive());
             
             int affectedRows = pstmt.executeUpdate();
@@ -49,7 +49,7 @@ public class TreatmentDAO {
      * @return Treatment object if found, null otherwise
      */
     public Treatment getTreatmentById(int treatmentId) {
-        String sql = "SELECT * FROM treatment WHERE treatment_id = ?";
+        String sql = "SELECT * FROM treatments WHERE treatment_id = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -73,7 +73,7 @@ public class TreatmentDAO {
      * @return Treatment object if found, null otherwise
      */
     public Treatment getTreatmentByName(String treatmentName) {
-        String sql = "SELECT * FROM treatment WHERE treatment_name = ?";
+        String sql = "SELECT * FROM treatments WHERE treatment_name = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -97,7 +97,7 @@ public class TreatmentDAO {
      */
     public List<Treatment> getAllTreatments() {
         List<Treatment> treatments = new ArrayList<>();
-        String sql = "SELECT * FROM treatment ORDER BY treatment_name";
+        String sql = "SELECT * FROM treatments ORDER BY treatment_name";
         
         try (Connection conn = DBconnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -119,7 +119,7 @@ public class TreatmentDAO {
      */
     public List<Treatment> getActiveTreatments() {
         List<Treatment> treatments = new ArrayList<>();
-        String sql = "SELECT * FROM treatment WHERE is_active = true ORDER BY treatment_name";
+        String sql = "SELECT * FROM treatments WHERE is_active = true ORDER BY treatment_name";
         
         try (Connection conn = DBconnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -142,7 +142,7 @@ public class TreatmentDAO {
      */
     public List<Treatment> getTreatmentsByCategory(String category) {
         List<Treatment> treatments = new ArrayList<>();
-        String sql = "SELECT * FROM treatment WHERE category = ? ORDER BY treatment_name";
+        String sql = "SELECT * FROM treatments WHERE category = ? ORDER BY treatment_name";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -167,7 +167,7 @@ public class TreatmentDAO {
      */
     public List<Treatment> searchTreatments(String searchTerm) {
         List<Treatment> treatments = new ArrayList<>();
-        String sql = "SELECT * FROM treatment WHERE treatment_name LIKE ? OR category LIKE ? OR description LIKE ?";
+        String sql = "SELECT * FROM treatments WHERE treatment_name LIKE ? OR category LIKE ? OR description LIKE ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -195,7 +195,7 @@ public class TreatmentDAO {
      * @return true if successful, false otherwise
      */
     public boolean updateTreatment(Treatment treatment) {
-        String sql = "UPDATE treatment SET treatment_name=?, description=?, category=?, "
+        String sql = "UPDATE treatments SET treatment_name=?, description=?, category=?, "
                    + "cost=?, estimated_duration=?, is_active=? WHERE treatment_id=?";
         
         try (Connection conn = DBconnection.getConnection();
@@ -205,7 +205,7 @@ public class TreatmentDAO {
             pstmt.setString(2, treatment.getDescription());
             pstmt.setString(3, treatment.getCategory());
             pstmt.setDouble(4, treatment.getCost());
-            pstmt.setInt(5, treatment.getDuration()); // Note: getDuration() should map to estimated_duration
+            pstmt.setInt(5, treatment.getDuration());
             pstmt.setBoolean(6, treatment.isActive());
             pstmt.setInt(7, treatment.getTreatmentId());
             
@@ -223,7 +223,7 @@ public class TreatmentDAO {
      * @return true if successful, false otherwise
      */
     public boolean deleteTreatment(int treatmentId) {
-        String sql = "DELETE FROM treatment WHERE treatment_id = ?";
+        String sql = "DELETE FROM treatments WHERE treatment_id = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -243,7 +243,7 @@ public class TreatmentDAO {
      * @return true if successful, false otherwise
      */
     public boolean deactivateTreatment(int treatmentId) {
-        String sql = "UPDATE treatment SET is_active = false WHERE treatment_id = ?";
+        String sql = "UPDATE treatments SET is_active = false WHERE treatment_id = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -263,7 +263,7 @@ public class TreatmentDAO {
      * @return true if successful, false otherwise
      */
     public boolean activateTreatment(int treatmentId) {
-        String sql = "UPDATE treatment SET is_active = true WHERE treatment_id = ?";
+        String sql = "UPDATE treatments SET is_active = true WHERE treatment_id = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -283,7 +283,7 @@ public class TreatmentDAO {
      * @return true if exists, false otherwise
      */
     public boolean treatmentNameExists(String treatmentName) {
-        String sql = "SELECT COUNT(*) FROM treatment WHERE treatment_name = ?";
+        String sql = "SELECT COUNT(*) FROM treatments WHERE treatment_name = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -306,7 +306,7 @@ public class TreatmentDAO {
      * @return Total number of treatments
      */
     public int getTreatmentCount() {
-        String sql = "SELECT COUNT(*) FROM treatment";
+        String sql = "SELECT COUNT(*) FROM treatments";
         
         try (Connection conn = DBconnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -330,7 +330,7 @@ public class TreatmentDAO {
      */
     public List<Treatment> getTreatmentsPaginated(int offset, int limit) {
         List<Treatment> treatments = new ArrayList<>();
-        String sql = "SELECT * FROM treatment ORDER BY treatment_name LIMIT ? OFFSET ?";
+        String sql = "SELECT * FROM treatments ORDER BY treatment_name LIMIT ? OFFSET ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -351,11 +351,11 @@ public class TreatmentDAO {
 
     /**
      * Get categories with treatment count
-     * @return Map of category names and their treatment counts (returns List of Object arrays)
+     * @return List of category stats
      */
     public List<Object[]> getCategoryStats() {
         List<Object[]> stats = new ArrayList<>();
-        String sql = "SELECT category, COUNT(*) as count FROM treatment GROUP BY category ORDER BY category";
+        String sql = "SELECT category, COUNT(*) as count FROM treatments GROUP BY category ORDER BY category";
         
         try (Connection conn = DBconnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -387,7 +387,7 @@ public class TreatmentDAO {
             rs.getString("description"),
             rs.getString("category"),
             rs.getDouble("cost"),
-            rs.getInt("estimated_duration"),  // ← FIXED: was 'duration'
+            rs.getInt("estimated_duration"),
             rs.getBoolean("is_active"),
             rs.getString("created_at"),
             rs.getString("updated_at")
