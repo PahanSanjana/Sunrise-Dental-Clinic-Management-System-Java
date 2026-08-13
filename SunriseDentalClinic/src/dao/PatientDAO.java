@@ -14,8 +14,8 @@ public class PatientDAO {
      * @return true if successful, false otherwise
      */
     public boolean addPatient(Patient patient) {
-        String sql = "INSERT INTO patients (patient_name, gender, address, contact_number, email, "
-                   + "date_of_birth, emergency_contact, emergency_phone, patient_login_id, "
+        String sql = "INSERT INTO patient (patient_name, gender, address, contact_number, email, "
+                   + "date_of_birth, emergency_contact, emergency_phone, user_id, "
                    + "medical_history, allergies) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DBconnection.getConnection();
@@ -30,7 +30,7 @@ public class PatientDAO {
             pstmt.setString(7, patient.getEmergencyContact());
             pstmt.setString(8, patient.getEmergencyPhone());
             
-            // Handle patient_login_id - if -1 or 0, set to NULL
+            // Handle user_id - if -1 or 0, set to NULL
             if (patient.getPatientLoginId() > 0) {
                 pstmt.setInt(9, patient.getPatientLoginId());
             } else {
@@ -62,7 +62,7 @@ public class PatientDAO {
      * @return Patient object if found, null otherwise
      */
     public Patient getPatientById(int patientId) {
-        String sql = "SELECT * FROM patients WHERE patient_id = ?";
+        String sql = "SELECT * FROM patient WHERE patient_id = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -81,24 +81,24 @@ public class PatientDAO {
     }
 
     /**
-     * Get patient by login ID (user ID)
-     * @param loginId The user login ID
+     * Get patient by user ID (login ID)
+     * @param userId The user ID
      * @return Patient object if found, null otherwise
      */
-    public Patient getPatientByLoginId(int loginId) {
-        String sql = "SELECT * FROM patients WHERE patient_login_id = ?";
+    public Patient getPatientByUserId(int userId) {
+        String sql = "SELECT * FROM patient WHERE user_id = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setInt(1, loginId);
+            pstmt.setInt(1, userId);
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
                 return mapResultSetToPatient(rs);
             }
         } catch (SQLException e) {
-            System.err.println("Error getting patient by login ID: " + e.getMessage());
+            System.err.println("Error getting patient by user ID: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -110,7 +110,7 @@ public class PatientDAO {
      */
     public List<Patient> getAllPatients() {
         List<Patient> patients = new ArrayList<>();
-        String sql = "SELECT * FROM patients ORDER BY patient_name";
+        String sql = "SELECT * FROM patient ORDER BY patient_name";
         
         try (Connection conn = DBconnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -133,7 +133,7 @@ public class PatientDAO {
      */
     public List<Patient> searchPatients(String searchTerm) {
         List<Patient> patients = new ArrayList<>();
-        String sql = "SELECT * FROM patients WHERE patient_name LIKE ? OR contact_number LIKE ? OR email LIKE ?";
+        String sql = "SELECT * FROM patient WHERE patient_name LIKE ? OR contact_number LIKE ? OR email LIKE ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -161,8 +161,8 @@ public class PatientDAO {
      * @return true if successful, false otherwise
      */
     public boolean updatePatient(Patient patient) {
-        String sql = "UPDATE patients SET patient_name=?, gender=?, address=?, contact_number=?, email=?, "
-                   + "date_of_birth=?, emergency_contact=?, emergency_phone=?, patient_login_id=?, "
+        String sql = "UPDATE patient SET patient_name=?, gender=?, address=?, contact_number=?, email=?, "
+                   + "date_of_birth=?, emergency_contact=?, emergency_phone=?, user_id=?, "
                    + "medical_history=?, allergies=? WHERE patient_id=?";
         
         try (Connection conn = DBconnection.getConnection();
@@ -177,7 +177,7 @@ public class PatientDAO {
             pstmt.setString(7, patient.getEmergencyContact());
             pstmt.setString(8, patient.getEmergencyPhone());
             
-            // Handle patient_login_id - if -1 or 0, set to NULL
+            // Handle user_id - if -1 or 0, set to NULL
             if (patient.getPatientLoginId() > 0) {
                 pstmt.setInt(9, patient.getPatientLoginId());
             } else {
@@ -202,7 +202,7 @@ public class PatientDAO {
      * @return true if successful, false otherwise
      */
     public boolean deletePatient(int patientId) {
-        String sql = "DELETE FROM patients WHERE patient_id = ?";
+        String sql = "DELETE FROM patient WHERE patient_id = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -221,7 +221,7 @@ public class PatientDAO {
      * @return Total number of patients
      */
     public int getPatientCount() {
-        String sql = "SELECT COUNT(*) FROM patients";
+        String sql = "SELECT COUNT(*) FROM patient";
         
         try (Connection conn = DBconnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -244,7 +244,7 @@ public class PatientDAO {
      * @return true if email exists, false otherwise
      */
     public boolean emailExists(String email, int excludePatientId) {
-        String sql = "SELECT COUNT(*) FROM patients WHERE email = ? AND patient_id != ?";
+        String sql = "SELECT COUNT(*) FROM patient WHERE email = ? AND patient_id != ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -270,7 +270,7 @@ public class PatientDAO {
      * @return true if contact number exists, false otherwise
      */
     public boolean contactNumberExists(String contactNumber, int excludePatientId) {
-        String sql = "SELECT COUNT(*) FROM patients WHERE contact_number = ? AND patient_id != ?";
+        String sql = "SELECT COUNT(*) FROM patient WHERE contact_number = ? AND patient_id != ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -296,7 +296,7 @@ public class PatientDAO {
      * @return true if successful, false otherwise
      */
     public boolean linkPatientToUser(int patientId, int userId) {
-        String sql = "UPDATE patients SET patient_login_id = ? WHERE patient_id = ?";
+        String sql = "UPDATE patient SET user_id = ? WHERE patient_id = ?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -329,70 +329,70 @@ public class PatientDAO {
         patient.setEmergencyContact(rs.getString("emergency_contact"));
         patient.setEmergencyPhone(rs.getString("emergency_phone"));
         
-        // Handle NULL patient_login_id
-        int loginId = rs.getInt("patient_login_id");
+        // Handle NULL user_id (was patient_login_id)
+        int userId = rs.getInt("user_id");
         if (rs.wasNull()) {
             patient.setPatientLoginId(-1); // -1 means NULL
         } else {
-            patient.setPatientLoginId(loginId);
+            patient.setPatientLoginId(userId);
         }
         
-        patient.setCreatedAt(rs.getString("created_at"));
-        patient.setUpdatedAt(rs.getString("updated_at"));
         patient.setMedicalHistory(rs.getString("medical_history"));
         patient.setAllergies(rs.getString("allergies"));
+        patient.setCreatedAt(rs.getString("created_at"));
+        patient.setUpdatedAt(rs.getString("updated_at"));
         return patient;
     }
     
     /**
- * Get recent patients (limited number)
- * @param limit Number of recent patients to get
- * @return List of recent patients
- */
-public List<Patient> getRecentPatients(int limit) {
-    List<Patient> patients = new ArrayList<>();
-    String sql = "SELECT * FROM patients ORDER BY created_at DESC LIMIT ?";
-    
-    try (Connection conn = DBconnection.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+     * Get recent patients (limited number)
+     * @param limit Number of recent patients to get
+     * @return List of recent patients
+     */
+    public List<Patient> getRecentPatients(int limit) {
+        List<Patient> patients = new ArrayList<>();
+        String sql = "SELECT * FROM patient ORDER BY created_at DESC LIMIT ?";
         
-        pstmt.setInt(1, limit);
-        ResultSet rs = pstmt.executeQuery();
-        
-        while (rs.next()) {
-            patients.add(mapResultSetToPatient(rs));
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, limit);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                patients.add(mapResultSetToPatient(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting recent patients: " + e.getMessage());
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        System.err.println("Error getting recent patients: " + e.getMessage());
-        e.printStackTrace();
+        return patients;
     }
-    return patients;
-}
 
-/**
- * Get patients with pagination
- * @param offset The offset (starting point)
- * @param limit The number of records to fetch
- * @return List of patients
- */
-public List<Patient> getPatientsPaginated(int offset, int limit) {
-    List<Patient> patients = new ArrayList<>();
-    String sql = "SELECT * FROM patients ORDER BY patient_name LIMIT ? OFFSET ?";
-    
-    try (Connection conn = DBconnection.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    /**
+     * Get patients with pagination
+     * @param offset The offset (starting point)
+     * @param limit The number of records to fetch
+     * @return List of patients
+     */
+    public List<Patient> getPatientsPaginated(int offset, int limit) {
+        List<Patient> patients = new ArrayList<>();
+        String sql = "SELECT * FROM patient ORDER BY patient_name LIMIT ? OFFSET ?";
         
-        pstmt.setInt(1, limit);
-        pstmt.setInt(2, offset);
-        ResultSet rs = pstmt.executeQuery();
-        
-        while (rs.next()) {
-            patients.add(mapResultSetToPatient(rs));
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, limit);
+            pstmt.setInt(2, offset);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                patients.add(mapResultSetToPatient(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting patients with pagination: " + e.getMessage());
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        System.err.println("Error getting patients with pagination: " + e.getMessage());
-        e.printStackTrace();
+        return patients;
     }
-    return patients;
-}
 }

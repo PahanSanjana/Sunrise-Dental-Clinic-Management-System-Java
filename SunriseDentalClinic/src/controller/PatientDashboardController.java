@@ -35,11 +35,11 @@ public class PatientDashboardController {
         // Get user ID from session
         int userId = LoginSession.getInstance().getCurrentUserId();
         if (userId > 0) {
-            Patient patient = patientDAO.getPatientByLoginId(userId);
-            if (patient != null) {
-                return patient.getPatientId();
-            }
-        }
+    Patient patient = patientDAO.getPatientByUserId(userId);  // ✅ FIXED
+    if (patient != null) {
+        return patient.getPatientId();
+    }
+}
         return -1; // No patient found
     }
 

@@ -212,9 +212,9 @@ public class PatientController {
      * @param loginId The user login ID
      * @return Patient object if found, null otherwise
      */
-    public Patient getPatientByLoginId(int loginId) {
-        return patientDAO.getPatientByLoginId(loginId);
-    }
+ public Patient getPatientByUserId(int userId) {
+    return patientDAO.getPatientByUserId(userId);  // ✅ FIXED
+}
 
     /**
      * Get all patients

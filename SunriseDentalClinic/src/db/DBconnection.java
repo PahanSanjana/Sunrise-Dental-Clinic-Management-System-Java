@@ -1,37 +1,25 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
-/**
- *
- * @author HP
- */
 public class DBconnection {
     
+    private static final String URL = "jdbc:mysql://localhost:3306/sunrise_dental?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
+    
     public static Connection getConnection() {
-
-        Connection con = null;
-
         try {
-            // Using the modern driver class name for Connector/J 8.x / 9.x
-            Class.forName("com.mysql.cj.jdbc.Driver");
-
-            // Updated database name to sunrise_dental
-            String url = "jdbc:mysql://127.0.0.1:3306/sunrise_dental_db?useSSL=false&serverTimezone=UTC";
-
-            con = DriverManager.getConnection(url, "root", "");
-
-            System.out.println("Database Connected Successfully!");
-
-        } catch (Exception e) {
+            // Register driver (no need for Class.forName in newer versions)
+            Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+            System.out.println("✅ Database Connected Successfully!");
+            return con;
+        } catch (SQLException e) {
+            System.err.println("❌ Database Connection Failed: " + e.getMessage());
             e.printStackTrace();
+            return null;
         }
-
-        return con;
     }
 }

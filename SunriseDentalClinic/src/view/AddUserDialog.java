@@ -72,6 +72,7 @@ public class AddUserDialog extends JDialog {
     private JLabel statusLabel;
     private UserController controller;
     private UserRole selectedRole;
+    private int createdBy; // Moved to class level
 
     public AddUserDialog(JFrame parent, UserController controller) {
         super(parent, "Add New User", true);
@@ -588,7 +589,7 @@ public class AddUserDialog extends JDialog {
     }
 
     // ========================
-    // Create User Logic
+    // Create User Logic - FIXED
     // ========================
 
     private void createUser() {
@@ -677,9 +678,8 @@ public class AddUserDialog extends JDialog {
             return;
         }
 
-        // Get the current user ID as creator
-        // FIXED: Get the current user from LoginSession
-        int createdBy = 0;
+        // FIXED: Get the current user ID as creator
+        createdBy = 0;
         User currentUser = LoginSession.getInstance().getCurrentUser();
         if (currentUser != null) {
             createdBy = currentUser.getUserId();
@@ -689,10 +689,14 @@ public class AddUserDialog extends JDialog {
         setCursor(new Cursor(Cursor.WAIT_CURSOR));
         saveButton.setEnabled(false);
 
+        // FIXED: Make createdBy final or effectively final
+        final int creatorId = createdBy;
+        
         SwingWorker<User, Void> worker = new SwingWorker<User, Void>() {
             @Override
             protected User doInBackground() throws Exception {
-                return controller.createUserWithProfile(username, password, email, userRole, createdBy, profileData);
+                // Use the final variable creatorId instead of createdBy
+                return controller.createUserWithProfile(username, password, email, userRole, creatorId, profileData);
             }
 
             @Override
