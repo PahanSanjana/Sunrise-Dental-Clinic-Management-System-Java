@@ -26,7 +26,7 @@ public class UserController {
     }
 
     // =====================================================
-    // CREATE METHODS
+    // CREATE USER WITH PROFILE (FOR ADMIN)
     // =====================================================
 
     /**
@@ -42,6 +42,25 @@ public class UserController {
     public User createUserWithProfile(String username, String password, String email,
                                       UserRole role, int createdBy, Map<String, Object> profileData) {
         return userDAO.createUserWithProfile(username, password, email, role, createdBy, profileData);
+    }
+
+    // =====================================================
+    // CREATE PATIENT USER (FOR SIGNUP)
+    // =====================================================
+
+    /**
+     * Create a new patient user with default PATIENT role (for signup)
+     * @param username The username
+     * @param password The plain text password
+     * @param salt The salt
+     * @param fullName The full name
+     * @param email The email
+     * @param phone The phone number
+     * @return The created User object if successful, null otherwise
+     */
+    public User createPatientUser(String username, String password, String salt, 
+                                  String fullName, String email, String phone) {
+        return userDAO.createPatientUser(username, password, salt, fullName, email, phone);
     }
 
     /**
@@ -129,7 +148,6 @@ public class UserController {
      * @return true if successful, false otherwise
      */
     public boolean changePassword(int userId, String newPassword) {
-        // In production, hash the password with salt
         String salt = "salt_" + System.currentTimeMillis();
         return userDAO.changePassword(userId, newPassword, salt);
     }
@@ -360,13 +378,10 @@ public class UserController {
         // Check based on role
         switch (user.getRole()) {
             case RECEPTION:
-                // Check staff table
                 return checkStaffProfile(userId);
             case DENTIST:
-                // Check dentist table
                 return checkDentistProfile(userId);
             case PATIENT:
-                // Check patient table
                 return checkPatientProfile(userId);
             default:
                 return false;

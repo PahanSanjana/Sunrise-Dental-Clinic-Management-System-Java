@@ -677,11 +677,12 @@ public class AddUserDialog extends JDialog {
             return;
         }
 
-        // Get the current user ID as creator - FIXED
-        int createdBy = LoginSession.getInstance().getCurrentUserId();
-        if (createdBy <= 0) {
-            // If no user logged in (shouldn't happen), use 0
-            createdBy = 0;
+        // Get the current user ID as creator
+        // FIXED: Get the current user from LoginSession
+        int createdBy = 0;
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            createdBy = currentUser.getUserId();
         }
 
         showInfo("Creating user account... Please wait.");
