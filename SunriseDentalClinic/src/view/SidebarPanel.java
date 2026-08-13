@@ -97,6 +97,12 @@ public class SidebarPanel extends JPanel {
         // Dashboard - All roles
         groups.add(new NavGroup(IconType.DASHBOARD, "Dashboard", "DASHBOARD"));
 
+        // User Management - Admin only
+        if (currentRole == UserRole.ADMIN) {
+            NavGroup users = new NavGroup(IconType.USERS, "User Management", "USER_MANAGEMENT");
+            groups.add(users);
+        }
+
         // Patients - All roles can see, but Dentist cannot add
         NavGroup patients = new NavGroup(IconType.PATIENTS, "Patients", null);
         patients.children.add(new NavChild("Patient List", "PATIENT_LIST"));
@@ -184,10 +190,10 @@ public class SidebarPanel extends JPanel {
             audit.children.add(new NavChild("Login History", "AUDIT_LOGIN"));
             groups.add(audit);
         }
-        
-        // Help
-NavGroup help = new NavGroup(IconType.HELP, "Help", "HELP");
-groups.add(help);
+
+        // Help - All roles
+        NavGroup help = new NavGroup(IconType.HELP, "Help", "HELP");
+        groups.add(help);
 
         return groups;
     }
@@ -545,6 +551,21 @@ groups.add(help);
                         g2.drawLine(7, y, 16, y);
                     }
                     break;
+
+                case HELP:
+                    // Question mark icon
+                    g2.drawOval(2, 2, 14, 14);
+                    g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                    g2.drawString("?", 6, 13);
+                    break;
+
+                case USERS:
+                    // User icon - two people
+                    g2.drawOval(2, 2, 5, 5);
+                    g2.drawArc(0, 9, 9, 7, 0, 180);
+                    g2.drawOval(11, 2, 5, 5);
+                    g2.drawArc(9, 9, 9, 7, 0, 180);
+                    break;
             }
             g2.dispose();
         }
@@ -576,6 +597,6 @@ groups.add(help);
 
     // IconType enum
     private enum IconType {
-        DASHBOARD, PATIENTS, APPOINTMENTS, BILLING, REPORTS, STAFF, DENTISTS, TREATMENTS, AUDIT, HELP
+        DASHBOARD, USERS, PATIENTS, APPOINTMENTS, BILLING, REPORTS, STAFF, DENTISTS, TREATMENTS, AUDIT, HELP
     }
 }

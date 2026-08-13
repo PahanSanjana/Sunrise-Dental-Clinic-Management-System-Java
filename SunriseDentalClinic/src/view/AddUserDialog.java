@@ -67,8 +67,8 @@ public class AddUserDialog extends JDialog {
     private JTextArea patientMedicalHistoryArea;
     private JTextArea patientAllergiesArea;
     
-    private JButton saveButton;
-    private JButton cancelButton;
+    private RoundedButton saveButton;
+    private RoundedButton cancelButton;
     private JLabel statusLabel;
     private UserController controller;
     private UserRole selectedRole;
@@ -677,7 +677,7 @@ public class AddUserDialog extends JDialog {
             return;
         }
 
-        // Create user
+        // Get the current user ID as creator - FIXED
         int createdBy = LoginSession.getInstance().getCurrentUserId();
         if (createdBy <= 0) {
             // If no user logged in (shouldn't happen), use 0

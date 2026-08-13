@@ -50,6 +50,24 @@ public class MainFrame extends JFrame {
         System.out.println("MainFrame: Added DASHBOARD placeholder");
 
         // =====================================================
+        // USER MANAGEMENT SCREENS (Admin only)
+        // =====================================================
+        
+        // User Management
+        try {
+            UserManagementPanel userManagementPanel = new UserManagementPanel();
+            userManagementPanel.setName("USER_MANAGEMENT");
+            contentPanel.add(userManagementPanel, "USER_MANAGEMENT");
+            System.out.println("MainFrame: Added USER_MANAGEMENT card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating UserManagementPanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel("User Management");
+            placeholder.setName("USER_MANAGEMENT");
+            contentPanel.add(placeholder, "USER_MANAGEMENT");
+        }
+
+        // =====================================================
         // PATIENT SCREENS
         // =====================================================
         

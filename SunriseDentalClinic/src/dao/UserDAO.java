@@ -45,7 +45,7 @@ public class UserDAO {
     }
 
     // =====================================================
-    // CREATE USER WITH PROFILE (MAIN METHOD)
+    // CREATE USER WITH PROFILE (ADMIN METHOD)
     // =====================================================
 
     /**
@@ -159,7 +159,98 @@ public class UserDAO {
     }
 
     // =====================================================
-    // PROFILE CREATION METHODS
+    // CREATE PATIENT USER (SIGNUP METHOD)
+    // =====================================================
+
+    /**
+     * Create a new patient user with default PATIENT role (for signup)
+     * @param username The username
+     * @param passwordHash The hashed password (plain text for demo)
+     * @param salt The salt
+     * @param fullName The full name
+     * @param email The email
+     * @param phone The phone number
+     * @return The created User object if successful, null otherwise
+     */
+    public User createPatientUser(String username, String passwordHash, String salt, 
+                                  String fullName, String email, String phone) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DBconnection.getConnection();
+            conn.setAutoCommit(false);
+            
+            // First, create the user with PATIENT role
+            String userSql = "INSERT INTO users (username, password_hash, salt, email, role, is_active) "
+                           + "VALUES (?, ?, ?, ?, 'PATIENT', 1)";
+            pstmt = conn.prepareStatement(userSql, Statement.RETURN_GENERATED_KEYS);
+            pstmt.setString(1, username);
+            pstmt.setString(2, passwordHash);
+            pstmt.setString(3, salt);
+            pstmt.setString(4, email);
+            
+            int affectedRows = pstmt.executeUpdate();
+            
+            if (affectedRows == 0) {
+                conn.rollback();
+                return null;
+            }
+            
+            rs = pstmt.getGeneratedKeys();
+            int userId = 0;
+            if (rs.next()) {
+                userId = rs.getInt(1);
+            } else {
+                conn.rollback();
+                return null;
+            }
+            
+            // Close the first statement
+            pstmt.close();
+            
+            // Then, create the patient record
+            String patientSql = "INSERT INTO patients (user_id, patient_name, email, contact_number) "
+                              + "VALUES (?, ?, ?, ?)";
+            pstmt = conn.prepareStatement(patientSql);
+            pstmt.setInt(1, userId);
+            pstmt.setString(2, fullName);
+            pstmt.setString(3, email);
+            pstmt.setString(4, phone);
+            
+            pstmt.executeUpdate();
+            
+            conn.commit();
+            
+            // Return the created user
+            return getUserById(userId);
+            
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            System.err.println("Error creating patient user: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // =====================================================
+    // PROFILE CREATION METHODS (For Admin)
     // =====================================================
 
     /**

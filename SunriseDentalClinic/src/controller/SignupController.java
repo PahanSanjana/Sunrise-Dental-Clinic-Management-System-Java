@@ -1,7 +1,6 @@
 package controller;
 
 import dao.UserDAO;
-import java.awt.Cursor;
 import model.User;
 import view.Signup;
 import view.Login;
@@ -21,13 +20,10 @@ public class SignupController {
 
     private void initController() {
         signupView.addSignupListener(e -> handleSignup());
-        
-        // Updated: Navigate to Welcome page on Cancel
         signupView.addCancelListener(e -> {
             signupView.dispose();
             openWelcomeView();
         });
-        
         signupView.addLoginLinkListener(e -> {
             signupView.dispose();
             openLoginView();
@@ -135,6 +131,9 @@ public class SignupController {
         SwingWorker<User, Void> worker = new SwingWorker<User, Void>() {
             @Override
             protected User doInBackground() throws Exception {
+                // FIXED: Correct parameter order
+                // createPatientUser(String username, String passwordHash, String salt, 
+                //                   String fullName, String email, String phone)
                 return userDAO.createPatientUser(username, password, salt, fullName, email, phone);
             }
 
