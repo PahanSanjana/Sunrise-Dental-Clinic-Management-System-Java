@@ -53,39 +53,60 @@ public class DentistListPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header Panel
-        add(createHeaderPanel(), BorderLayout.NORTH);
+        // Title Panel - At the top
+        add(createTitlePanel(), BorderLayout.NORTH);
+        
+        // Main Content Panel
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(15, 15, 15, 15)
+        ));
+
+        // Search Panel
+        mainPanel.add(createSearchPanel(), BorderLayout.NORTH);
         
         // Table Panel
-        add(createTablePanel(), BorderLayout.CENTER);
+        mainPanel.add(createTablePanel(), BorderLayout.CENTER);
         
         // Footer Panel
-        add(createFooterPanel(), BorderLayout.SOUTH);
+        mainPanel.add(createFooterPanel(), BorderLayout.SOUTH);
+
+        add(mainPanel, BorderLayout.CENTER);
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(SOFT_SURFACE);
-        header.setBorder(new EmptyBorder(0, 0, 15, 0));
-
-        // Title
+    /**
+     * ✅ Title Panel - Separate from other content
+     */
+    private JPanel createTitlePanel() {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
-        titlePanel.setOpaque(false);
+        titlePanel.setBackground(SOFT_SURFACE);
+        titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Dentist Management");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("Manage all dentists in the system");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
+        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         titlePanel.add(titleLabel);
+        titlePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         titlePanel.add(subtitleLabel);
+        
+        return titlePanel;
+    }
 
-        // Search Panel
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+    /**
+     * ✅ Search Panel - Search and filter controls
+     */
+    private JPanel createSearchPanel() {
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         searchPanel.setOpaque(false);
 
         // Filter dropdown
@@ -131,19 +152,15 @@ public class DentistListPanel extends JPanel {
         searchPanel.add(addButton);
         searchPanel.add(refreshButton);
 
-        header.add(titlePanel, BorderLayout.WEST);
-        header.add(searchPanel, BorderLayout.EAST);
-
-        return header;
+        return searchPanel;
     }
 
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
 
-        // Create table model
-        String[] columns = {"ID", "Dentist Name", "Specialization", "Phone", "Email", "Experience", "Fee", "Status", "Actions"};
+        // ✅ Removed "Actions" column - No buttons inside table
+        String[] columns = {"ID", "Dentist Name", "Specialization", "Phone", "Email", "Experience", "Fee", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -168,8 +185,6 @@ public class DentistListPanel extends JPanel {
         dentistTable.getColumnModel().getColumn(5).setMaxWidth(80);
         dentistTable.getColumnModel().getColumn(6).setMaxWidth(80);
         dentistTable.getColumnModel().getColumn(7).setMaxWidth(100);
-        dentistTable.getColumnModel().getColumn(8).setMaxWidth(200);
-        dentistTable.getColumnModel().getColumn(8).setMinWidth(180);
 
         // Custom header
         JTableHeader header = dentistTable.getTableHeader();
@@ -177,6 +192,9 @@ public class DentistListPanel extends JPanel {
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_DARK));
+
+        // Custom cell renderer for status column
+        dentistTable.getColumnModel().getColumn(7).setCellRenderer(new StatusCellRenderer());
 
         // Add mouse listener for double click to view
         dentistTable.addMouseListener(new MouseAdapter() {
@@ -186,33 +204,6 @@ public class DentistListPanel extends JPanel {
                     int row = dentistTable.getSelectedRow();
                     if (row != -1) {
                         viewDentist(row);
-                    }
-                }
-            }
-        });
-
-        // Action buttons for each row
-        dentistTable.getColumnModel().getColumn(8).setCellRenderer(new ActionButtonRenderer());
-        dentistTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int column = dentistTable.getColumnModel().getColumnIndex("Actions");
-                int row = dentistTable.rowAtPoint(e.getPoint());
-                int col = dentistTable.columnAtPoint(e.getPoint());
-                
-                if (row >= 0 && col == column) {
-                    int x = e.getX();
-                    int cellWidth = dentistTable.getCellRect(row, col, true).width;
-                    int buttonWidth = cellWidth / 4;
-                    
-                    if (x < buttonWidth) {
-                        viewDentist(row);
-                    } else if (x < buttonWidth * 2) {
-                        editDentist(row);
-                    } else if (x < buttonWidth * 3) {
-                        toggleAvailability(row);
-                    } else {
-                        deleteDentist(row);
                     }
                 }
             }
@@ -240,7 +231,7 @@ public class DentistListPanel extends JPanel {
         countLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         countLabel.setForeground(new Color(107, 123, 121));
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
         
         viewButton = createStyledButton("View", SOFT_SURFACE, PRIMARY_DARK);
@@ -373,60 +364,38 @@ public class DentistListPanel extends JPanel {
         }
     }
 
-    // Action Button Renderer for table
-    private class ActionButtonRenderer extends javax.swing.table.DefaultTableCellRenderer {
+    // Status Cell Renderer
+    private class StatusCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
             
-            JPanel panel = new JPanel(new GridLayout(1, 4, 3, 3));
-            panel.setOpaque(true);
-            panel.setBackground(isSelected ? new Color(235, 245, 240) : Color.WHITE);
-            panel.setBorder(BorderFactory.createEmptyBorder(2, 3, 2, 3));
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             
-            JButton viewBtn = new JButton("View");
-            viewBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            viewBtn.setBackground(MINT);
-            viewBtn.setForeground(PRIMARY_DARK);
-            viewBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            viewBtn.setFocusPainted(false);
-            viewBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            JButton editBtn = new JButton("Edit");
-            editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            editBtn.setBackground(new Color(200, 220, 240));
-            editBtn.setForeground(PRIMARY_DARK);
-            editBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            editBtn.setFocusPainted(false);
-            editBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            // Check availability from table data
-            String status = (String) table.getValueAt(row, 7);
-            boolean isAvailable = "Available".equals(status);
-            
-            JButton statusBtn = new JButton(isAvailable ? "Available" : "Unavailable");
-            statusBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            statusBtn.setBackground(isAvailable ? AVAILABLE_COLOR : UNAVAILABLE_COLOR);
-            statusBtn.setForeground(Color.WHITE);
-            statusBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            statusBtn.setFocusPainted(false);
-            statusBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            JButton delBtn = new JButton("Delete");
-            delBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            delBtn.setBackground(new Color(240, 200, 200));
-            delBtn.setForeground(ERROR_COLOR);
-            delBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            delBtn.setFocusPainted(false);
-            delBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            panel.add(viewBtn);
-            panel.add(editBtn);
-            panel.add(statusBtn);
-            panel.add(delBtn);
-            
-            return panel;
+            if (value != null) {
+                String status = value.toString();
+                JLabel label = (JLabel) c;
+                label.setOpaque(true);
+                label.setHorizontalAlignment(SwingConstants.CENTER);
+                label.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 10));
+                
+                if (status.equals("Available")) {
+                    label.setBackground(AVAILABLE_COLOR);
+                    label.setForeground(Color.WHITE);
+                } else if (status.equals("Unavailable")) {
+                    label.setBackground(UNAVAILABLE_COLOR);
+                    label.setForeground(Color.WHITE);
+                } else {
+                    label.setBackground(LIGHT_SURFACE);
+                    label.setForeground(PRIMARY_DARK);
+                }
+            }
+            return c;
         }
+    }
+
+    private static class MouseAdapter extends java.awt.event.MouseAdapter {
+        // Empty implementation
     }
 
     // ========================
@@ -437,7 +406,6 @@ public class DentistListPanel extends JPanel {
         String searchText = searchField != null ? searchField.getText().trim() : "";
         String filter = filterCombo != null ? (String) filterCombo.getSelectedItem() : "All";
         
-        // Use SwingWorker to load in background
         SwingWorker<List<Dentist>, Void> worker = new SwingWorker<List<Dentist>, Void>() {
             @Override
             protected List<Dentist> doInBackground() throws Exception {
@@ -449,7 +417,6 @@ public class DentistListPanel extends JPanel {
                     dentists = controller.getAllDentists();
                 }
                 
-                // Apply filter
                 if (filter != null && dentists != null) {
                     if ("Available".equals(filter)) {
                         dentists.removeIf(d -> !d.isAvailable());
@@ -498,8 +465,7 @@ public class DentistListPanel extends JPanel {
                 dentist.getEmail() != null ? dentist.getEmail() : "N/A",
                 dentist.getYearsOfExperience() + " yrs",
                 "$" + df.format(dentist.getConsultationFee()),
-                status,
-                "Actions"
+                status
             };
             tableModel.addRow(row);
         }
@@ -511,7 +477,6 @@ public class DentistListPanel extends JPanel {
     public void viewDentist(int row) {
         int dentistId = (int) tableModel.getValueAt(row, 0);
         
-        // Navigate to dentist details
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
@@ -519,10 +484,8 @@ public class DentistListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            // Get the dentist from database
             Dentist dentist = controller.getDentistById(dentistId);
             if (dentist != null) {
-                // Create a new details panel with the dentist
                 DentistDetailsPanel detailsPanel = new DentistDetailsPanel(dentist);
                 detailsPanel.setName("DENTIST_DETAILS");
                 mainFrame.addScreen("DENTIST_DETAILS", detailsPanel);
@@ -536,7 +499,6 @@ public class DentistListPanel extends JPanel {
     public void editDentist(int row) {
         int dentistId = (int) tableModel.getValueAt(row, 0);
         
-        // Navigate to dentist details in edit mode
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
@@ -544,15 +506,12 @@ public class DentistListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            // Get the dentist from database
             Dentist dentist = controller.getDentistById(dentistId);
             if (dentist != null) {
-                // Create a new details panel with the dentist
                 DentistDetailsPanel detailsPanel = new DentistDetailsPanel(dentist);
                 detailsPanel.setName("DENTIST_DETAILS");
                 mainFrame.addScreen("DENTIST_DETAILS", detailsPanel);
                 mainFrame.showCard("DENTIST_DETAILS");
-                // Switch to edit mode
                 detailsPanel.toggleEditMode();
             } else {
                 showError("Dentist not found.");
@@ -579,7 +538,7 @@ public class DentistListPanel extends JPanel {
             boolean success = controller.updateAvailability(dentistId, !isAvailable);
             if (success) {
                 showSuccess("Dentist status updated to " + newStatus + "!");
-                loadDentists(); // Refresh the list
+                loadDentists();
             } else {
                 showError("Failed to update dentist status.");
             }
@@ -602,7 +561,7 @@ public class DentistListPanel extends JPanel {
             boolean success = controller.deleteDentist(dentistId);
             if (success) {
                 showSuccess("Dentist deleted successfully!");
-                loadDentists(); // Refresh the list
+                loadDentists();
             } else {
                 showError("Failed to delete dentist.");
             }
