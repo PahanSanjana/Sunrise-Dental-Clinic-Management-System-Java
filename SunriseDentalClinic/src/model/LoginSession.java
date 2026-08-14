@@ -15,6 +15,11 @@ public class LoginSession {
         return instance;
     }
 
+    // ✅ NEW: Login method
+    public void login(User user) {
+        this.currentUser = user;
+    }
+
     public void setCurrentUser(User user) {
         this.currentUser = user;
     }

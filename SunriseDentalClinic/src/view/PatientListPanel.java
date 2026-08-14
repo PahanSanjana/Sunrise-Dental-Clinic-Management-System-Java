@@ -49,39 +49,60 @@ public class PatientListPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header Panel
-        add(createHeaderPanel(), BorderLayout.NORTH);
+        // Title Panel - At the top
+        add(createTitlePanel(), BorderLayout.NORTH);
+        
+        // Main Content Panel
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(15, 15, 15, 15)
+        ));
+
+        // Search Panel
+        mainPanel.add(createSearchPanel(), BorderLayout.NORTH);
         
         // Table Panel
-        add(createTablePanel(), BorderLayout.CENTER);
+        mainPanel.add(createTablePanel(), BorderLayout.CENTER);
         
         // Footer Panel
-        add(createFooterPanel(), BorderLayout.SOUTH);
+        mainPanel.add(createFooterPanel(), BorderLayout.SOUTH);
+
+        add(mainPanel, BorderLayout.CENTER);
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(SOFT_SURFACE);
-        header.setBorder(new EmptyBorder(0, 0, 15, 0));
-
-        // Title
+    /**
+     * ✅ Title Panel - Separate from other content
+     */
+    private JPanel createTitlePanel() {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
-        titlePanel.setOpaque(false);
+        titlePanel.setBackground(SOFT_SURFACE);
+        titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Patient Management");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("Manage all patient records in the system");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
+        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         titlePanel.add(titleLabel);
+        titlePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         titlePanel.add(subtitleLabel);
+        
+        return titlePanel;
+    }
 
-        // Search Panel
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+    /**
+     * ✅ Search Panel - Search and filter controls
+     */
+    private JPanel createSearchPanel() {
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         searchPanel.setOpaque(false);
 
         // Filter dropdown
@@ -127,19 +148,15 @@ public class PatientListPanel extends JPanel {
         searchPanel.add(addButton);
         searchPanel.add(refreshButton);
 
-        header.add(titlePanel, BorderLayout.WEST);
-        header.add(searchPanel, BorderLayout.EAST);
-
-        return header;
+        return searchPanel;
     }
 
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
 
-        // Create table model
-        String[] columns = {"ID", "Patient Name", "Gender", "Contact", "Email", "Date of Birth", "Actions"};
+        // ✅ Removed "Actions" column - No buttons inside table
+        String[] columns = {"ID", "Patient Name", "Gender", "Contact", "Email", "Date of Birth"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -161,8 +178,6 @@ public class PatientListPanel extends JPanel {
         patientTable.getColumnModel().getColumn(0).setMinWidth(50);
         patientTable.getColumnModel().getColumn(2).setMaxWidth(100);
         patientTable.getColumnModel().getColumn(3).setMaxWidth(150);
-        patientTable.getColumnModel().getColumn(6).setMaxWidth(180);
-        patientTable.getColumnModel().getColumn(6).setMinWidth(150);
 
         // Custom header
         JTableHeader header = patientTable.getTableHeader();
@@ -179,31 +194,6 @@ public class PatientListPanel extends JPanel {
                     int row = patientTable.getSelectedRow();
                     if (row != -1) {
                         viewPatient(row);
-                    }
-                }
-            }
-        });
-
-        // Action buttons for each row
-        patientTable.getColumnModel().getColumn(6).setCellRenderer(new ActionButtonRenderer());
-        patientTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int column = patientTable.getColumnModel().getColumnIndex("Actions");
-                int row = patientTable.rowAtPoint(e.getPoint());
-                int col = patientTable.columnAtPoint(e.getPoint());
-                
-                if (row >= 0 && col == column) {
-                    int x = e.getX();
-                    int cellWidth = patientTable.getCellRect(row, col, true).width;
-                    int buttonWidth = cellWidth / 3;
-                    
-                    if (x < buttonWidth) {
-                        viewPatient(row);
-                    } else if (x < buttonWidth * 2) {
-                        editPatient(row);
-                    } else {
-                        deletePatient(row);
                     }
                 }
             }
@@ -231,7 +221,7 @@ public class PatientListPanel extends JPanel {
         countLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         countLabel.setForeground(new Color(107, 123, 121));
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
         
         viewButton = createStyledButton("View", SOFT_SURFACE, PRIMARY_DARK);
@@ -351,47 +341,8 @@ public class PatientListPanel extends JPanel {
         }
     }
 
-    // Action Button Renderer for table
-    private class ActionButtonRenderer extends javax.swing.table.DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-            
-            JPanel panel = new JPanel(new GridLayout(1, 3, 5, 5));
-            panel.setOpaque(true);
-            panel.setBackground(isSelected ? new Color(235, 245, 240) : Color.WHITE);
-            panel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            
-            JButton viewBtn = new JButton("View");
-            viewBtn.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-            viewBtn.setBackground(MINT);
-            viewBtn.setForeground(PRIMARY_DARK);
-            viewBtn.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
-            viewBtn.setFocusPainted(false);
-            viewBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            JButton editBtn = new JButton("Edit");
-            editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-            editBtn.setBackground(new Color(200, 220, 240));
-            editBtn.setForeground(PRIMARY_DARK);
-            editBtn.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
-            editBtn.setFocusPainted(false);
-            editBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            JButton delBtn = new JButton("Delete");
-            delBtn.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-            delBtn.setBackground(new Color(240, 200, 200));
-            delBtn.setForeground(ERROR_COLOR);
-            delBtn.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
-            delBtn.setFocusPainted(false);
-            delBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            panel.add(viewBtn);
-            panel.add(editBtn);
-            panel.add(delBtn);
-            
-            return panel;
-        }
+    private static class MouseAdapter extends java.awt.event.MouseAdapter {
+        // Empty implementation
     }
 
     // ========================
@@ -427,8 +378,7 @@ public class PatientListPanel extends JPanel {
                 patient.getGender() != null ? patient.getGender() : "N/A",
                 patient.getContactNumber(),
                 patient.getEmail() != null && !patient.getEmail().isEmpty() ? patient.getEmail() : "N/A",
-                patient.getDateOfBirth() != null ? sdf.format(patient.getDateOfBirth()) : "N/A",
-                "Actions"
+                patient.getDateOfBirth() != null ? sdf.format(patient.getDateOfBirth()) : "N/A"
             };
             tableModel.addRow(row);
         }
@@ -439,9 +389,7 @@ public class PatientListPanel extends JPanel {
 
     public void viewPatient(int row) {
         int patientId = (int) tableModel.getValueAt(row, 0);
-        String patientName = (String) tableModel.getValueAt(row, 1);
         
-        // Navigate to patient details
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
@@ -449,10 +397,8 @@ public class PatientListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            // Get the patient from database
             Patient patient = controller.getPatientById(patientId);
             if (patient != null) {
-                // Create a new details panel with the patient
                 PatientDetailsPanel detailsPanel = new PatientDetailsPanel(patient);
                 detailsPanel.setName("PATIENT_DETAILS");
                 mainFrame.addScreen("PATIENT_DETAILS", detailsPanel);
@@ -465,9 +411,7 @@ public class PatientListPanel extends JPanel {
 
     public void editPatient(int row) {
         int patientId = (int) tableModel.getValueAt(row, 0);
-        String patientName = (String) tableModel.getValueAt(row, 1);
         
-        // Navigate to patient details in edit mode
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
@@ -475,15 +419,12 @@ public class PatientListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            // Get the patient from database
             Patient patient = controller.getPatientById(patientId);
             if (patient != null) {
-                // Create a new details panel with the patient
                 PatientDetailsPanel detailsPanel = new PatientDetailsPanel(patient);
                 detailsPanel.setName("PATIENT_DETAILS");
                 mainFrame.addScreen("PATIENT_DETAILS", detailsPanel);
                 mainFrame.showCard("PATIENT_DETAILS");
-                // Switch to edit mode
                 detailsPanel.toggleEditMode();
             } else {
                 showError("Patient not found.");
@@ -525,9 +466,5 @@ public class PatientListPanel extends JPanel {
     public void showInfo(String message) {
         statusLabel.setText("ℹ️ " + message);
         statusLabel.setForeground(new Color(107, 123, 121));
-    }
-
-    private static class MouseAdapter extends java.awt.event.MouseAdapter {
-        // Empty implementation
     }
 }

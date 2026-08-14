@@ -34,6 +34,19 @@ public class UserProfileController {
     }
 
     // =====================================================
+    // ✅ NEW: Get user by ID from database
+    // =====================================================
+    
+    /**
+     * Get user by ID directly from database (fresh data)
+     * @param userId The user ID
+     * @return User object if found, null otherwise
+     */
+    public User getUserById(int userId) {
+        return userDAO.getUserById(userId);
+    }
+
+    // =====================================================
     // PROFILE DATA LOADING
     // =====================================================
 
@@ -254,6 +267,16 @@ public class UserProfileController {
         staff.setPhone((String) data.get("phone"));
         staff.setEmail((String) data.get("email"));
         staff.setSalary((Double) data.get("salary"));
+        
+        // Update hire date if provided
+        String hireDateStr = (String) data.get("hireDate");
+        if (hireDateStr != null && !hireDateStr.isEmpty()) {
+            try {
+                staff.setHireDate(java.sql.Date.valueOf(hireDateStr));
+            } catch (Exception e) {
+                // Ignore invalid date
+            }
+        }
         
         // Update email in users table too
         updateUserEmail(userId, (String) data.get("email"));

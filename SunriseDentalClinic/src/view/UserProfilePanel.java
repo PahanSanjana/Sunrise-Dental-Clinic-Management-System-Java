@@ -3,6 +3,7 @@ package view;
 import controller.UserProfileController;
 import model.User;
 import model.User.UserRole;
+import model.LoginSession;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -41,7 +42,6 @@ public class UserProfilePanel extends JPanel {
     private JLabel statusMessageLabel;
     private UserProfileController controller;
     private User currentUser;
-    private JFrame parentFrame;
 
     public UserProfilePanel() {
         initComponents();
@@ -393,12 +393,28 @@ public class UserProfilePanel extends JPanel {
     // PUBLIC METHODS FOR CONTROLLER
     // =====================================================
 
+    /**
+     * ✅ FIXED: Load user profile - refreshes from database
+     */
     public void loadUserProfile() {
-        this.currentUser = controller.getCurrentUser();
-        if (currentUser == null) {
+        // ✅ Get current user ID from session
+        int userId = LoginSession.getInstance().getCurrentUserId();
+        
+        if (userId <= 0) {
             showError("No user logged in.");
             return;
         }
+
+        // ✅ Load fresh user data from database
+        this.currentUser = controller.getUserById(userId);
+        
+        if (currentUser == null) {
+            showError("User not found in database.");
+            return;
+        }
+
+        // ✅ Update the session with fresh user data
+        LoginSession.getInstance().setCurrentUser(currentUser);
 
         // Update account info
         usernameLabel.setText(currentUser.getUsername());
@@ -538,7 +554,7 @@ public class UserProfilePanel extends JPanel {
         );
         dialog.setVisible(true);
         
-        // Reload profile after editing
+        // ✅ Reload profile after editing
         loadUserProfile();
     }
 
@@ -554,6 +570,9 @@ public class UserProfilePanel extends JPanel {
             controller
         );
         dialog.setVisible(true);
+        
+        // ✅ Reload profile after password change
+        loadUserProfile();
     }
 
     public void showError(String message) {

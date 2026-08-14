@@ -16,11 +16,13 @@ public class MainFrame extends JFrame {
     private JPanel contentWrapper;
     
     private static final int TOP_BAR_HEIGHT = 72;
+    private static final int FRAME_WIDTH = 1400;
+    private static final int FRAME_HEIGHT = 820;
 
     public MainFrame() {
         setTitle("Sunrise Dental Clinic - Management System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1400, 850);
+        setSize(FRAME_WIDTH, FRAME_HEIGHT);
         setMinimumSize(new Dimension(1100, 700));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -31,10 +33,10 @@ public class MainFrame extends JFrame {
         sidebarPanel = new SidebarPanel(this);
         topBarPanel = new TopBarPanel();
         
-        // ✅ Content wrapper with NO padding - content starts immediately after TopBar
+        // Content wrapper with NO padding - content starts immediately after TopBar
         contentWrapper = new JPanel(new BorderLayout());
         contentWrapper.setBackground(Color.WHITE);
-        contentWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));  // No padding
+        contentWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
         contentWrapper.add(contentPanel, BorderLayout.CENTER);
         
         // Add to frame
@@ -372,36 +374,6 @@ public class MainFrame extends JFrame {
         contentPanel.add(treatmentDetailsPlaceholder, "TREATMENT_DETAILS");
         System.out.println("MainFrame: Added TREATMENT_DETAILS card");
         System.out.println("MainFrame: Added TREATMENT cards");
-
-        // =====================================================
-        // AUDIT SCREENS (Admin only)
-        // =====================================================
-        try {
-            ActivityLogPanel activityLogPanel = new ActivityLogPanel();
-            activityLogPanel.setName("AUDIT_ACTIVITY");
-            contentPanel.add(activityLogPanel, "AUDIT_ACTIVITY");
-            System.out.println("MainFrame: Added AUDIT_ACTIVITY card");
-        } catch (Exception e) {
-            System.err.println("MainFrame: Error creating ActivityLogPanel: " + e.getMessage());
-            e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel();
-            placeholder.setName("AUDIT_ACTIVITY");
-            contentPanel.add(placeholder, "AUDIT_ACTIVITY");
-        }
-        
-        try {
-            LoginHistoryPanel loginHistoryPanel = new LoginHistoryPanel();
-            loginHistoryPanel.setName("AUDIT_LOGIN");
-            contentPanel.add(loginHistoryPanel, "AUDIT_LOGIN");
-            System.out.println("MainFrame: Added AUDIT_LOGIN card");
-        } catch (Exception e) {
-            System.err.println("MainFrame: Error creating LoginHistoryPanel: " + e.getMessage());
-            e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel();
-            placeholder.setName("AUDIT_LOGIN");
-            contentPanel.add(placeholder, "AUDIT_LOGIN");
-        }
-        System.out.println("MainFrame: Added AUDIT cards");
 
         // =====================================================
         // HELP SCREEN

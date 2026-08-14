@@ -25,12 +25,21 @@ public class Signup extends javax.swing.JFrame {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color CARD_BG = new Color(255, 255, 255);
 
+    // Form Fields - Full Patient Details
     private JTextField usernameField;
     private JTextField fullNameField;
+    private JComboBox<String> genderCombo;
+    private JTextField dobField;
     private JTextField emailField;
     private JTextField phoneField;
+    private JTextArea addressArea;
+    private JTextField emergencyContactField;
+    private JTextField emergencyPhoneField;
+    private JTextArea medicalHistoryArea;
+    private JTextArea allergiesArea;
     private JPasswordField passwordField;
     private JPasswordField confirmPasswordField;
+    
     private RoundedButton signupButton;
     private RoundedButton cancelButton;
     private JButton loginLinkButton;
@@ -52,18 +61,12 @@ public class Signup extends javax.swing.JFrame {
         setMinimumSize(new Dimension(1100, 700));
         setResizable(true);
 
-        // Main panel with GridBagLayout for perfect centering
-        JPanel mainPanel = new JPanel(new GridBagLayout());
+        // Main panel with BorderLayout
+        JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(SOFT_SURFACE);
-        mainPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
-
-        GridBagConstraints mainGbc = new GridBagConstraints();
-        mainGbc.fill = GridBagConstraints.BOTH;
-        mainGbc.weightx = 1.0;
-        mainGbc.weighty = 1.0;
 
         // Create the split panel
-        JPanel splitPanel = new JPanel(new GridLayout(1, 2, 0, 0));
+        JPanel splitPanel = new JPanel(new GridLayout(1, 2));
         splitPanel.setBackground(SOFT_SURFACE);
 
         // Left Panel - Signup Form (60% width)
@@ -72,7 +75,7 @@ public class Signup extends javax.swing.JFrame {
         // Right Panel - Welcome Branding (40% width)
         splitPanel.add(createWelcomePanel());
 
-        mainPanel.add(splitPanel, mainGbc);
+        mainPanel.add(splitPanel, BorderLayout.CENTER);
         setContentPane(mainPanel);
     }
 
@@ -80,185 +83,360 @@ public class Signup extends javax.swing.JFrame {
     // LEFT PANEL - Signup Form (Professional Layout)
     // =====================================================
     private JPanel createSignupPanel() {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(SOFT_SURFACE);
-        panel.setLayout(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(35, 60, 35, 60));
+        panel.setBorder(new EmptyBorder(20, 40, 20, 40));
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.weightx = 1.0;
-        gbc.insets = new Insets(0, 0, 0, 0);
+        // Create the form panel with proper layout
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
+        formPanel.setBackground(SOFT_SURFACE);
+        formPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
-        // Row 0: Logo + Brand
-        gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 6, 0);
+        // =============================================
+        // HEADER SECTION
+        // =============================================
+        
+        // Logo + Brand
         JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         brandPanel.setOpaque(false);
+        brandPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel logoLabel = createLogoLabel();
         brandPanel.add(logoLabel);
         
         JLabel brandTitle = new JLabel("SUNRISE DENTAL");
-        brandTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        brandTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         brandTitle.setForeground(PRIMARY_DARK);
         brandPanel.add(brandTitle);
         
-        panel.add(brandPanel, gbc);
+        formPanel.add(brandPanel);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 
-        // Row 1: Title
-        gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 2, 0);
+        // Title
         JLabel titleLabel = new JLabel("Create Account");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
         titleLabel.setForeground(PRIMARY_DARK);
-        panel.add(titleLabel, gbc);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(titleLabel);
 
-        // Row 2: Subtitle
-        gbc.gridy = 2;
-        gbc.insets = new Insets(0, 0, 20, 0);
+        // Subtitle
         JLabel subtitleLabel = new JLabel("Sign up as a new patient");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(SECONDARY_TEXT);
-        panel.add(subtitleLabel, gbc);
+        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(subtitleLabel);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // Row 3: Form Fields Container
-        gbc.gridy = 3;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setOpaque(false);
-        formPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
-
-        GridBagConstraints fGbc = new GridBagConstraints();
-        fGbc.gridx = 0;
-        fGbc.fill = GridBagConstraints.HORIZONTAL;
-        fGbc.anchor = GridBagConstraints.WEST;
-        fGbc.weightx = 1.0;
-
-        int row = 0;
+        // =============================================
+        // FORM FIELDS CONTAINER
+        // =============================================
         
+        JPanel fieldsPanel = new JPanel();
+        fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));
+        fieldsPanel.setBackground(Color.WHITE);
+        fieldsPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(15, 20, 15, 20)
+        ));
+        fieldsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.setMaximumSize(new Dimension(500, Integer.MAX_VALUE));
+
+        int fieldHeight = 34;
+        int labelGap = 2;
+        int fieldGap = 8;
+
+        // =============================================
+        // LOGIN CREDENTIALS SECTION
+        // =============================================
+        
+        // Section Label
+        JLabel loginSectionLabel = new JLabel("LOGIN CREDENTIALS");
+        loginSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        loginSectionLabel.setForeground(PRIMARY_LIGHT);
+        loginSectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(loginSectionLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+
         // Username
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 4, 0);
-        JLabel userLabel = new JLabel("Username");
-        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        JLabel userLabel = new JLabel("Username *");
+        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         userLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(userLabel, fGbc);
+        userLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(userLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 12, 0);
         usernameField = createStyledTextField();
-        usernameField.setPreferredSize(new Dimension(400, 42));
-        usernameField.setMinimumSize(new Dimension(300, 42));
-        formPanel.add(usernameField, fGbc);
-
-        // Full Name
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 4, 0);
-        JLabel nameLabel = new JLabel("Full Name");
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        nameLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(nameLabel, fGbc);
-
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 12, 0);
-        fullNameField = createStyledTextField();
-        fullNameField.setPreferredSize(new Dimension(400, 42));
-        fullNameField.setMinimumSize(new Dimension(300, 42));
-        formPanel.add(fullNameField, fGbc);
-
-        // Email
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 4, 0);
-        JLabel emailLabel = new JLabel("Email");
-        emailLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        emailLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(emailLabel, fGbc);
-
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 12, 0);
-        emailField = createStyledTextField();
-        emailField.setPreferredSize(new Dimension(400, 42));
-        emailField.setMinimumSize(new Dimension(300, 42));
-        formPanel.add(emailField, fGbc);
-
-        // Phone
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 4, 0);
-        JLabel phoneLabel = new JLabel("Phone Number");
-        phoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        phoneLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(phoneLabel, fGbc);
-
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 12, 0);
-        phoneField = createStyledTextField();
-        phoneField.setPreferredSize(new Dimension(400, 42));
-        phoneField.setMinimumSize(new Dimension(300, 42));
-        formPanel.add(phoneField, fGbc);
+        usernameField.setMaximumSize(new Dimension(460, fieldHeight));
+        usernameField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(usernameField);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
         // Password
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 4, 0);
-        JLabel passLabel = new JLabel("Password");
-        passLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        passLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(passLabel, fGbc);
+        JLabel passLabelTitle = new JLabel("Password *");
+        passLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        passLabelTitle.setForeground(PRIMARY_DARK);
+        passLabelTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(passLabelTitle);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 12, 0);
         passwordField = createStyledPasswordField();
-        passwordField.setPreferredSize(new Dimension(400, 42));
-        passwordField.setMinimumSize(new Dimension(300, 42));
-        formPanel.add(passwordField, fGbc);
+        passwordField.setMaximumSize(new Dimension(460, fieldHeight));
+        passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(passwordField);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
         // Confirm Password
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 4, 0);
-        JLabel confirmLabel = new JLabel("Confirm Password");
-        confirmLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        confirmLabel.setForeground(PRIMARY_DARK);
-        formPanel.add(confirmLabel, fGbc);
+        JLabel confirmLabelTitle = new JLabel("Confirm Password *");
+        confirmLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        confirmLabelTitle.setForeground(PRIMARY_DARK);
+        confirmLabelTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(confirmLabelTitle);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 10, 0);
         confirmPasswordField = createStyledPasswordField();
-        confirmPasswordField.setPreferredSize(new Dimension(400, 42));
-        confirmPasswordField.setMinimumSize(new Dimension(300, 42));
-        formPanel.add(confirmPasswordField, fGbc);
+        confirmPasswordField.setMaximumSize(new Dimension(460, fieldHeight));
+        confirmPasswordField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(confirmPasswordField);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
+        // =============================================
+        // PERSONAL INFORMATION SECTION
+        // =============================================
+        
+        // Section Label
+        JLabel personalSectionLabel = new JLabel("PERSONAL INFORMATION");
+        personalSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        personalSectionLabel.setForeground(PRIMARY_LIGHT);
+        personalSectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(personalSectionLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+
+        // Full Name
+        JLabel nameLabel = new JLabel("Full Name *");
+        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        nameLabel.setForeground(PRIMARY_DARK);
+        nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(nameLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
+
+        fullNameField = createStyledTextField();
+        fullNameField.setMaximumSize(new Dimension(460, fieldHeight));
+        fullNameField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(fullNameField);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // Gender + DOB in one row
+        JPanel rowPanel = new JPanel(new GridLayout(1, 2, 15, 0));
+        rowPanel.setOpaque(false);
+        rowPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        rowPanel.setMaximumSize(new Dimension(460, fieldHeight + 20));
+        
+        JPanel genderPanel = new JPanel(new BorderLayout());
+        genderPanel.setOpaque(false);
+        JLabel genderLabel = new JLabel("Gender");
+        genderLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        genderLabel.setForeground(PRIMARY_DARK);
+        genderPanel.add(genderLabel, BorderLayout.NORTH);
+        
+        genderCombo = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+        genderCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        genderCombo.setPreferredSize(new Dimension(180, fieldHeight));
+        genderPanel.add(genderCombo, BorderLayout.CENTER);
+        
+        JPanel dobPanel = new JPanel(new BorderLayout());
+        dobPanel.setOpaque(false);
+        JLabel dobLabel = new JLabel("Date of Birth *");
+        dobLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        dobLabel.setForeground(PRIMARY_DARK);
+        dobPanel.add(dobLabel, BorderLayout.NORTH);
+        
+        dobField = createStyledTextField();
+        dobField.setPreferredSize(new Dimension(180, fieldHeight));
+        dobField.setToolTipText("YYYY-MM-DD");
+        dobPanel.add(dobField, BorderLayout.CENTER);
+        
+        rowPanel.add(genderPanel);
+        rowPanel.add(dobPanel);
+        fieldsPanel.add(rowPanel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // =============================================
+        // CONTACT INFORMATION SECTION
+        // =============================================
+        
+        // Section Label
+        JLabel contactSectionLabel = new JLabel("CONTACT INFORMATION");
+        contactSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        contactSectionLabel.setForeground(PRIMARY_LIGHT);
+        contactSectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(contactSectionLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+
+        // Email
+        JLabel emailLabelTitle = new JLabel("Email");
+        emailLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        emailLabelTitle.setForeground(PRIMARY_DARK);
+        emailLabelTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(emailLabelTitle);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
+
+        emailField = createStyledTextField();
+        emailField.setMaximumSize(new Dimension(460, fieldHeight));
+        emailField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(emailField);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // Phone
+        JLabel phoneLabelTitle = new JLabel("Phone Number *");
+        phoneLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        phoneLabelTitle.setForeground(PRIMARY_DARK);
+        phoneLabelTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(phoneLabelTitle);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
+
+        phoneField = createStyledTextField();
+        phoneField.setMaximumSize(new Dimension(460, fieldHeight));
+        phoneField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(phoneField);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // Address
+        JLabel addressLabelTitle = new JLabel("Address");
+        addressLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        addressLabelTitle.setForeground(PRIMARY_DARK);
+        addressLabelTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(addressLabelTitle);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
+
+        addressArea = createStyledTextArea(2);
+        addressArea.setMaximumSize(new Dimension(460, 50));
+        addressArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JScrollPane addressScroll = new JScrollPane(addressArea);
+        addressScroll.setMaximumSize(new Dimension(460, 50));
+        addressScroll.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
+        fieldsPanel.add(addressScroll);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // =============================================
+        // EMERGENCY CONTACT SECTION
+        // =============================================
+        
+        // Section Label
+        JLabel emergencySectionLabel = new JLabel("EMERGENCY CONTACT");
+        emergencySectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        emergencySectionLabel.setForeground(PRIMARY_LIGHT);
+        emergencySectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(emergencySectionLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+
+        // Emergency Contact Name
+        JLabel emergencyLabel = new JLabel("Contact Name");
+        emergencyLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        emergencyLabel.setForeground(PRIMARY_DARK);
+        emergencyLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(emergencyLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
+
+        emergencyContactField = createStyledTextField();
+        emergencyContactField.setMaximumSize(new Dimension(460, fieldHeight));
+        emergencyContactField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(emergencyContactField);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // Emergency Phone
+        JLabel emergencyPhoneLabel = new JLabel("Contact Phone");
+        emergencyPhoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        emergencyPhoneLabel.setForeground(PRIMARY_DARK);
+        emergencyPhoneLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(emergencyPhoneLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
+
+        emergencyPhoneField = createStyledTextField();
+        emergencyPhoneField.setMaximumSize(new Dimension(460, fieldHeight));
+        emergencyPhoneField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(emergencyPhoneField);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // =============================================
+        // MEDICAL INFORMATION SECTION
+        // =============================================
+        
+        // Section Label
+        JLabel medicalSectionLabel = new JLabel("MEDICAL INFORMATION");
+        medicalSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        medicalSectionLabel.setForeground(PRIMARY_LIGHT);
+        medicalSectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(medicalSectionLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+
+        // Medical History
+        JLabel medicalLabel = new JLabel("Medical History");
+        medicalLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        medicalLabel.setForeground(PRIMARY_DARK);
+        medicalLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(medicalLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
+
+        medicalHistoryArea = createStyledTextArea(2);
+        medicalHistoryArea.setMaximumSize(new Dimension(460, 40));
+        medicalHistoryArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JScrollPane medicalScroll = new JScrollPane(medicalHistoryArea);
+        medicalScroll.setMaximumSize(new Dimension(460, 40));
+        medicalScroll.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
+        fieldsPanel.add(medicalScroll);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // Allergies
+        JLabel allergiesLabelTitle = new JLabel("Allergies");
+        allergiesLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        allergiesLabelTitle.setForeground(PRIMARY_DARK);
+        allergiesLabelTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(allergiesLabelTitle);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
+
+        allergiesArea = createStyledTextArea(2);
+        allergiesArea.setMaximumSize(new Dimension(460, 40));
+        allergiesArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JScrollPane allergiesScroll = new JScrollPane(allergiesArea);
+        allergiesScroll.setMaximumSize(new Dimension(460, 40));
+        allergiesScroll.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
+        fieldsPanel.add(allergiesScroll);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
+
+        // =============================================
+        // MESSAGE & BUTTONS
+        // =============================================
+        
         // Message
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 14, 0);
         messageLabel = new JLabel(" ");
         messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         messageLabel.setForeground(ERROR_COLOR);
-        formPanel.add(messageLabel, fGbc);
+        messageLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fieldsPanel.add(messageLabel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 8)));
 
         // Buttons
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 14, 0);
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         buttonPanel.setOpaque(false);
+        buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         signupButton = createRoundedButton("Sign Up", PRIMARY_DARK, Color.WHITE);
-        signupButton.setPreferredSize(new Dimension(150, 46));
+        signupButton.setPreferredSize(new Dimension(150, 44));
         
         cancelButton = createRoundedButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(MINT);
-        cancelButton.setPreferredSize(new Dimension(150, 46));
+        cancelButton.setPreferredSize(new Dimension(150, 44));
 
         buttonPanel.add(signupButton);
         buttonPanel.add(cancelButton);
-        formPanel.add(buttonPanel, fGbc);
+        fieldsPanel.add(buttonPanel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 8)));
 
         // Login Link
-        fGbc.gridy = row++;
-        fGbc.insets = new Insets(0, 0, 0, 0);
         JPanel loginLinkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         loginLinkPanel.setOpaque(false);
+        loginLinkPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel alreadyHaveLabel = new JLabel("Already have an account?");
         alreadyHaveLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -274,28 +452,28 @@ public class Signup extends javax.swing.JFrame {
         loginLinkButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         loginLinkPanel.add(loginLinkButton);
 
-        formPanel.add(loginLinkPanel, fGbc);
+        fieldsPanel.add(loginLinkPanel);
 
-        panel.add(formPanel, gbc);
+        // Add fields panel to scroll pane
+        JScrollPane scrollPane = new JScrollPane(fieldsPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(10, 0));
 
-        // Add vertical glue to push content to top
-        gbc.gridy = 4;
-        gbc.weighty = 1.0;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        panel.add(Box.createVerticalGlue(), gbc);
+        panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
     }
 
     // =====================================================
-    // RIGHT PANEL - Welcome Branding (Professional)
+    // RIGHT PANEL - Welcome Branding
     // =====================================================
     private JPanel createWelcomePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(PRIMARY_DARK);
         panel.setBorder(new EmptyBorder(40, 40, 40, 40));
 
-        // Center - Image with proper scaling
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
         
@@ -336,7 +514,6 @@ public class Signup extends javax.swing.JFrame {
         centerPanel.add(imageLabel);
         panel.add(centerPanel, BorderLayout.CENTER);
 
-        // Bottom - Text with proper spacing
         JPanel bottomPanel = new JPanel();
         bottomPanel.setOpaque(false);
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
@@ -381,7 +558,7 @@ public class Signup extends javax.swing.JFrame {
                     int imgHeight = img.getHeight();
                     double aspectRatio = (double) imgWidth / imgHeight;
                     
-                    int targetHeight = 42;
+                    int targetHeight = 40;
                     int targetWidth = (int) (targetHeight * aspectRatio);
                     
                     Image scaled = img.getScaledInstance(targetWidth, targetHeight, Image.SCALE_SMOOTH);
@@ -400,28 +577,39 @@ public class Signup extends javax.swing.JFrame {
 
     private JTextField createStyledTextField() {
         JTextField field = new JTextField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            BorderFactory.createEmptyBorder(10, 14, 10, 14)
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
         field.setBackground(Color.WHITE);
         field.setOpaque(true);
-        field.setPreferredSize(new Dimension(400, 42));
         return field;
     }
 
     private JPasswordField createStyledPasswordField() {
         JPasswordField field = new JPasswordField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            BorderFactory.createEmptyBorder(10, 14, 10, 14)
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
         ));
         field.setBackground(Color.WHITE);
         field.setOpaque(true);
-        field.setPreferredSize(new Dimension(400, 42));
         return field;
+    }
+
+    private JTextArea createStyledTextArea(int rows) {
+        JTextArea area = new JTextArea(rows, 20);
+        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+        area.setBackground(Color.WHITE);
+        return area;
     }
 
     private RoundedButton createRoundedButton(String text, Color bg, Color fg) {
@@ -429,7 +617,7 @@ public class Signup extends javax.swing.JFrame {
     }
 
     // =====================================================
-    // ROUNDED BUTTON - Modern
+    // ROUNDED BUTTON
     // =====================================================
     private static class RoundedButton extends JButton {
         private Color bg;
@@ -446,7 +634,7 @@ public class Signup extends javax.swing.JFrame {
 
             setForeground(fg);
             setFont(new Font("Segoe UI", Font.BOLD, 14));
-            setPreferredSize(new Dimension(150, 46));
+            setPreferredSize(new Dimension(150, 44));
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);
@@ -499,20 +687,9 @@ public class Signup extends javax.swing.JFrame {
     // PUBLIC METHODS FOR CONTROLLER
     // =====================================================
     
+    // Login credentials
     public String getUsername() {
         return usernameField.getText().trim();
-    }
-
-    public String getFullName() {
-        return fullNameField.getText().trim();
-    }
-
-    public String getEmail() {
-        return emailField.getText().trim();
-    }
-
-    public String getPhone() {
-        return phoneField.getText().trim();
     }
 
     public String getPassword() {
@@ -523,11 +700,59 @@ public class Signup extends javax.swing.JFrame {
         return new String(confirmPasswordField.getPassword());
     }
 
+    // Patient details
+    public String getFullName() {
+        return fullNameField.getText().trim();
+    }
+
+    public String getGender() {
+        return (String) genderCombo.getSelectedItem();
+    }
+
+    public String getDateOfBirth() {
+        return dobField.getText().trim();
+    }
+
+    public String getEmail() {
+        return emailField.getText().trim();
+    }
+
+    public String getPhone() {
+        return phoneField.getText().trim();
+    }
+
+    public String getAddress() {
+        return addressArea.getText().trim();
+    }
+
+    public String getEmergencyContact() {
+        return emergencyContactField.getText().trim();
+    }
+
+    public String getEmergencyPhone() {
+        return emergencyPhoneField.getText().trim();
+    }
+
+    public String getMedicalHistory() {
+        return medicalHistoryArea.getText().trim();
+    }
+
+    public String getAllergies() {
+        return allergiesArea.getText().trim();
+    }
+
     public void clearFields() {
         usernameField.setText("");
         fullNameField.setText("");
+        genderCombo.setSelectedIndex(0);
+        dobField.setText("");
         emailField.setText("");
         phoneField.setText("");
+        addressArea.setText("");
+        emergencyContactField.setText("");
+        emergencyPhoneField.setText("");
+        medicalHistoryArea.setText("");
+        allergiesArea.setText("");
         passwordField.setText("");
         confirmPasswordField.setText("");
         messageLabel.setText(" ");
