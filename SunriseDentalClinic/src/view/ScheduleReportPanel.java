@@ -44,8 +44,6 @@ public class ScheduleReportPanel extends JPanel {
     private JComboBox<Dentist> dentistCombo;
     private JComboBox<String> statusCombo;
     private RoundedButton generateButton;
-    private RoundedButton exportButton;
-    private RoundedButton printButton;
     private RoundedButton refreshButton;
     private JLabel statusLabel;
     private JLabel summaryLabel;
@@ -79,13 +77,17 @@ public class ScheduleReportPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header Panel
-        add(createHeaderPanel(), BorderLayout.NORTH);
+        // Title Panel - At the top
+        add(createTitlePanel(), BorderLayout.NORTH);
         
         // Main Content Panel
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(SOFT_SURFACE);
+        
+        // Filter Panel
+        mainPanel.add(createFilterPanel());
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Summary Cards
         mainPanel.add(createSummaryPanel());
@@ -107,36 +109,48 @@ public class ScheduleReportPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(SOFT_SURFACE);
-        header.setBorder(new EmptyBorder(0, 0, 15, 0));
-
-        // Title
+    /**
+     * ✅ Title Panel - Separate from other content
+     */
+    private JPanel createTitlePanel() {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
-        titlePanel.setOpaque(false);
+        titlePanel.setBackground(SOFT_SURFACE);
+        titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Schedule Report");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("View appointment statistics and schedule overview");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
+        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         titlePanel.add(titleLabel);
+        titlePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         titlePanel.add(subtitleLabel);
+        
+        return titlePanel;
+    }
 
-        // Search Panel
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        searchPanel.setOpaque(false);
+    /**
+     * ✅ Filter Panel - Search and filter controls
+     */
+    private JPanel createFilterPanel() {
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        filterPanel.setBackground(Color.WHITE);
+        filterPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(10, 15, 10, 15)
+        ));
 
         // Period filter
         String[] periods = {"Today", "This Week", "This Month", "Next Week", "Next Month", "Custom Range"};
         periodCombo = new JComboBox<>(periods);
         periodCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        periodCombo.setPreferredSize(new Dimension(120, 35));
+        periodCombo.setPreferredSize(new Dimension(130, 35));
         periodCombo.addActionListener(e -> {
             if ("Custom Range".equals(periodCombo.getSelectedItem())) {
                 showCustomDateDialog();
@@ -153,42 +167,27 @@ public class ScheduleReportPanel extends JPanel {
         String[] statuses = {"All Status", "Scheduled", "Confirmed", "In Progress", "Completed", "Cancelled", "No Show"};
         statusCombo = new JComboBox<>(statuses);
         statusCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        statusCombo.setPreferredSize(new Dimension(120, 35));
+        statusCombo.setPreferredSize(new Dimension(130, 35));
 
         generateButton = createStyledButton("Generate Report", PRIMARY_DARK, Color.WHITE);
         generateButton.setPreferredSize(new Dimension(150, 35));
         generateButton.addActionListener(e -> generateReport());
-
-        exportButton = createStyledButton("Export PDF", SOFT_SURFACE, PRIMARY_DARK);
-        exportButton.setBorderColor(LIGHT_SURFACE);
-        exportButton.setPreferredSize(new Dimension(120, 35));
-        exportButton.addActionListener(e -> exportReport());
-
-        printButton = createStyledButton("Print", SOFT_SURFACE, PRIMARY_DARK);
-        printButton.setBorderColor(LIGHT_SURFACE);
-        printButton.setPreferredSize(new Dimension(100, 35));
-        printButton.addActionListener(e -> printReport());
 
         refreshButton = createStyledButton("Refresh", SOFT_SURFACE, PRIMARY_DARK);
         refreshButton.setBorderColor(LIGHT_SURFACE);
         refreshButton.setPreferredSize(new Dimension(100, 35));
         refreshButton.addActionListener(e -> loadData());
 
-        searchPanel.add(new JLabel("Period:"));
-        searchPanel.add(periodCombo);
-        searchPanel.add(new JLabel("Dentist:"));
-        searchPanel.add(dentistCombo);
-        searchPanel.add(new JLabel("Status:"));
-        searchPanel.add(statusCombo);
-        searchPanel.add(generateButton);
-        searchPanel.add(exportButton);
-        searchPanel.add(printButton);
-        searchPanel.add(refreshButton);
+        filterPanel.add(new JLabel("Period:"));
+        filterPanel.add(periodCombo);
+        filterPanel.add(new JLabel("Dentist:"));
+        filterPanel.add(dentistCombo);
+        filterPanel.add(new JLabel("Status:"));
+        filterPanel.add(statusCombo);
+        filterPanel.add(generateButton);
+        filterPanel.add(refreshButton);
 
-        header.add(titlePanel, BorderLayout.WEST);
-        header.add(searchPanel, BorderLayout.EAST);
-
-        return header;
+        return filterPanel;
     }
 
     private JPanel createSummaryPanel() {
@@ -490,7 +489,6 @@ public class ScheduleReportPanel extends JPanel {
     }
 
     private void showCustomDateDialog() {
-        // TODO: Implement custom date range dialog
         JOptionPane.showMessageDialog(this, 
             "Custom date range selection coming soon.\nUsing this month for now.",
             "Custom Range",
@@ -611,24 +609,6 @@ public class ScheduleReportPanel extends JPanel {
         }
 
         summaryLabel.setText("Total: " + total + " appointments");
-    }
-
-    private void exportReport() {
-        if (tableModel.getRowCount() == 0) {
-            showError("No data to export. Please generate a report first.");
-            return;
-        }
-        // TODO: Implement PDF export
-        showInfo("PDF export functionality coming soon...");
-    }
-
-    private void printReport() {
-        if (tableModel.getRowCount() == 0) {
-            showError("No data to print. Please generate a report first.");
-            return;
-        }
-        // TODO: Implement print functionality
-        showInfo("Print functionality coming soon...");
     }
 
     // ========================
