@@ -1,8 +1,10 @@
 package view;
 
 import controller.DentistController;
+import model.User.UserRole;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -19,7 +21,7 @@ public class AddDentistPanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
 
-    // Form Fields
+    // Form Fields - Dentist Details
     private JTextField dentistNameField;
     private JTextField specializationField;
     private JTextField licenseNumberField;
@@ -29,6 +31,14 @@ public class AddDentistPanel extends JPanel {
     private JTextField experienceField;
     private JTextField consultationFeeField;
     private JCheckBox availableCheckBox;
+    
+    // Login Credentials Section (NEW)
+    private JCheckBox createLoginCheckBox;
+    private JPanel loginPanel;
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JPasswordField confirmPasswordField;
+    private JLabel passwordStrengthLabel;
     
     // Buttons
     private RoundedButton saveButton;
@@ -40,8 +50,8 @@ public class AddDentistPanel extends JPanel {
 
     public AddDentistPanel() {
         initComponents();
-        // Initialize controller AFTER all components are created
         this.controller = new DentistController(this);
+        loginPanel.setVisible(false); // Initially hidden
     }
 
     private void initComponents() {
@@ -76,7 +86,7 @@ public class AddDentistPanel extends JPanel {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
-        JLabel subtitleLabel = new JLabel("Register a new dentist in the system");
+        JLabel subtitleLabel = new JLabel("Register a new dentist with optional login account");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
@@ -106,8 +116,163 @@ public class AddDentistPanel extends JPanel {
         
         // Contact Information Section
         formPanel.add(createSectionPanel("Contact Information", createContactInfoPanel()));
+        formPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        
+        // Login Credentials Section (NEW)
+        formPanel.add(createLoginSection());
 
         return formPanel;
+    }
+
+    private JPanel createLoginSection() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(MINT, 1),
+            "Login Account (Optional)",
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14),
+            PRIMARY_DARK
+        ));
+        
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        
+        // Checkbox
+        JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        checkPanel.setOpaque(false);
+        createLoginCheckBox = new JCheckBox("Create login account for this dentist");
+        createLoginCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        createLoginCheckBox.setForeground(PRIMARY_DARK);
+        createLoginCheckBox.addActionListener(e -> loginPanel.setVisible(createLoginCheckBox.isSelected()));
+        checkPanel.add(createLoginCheckBox);
+        
+        mainPanel.add(checkPanel, BorderLayout.NORTH);
+        
+        // Login Credentials Panel (hidden by default)
+        loginPanel = new JPanel(new GridBagLayout());
+        loginPanel.setBackground(Color.WHITE);
+        loginPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(10, 10, 10, 10)
+        ));
+        loginPanel.setVisible(false);
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+        
+        // Row 0: Username
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel usernameLabel = new JLabel("Username:");
+        usernameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        usernameLabel.setForeground(PRIMARY_DARK);
+        loginPanel.add(usernameLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        usernameField = new JTextField();
+        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        usernameField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        loginPanel.add(usernameField, gbc);
+        
+        // Row 1: Password
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel passwordLabel = new JLabel("Password:");
+        passwordLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        passwordLabel.setForeground(PRIMARY_DARK);
+        loginPanel.add(passwordLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        passwordField = new JPasswordField();
+        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        passwordField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                checkPasswordStrength();
+            }
+        });
+        loginPanel.add(passwordField, gbc);
+        
+        // Row 1: Confirm Password
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel confirmLabel = new JLabel("Confirm Password:");
+        confirmLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        confirmLabel.setForeground(PRIMARY_DARK);
+        loginPanel.add(confirmLabel, gbc);
+        
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.3;
+        confirmPasswordField = new JPasswordField();
+        confirmPasswordField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        confirmPasswordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        loginPanel.add(confirmPasswordField, gbc);
+        
+        // Row 2: Password Strength
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        gbc.gridwidth = 3;
+        gbc.weightx = 0.8;
+        passwordStrengthLabel = new JLabel(" ");
+        passwordStrengthLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        passwordStrengthLabel.setForeground(SECONDARY_TEXT);
+        loginPanel.add(passwordStrengthLabel, gbc);
+        
+        mainPanel.add(loginPanel, BorderLayout.CENTER);
+        panel.add(mainPanel, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void checkPasswordStrength() {
+        String password = new String(passwordField.getPassword());
+        if (password.isEmpty()) {
+            passwordStrengthLabel.setText(" ");
+            passwordStrengthLabel.setForeground(SECONDARY_TEXT);
+            return;
+        }
+        
+        int strength = 0;
+        if (password.length() >= 6) strength++;
+        if (password.length() >= 10) strength++;
+        if (password.matches(".*[A-Z].*")) strength++;
+        if (password.matches(".*[a-z].*")) strength++;
+        if (password.matches(".*\\d.*")) strength++;
+        if (password.matches(".*[!@#$%^&*].*")) strength++;
+        
+        if (strength <= 2) {
+            passwordStrengthLabel.setText("🔴 Weak");
+            passwordStrengthLabel.setForeground(ERROR_COLOR);
+        } else if (strength <= 4) {
+            passwordStrengthLabel.setText("🟡 Medium");
+            passwordStrengthLabel.setForeground(new Color(200, 180, 0));
+        } else {
+            passwordStrengthLabel.setText("🟢 Strong");
+            passwordStrengthLabel.setForeground(SUCCESS_COLOR);
+        }
     }
 
     private JPanel createSectionPanel(String title, JPanel content) {
@@ -253,7 +418,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridy = 3;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel availableLabel = new JLabel("Available:");
+        JLabel availableLabel = new JLabel("Availability:");
         availableLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         availableLabel.setForeground(PRIMARY_DARK);
         panel.add(availableLabel, gbc);
@@ -261,7 +426,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
-        availableCheckBox = new JCheckBox("Yes, this dentist is currently available");
+        availableCheckBox = new JCheckBox("Available for appointments");
         availableCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         availableCheckBox.setSelected(true);
         panel.add(availableCheckBox, gbc);
@@ -437,41 +602,22 @@ public class AddDentistPanel extends JPanel {
     // Public methods for Controller
     // ========================
 
-    public String getDentistName() { 
-        return dentistNameField.getText().trim(); 
-    }
+    // Dentist getters
+    public String getDentistName() { return dentistNameField.getText().trim(); }
+    public String getSpecialization() { return specializationField.getText().trim(); }
+    public String getLicenseNumber() { return licenseNumberField.getText().trim(); }
+    public String getWorkingHours() { return workingHoursField.getText().trim(); }
+    public String getPhone() { return phoneField.getText().trim(); }
+    public String getEmail() { return emailField.getText().trim(); }
+    public String getExperience() { return experienceField.getText().trim(); }
+    public String getConsultationFee() { return consultationFeeField.getText().trim(); }
+    public boolean isAvailable() { return availableCheckBox.isSelected(); }
     
-    public String getSpecialization() { 
-        return specializationField.getText().trim(); 
-    }
-    
-    public String getLicenseNumber() { 
-        return licenseNumberField.getText().trim(); 
-    }
-    
-    public String getWorkingHours() { 
-        return workingHoursField.getText().trim(); 
-    }
-    
-    public String getPhone() { 
-        return phoneField.getText().trim(); 
-    }
-    
-    public String getEmail() { 
-        return emailField.getText().trim(); 
-    }
-    
-    public String getExperience() { 
-        return experienceField.getText().trim(); 
-    }
-    
-    public String getConsultationFee() { 
-        return consultationFeeField.getText().trim(); 
-    }
-    
-    public boolean isAvailable() { 
-        return availableCheckBox.isSelected(); 
-    }
+    // Login getters
+    public boolean isCreateLogin() { return createLoginCheckBox.isSelected(); }
+    public String getUsername() { return usernameField != null ? usernameField.getText().trim() : ""; }
+    public String getPassword() { return passwordField != null ? new String(passwordField.getPassword()) : ""; }
+    public String getConfirmPassword() { return confirmPasswordField != null ? new String(confirmPasswordField.getPassword()) : ""; }
 
     public void clearForm() {
         dentistNameField.setText("");
@@ -483,6 +629,12 @@ public class AddDentistPanel extends JPanel {
         experienceField.setText("");
         consultationFeeField.setText("");
         availableCheckBox.setSelected(true);
+        usernameField.setText("");
+        passwordField.setText("");
+        confirmPasswordField.setText("");
+        createLoginCheckBox.setSelected(false);
+        loginPanel.setVisible(false);
+        passwordStrengthLabel.setText(" ");
         statusLabel.setText("Form cleared");
         statusLabel.setForeground(SECONDARY_TEXT);
     }
@@ -505,20 +657,14 @@ public class AddDentistPanel extends JPanel {
     }
 
     public void addSaveListener(ActionListener listener) {
-        if (saveButton != null) {
-            saveButton.addActionListener(listener);
-        }
+        saveButton.addActionListener(listener);
     }
 
     public void addClearListener(ActionListener listener) {
-        if (clearButton != null) {
-            clearButton.addActionListener(listener);
-        }
+        clearButton.addActionListener(listener);
     }
 
     public void addCancelListener(ActionListener listener) {
-        if (cancelButton != null) {
-            cancelButton.addActionListener(listener);
-        }
+        cancelButton.addActionListener(listener);
     }
 }

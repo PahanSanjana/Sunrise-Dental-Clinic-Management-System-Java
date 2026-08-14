@@ -1,7 +1,11 @@
 package controller;
 
 import dao.DentistDAO;
+import dao.UserDAO;
 import model.Dentist;
+import model.User;
+import model.User.UserRole;
+import model.LoginSession;
 import view.AddDentistPanel;
 import view.DentistListPanel;
 import view.DentistDetailsPanel;
@@ -9,44 +13,38 @@ import view.MainFrame;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DentistController {
     private AddDentistPanel addView;
     private DentistListPanel listView;
     private DentistDetailsPanel detailsView;
     private DentistDAO dentistDAO;
+    private UserDAO userDAO;
 
     // =====================================================
     // CONSTRUCTORS
     // =====================================================
 
-    /**
-     * Constructor for AddDentistPanel
-     * @param view The AddDentistPanel instance
-     */
     public DentistController(AddDentistPanel view) {
         this.addView = view;
         this.dentistDAO = new DentistDAO();
+        this.userDAO = new UserDAO();
         initAddController();
     }
 
-    /**
-     * Constructor for DentistListPanel
-     * @param view The DentistListPanel instance
-     */
     public DentistController(DentistListPanel view) {
         this.listView = view;
         this.dentistDAO = new DentistDAO();
+        this.userDAO = new UserDAO();
     }
 
-    /**
-     * Constructor for DentistDetailsPanel
-     * @param view The DentistDetailsPanel instance
-     */
     public DentistController(DentistDetailsPanel view) {
         this.detailsView = view;
         this.dentistDAO = new DentistDAO();
+        this.userDAO = new UserDAO();
     }
 
     // =====================================================
@@ -87,7 +85,17 @@ public class DentistController {
         String feeStr = addView.getConsultationFee();
         boolean isAvailable = addView.isAvailable();
 
-        // Validate required fields
+        // Check if login account is requested
+        boolean createLogin = addView.isCreateLogin();
+        String username = addView.getUsername();
+        String password = addView.getPassword();
+        String confirmPassword = addView.getConfirmPassword();
+
+        // =============================================
+        // VALIDATE REQUIRED FIELDS
+        // =============================================
+
+        // Validate Dentist Name
         if (dentistName.isEmpty()) {
             addView.showError("Dentist Name is required.");
             return;
@@ -103,13 +111,13 @@ public class DentistController {
             return;
         }
 
-        // Validate specialization
+        // Validate Specialization
         if (specialization.isEmpty()) {
             addView.showError("Specialization is required.");
             return;
         }
 
-        // Validate license number
+        // Validate License Number
         if (licenseNumber.isEmpty()) {
             addView.showError("License Number is required.");
             return;
@@ -120,7 +128,7 @@ public class DentistController {
             return;
         }
 
-        // Validate phone
+        // Validate Phone
         if (phone.isEmpty()) {
             addView.showError("Phone number is required.");
             return;
@@ -131,7 +139,7 @@ public class DentistController {
             return;
         }
 
-        // Validate email
+        // Validate Email
         if (email.isEmpty()) {
             addView.showError("Email is required.");
             return;
@@ -141,7 +149,7 @@ public class DentistController {
             return;
         }
 
-        // Validate years of experience
+        // Validate Years of Experience
         int yearsOfExperience = 0;
         if (experienceStr.isEmpty()) {
             addView.showError("Years of experience is required.");
@@ -158,7 +166,7 @@ public class DentistController {
             return;
         }
 
-        // Validate consultation fee
+        // Validate Consultation Fee
         double consultationFee = 0;
         if (feeStr.isEmpty()) {
             addView.showError("Consultation fee is required.");
@@ -175,28 +183,99 @@ public class DentistController {
             return;
         }
 
-        // Create Dentist object
+        // =============================================
+        // VALIDATE LOGIN CREDENTIALS
+        // =============================================
+        if (createLogin) {
+            if (username.isEmpty()) {
+                addView.showError("Username is required for login account.");
+                return;
+            }
+            if (username.length() < 3) {
+                addView.showError("Username must be at least 3 characters.");
+                return;
+            }
+            if (!username.matches("^[a-zA-Z0-9_]+$")) {
+                addView.showError("Username can only contain letters, numbers, and underscores.");
+                return;
+            }
+            if (userDAO.usernameExists(username)) {
+                addView.showError("Username already exists. Please choose another.");
+                return;
+            }
+            
+            if (password.isEmpty()) {
+                addView.showError("Password is required for login account.");
+                return;
+            }
+            if (password.length() < 6) {
+                addView.showError("Password must be at least 6 characters.");
+                return;
+            }
+            if (!password.equals(confirmPassword)) {
+                addView.showError("Passwords do not match.");
+                return;
+            }
+        }
+
+        // =============================================
+        // CREATE DENTIST OBJECT
+        // =============================================
         Dentist dentist = new Dentist(
-            dentistName, 
-            specialization, 
-            licenseNumber,
-            workingHours, 
-            phone, 
-            email, 
-            yearsOfExperience, 
-            consultationFee, 
-            isAvailable
+            dentistName, specialization, licenseNumber,
+            workingHours, phone, email, yearsOfExperience,
+            consultationFee, isAvailable
         );
 
-        // Show loading message
+        // =============================================
+        // SAVE WITH SWINGWORKER
+        // =============================================
         addView.showSuccess("Saving dentist... Please wait.");
         addView.setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
-        // Use SwingWorker to save in background
+        // Store final values for use in SwingWorker
+        final String finalDentistName = dentistName;
+        final String finalSpecialization = specialization;
+        final String finalLicenseNumber = licenseNumber;
+        final String finalWorkingHours = workingHours;
+        final String finalPhone = phone;
+        final String finalEmail = email;
+        final int finalYearsOfExperience = yearsOfExperience;
+        final double finalConsultationFee = consultationFee;
+        final boolean finalIsAvailable = isAvailable;
+
         SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
             @Override
             protected Boolean doInBackground() throws Exception {
-                return dentistDAO.addDentist(dentist);
+                // 1. Save dentist
+                boolean dentistSaved = dentistDAO.addDentist(dentist);
+                if (!dentistSaved) {
+                    return false;
+                }
+                
+                // 2. If login required, create user and link
+                if (createLogin) {
+                    int createdBy = LoginSession.getInstance().getCurrentUserId();
+                    
+                    // Prepare profile data for dentist - only need licenseNumber for UPDATE
+                    Map<String, Object> profileData = new HashMap<>();
+                    profileData.put("licenseNumber", finalLicenseNumber);  // ✅ Used to find the dentist
+                    
+                    // Create user with DENTIST role - this will UPDATE user_id in dentists table
+                    User newUser = userDAO.createUserWithProfile(
+                        username, password, email, UserRole.DENTIST,
+                        createdBy, profileData
+                    );
+                    
+                    if (newUser == null) {
+                        return false;
+                    }
+                    
+                    // ✅ No need to link separately - updateDentistProfile already did it
+                    return true;
+                }
+                
+                return true;
             }
 
             @Override
@@ -205,11 +284,15 @@ public class DentistController {
                 try {
                     boolean success = get();
                     if (success) {
-                        addView.showSuccess("Dentist saved successfully!");
+                        String message = "Dentist saved successfully! Dentist ID: " + dentist.getDentistId();
+                        if (createLogin) {
+                            message += "\nLogin account created for: " + username;
+                            message += "\nRole: DENTIST";
+                        }
+                        addView.showSuccess(message);
                         addView.clearForm();
                         
-                        // Show success and navigate back after delay
-                        Timer timer = new Timer(1500, e -> {
+                        Timer timer = new Timer(2000, e -> {
                             Container parent = addView.getParent();
                             while (parent != null && !(parent instanceof MainFrame)) {
                                 parent = parent.getParent();
@@ -236,82 +319,38 @@ public class DentistController {
     // READ METHODS
     // =====================================================
 
-    /**
-     * Get dentist by ID
-     * @param dentistId The dentist ID
-     * @return Dentist object if found, null otherwise
-     */
     public Dentist getDentistById(int dentistId) {
         return dentistDAO.getDentistById(dentistId);
     }
 
-    /**
-     * Get dentist by user ID
-     * @param userId The user ID
-     * @return Dentist object if found, null otherwise
-     */
     public Dentist getDentistByUserId(int userId) {
         return dentistDAO.getDentistByUserId(userId);
     }
 
-    /**
-     * Get dentist by license number
-     * @param licenseNumber The license number
-     * @return Dentist object if found, null otherwise
-     */
     public Dentist getDentistByLicenseNumber(String licenseNumber) {
         return dentistDAO.getDentistByLicenseNumber(licenseNumber);
     }
 
-    /**
-     * Get all dentists
-     * @return List of all dentists
-     */
     public List<Dentist> getAllDentists() {
         return dentistDAO.getAllDentists();
     }
 
-    /**
-     * Get available dentists
-     * @return List of available dentists
-     */
     public List<Dentist> getAvailableDentists() {
         return dentistDAO.getAvailableDentists();
     }
 
-    /**
-     * Get dentists by specialization
-     * @param specialization The specialization to filter by
-     * @return List of dentists with the specified specialization
-     */
     public List<Dentist> getDentistsBySpecialization(String specialization) {
         return dentistDAO.getDentistsBySpecialization(specialization);
     }
 
-    /**
-     * Search dentists by name or specialization
-     * @param searchTerm The search term
-     * @return List of matching dentists
-     */
     public List<Dentist> searchDentists(String searchTerm) {
         return dentistDAO.searchDentists(searchTerm);
     }
 
-    /**
-     * Get dentists with pagination
-     * @param offset The offset (starting point)
-     * @param limit The number of records to fetch
-     * @return List of dentists
-     */
     public List<Dentist> getDentistsPaginated(int offset, int limit) {
         return dentistDAO.getDentistsPaginated(offset, limit);
     }
 
-    /**
-     * Get recent dentists
-     * @param limit Number of recent dentists to get
-     * @return List of recent dentists
-     */
     public List<Dentist> getRecentDentists(int limit) {
         return dentistDAO.getRecentDentists(limit);
     }
@@ -320,31 +359,14 @@ public class DentistController {
     // UPDATE METHODS
     // =====================================================
 
-    /**
-     * Update dentist information
-     * @param dentist The dentist to update
-     * @return true if successful, false otherwise
-     */
     public boolean updateDentist(Dentist dentist) {
         return dentistDAO.updateDentist(dentist);
     }
 
-    /**
-     * Update dentist availability
-     * @param dentistId The dentist ID
-     * @param isAvailable The availability status
-     * @return true if successful, false otherwise
-     */
     public boolean updateAvailability(int dentistId, boolean isAvailable) {
         return dentistDAO.updateAvailability(dentistId, isAvailable);
     }
 
-    /**
-     * Link a dentist to a user account
-     * @param dentistId The dentist ID
-     * @param userId The user ID to link
-     * @return true if successful, false otherwise
-     */
     public boolean linkDentistToUser(int dentistId, int userId) {
         return dentistDAO.linkDentistToUser(dentistId, userId);
     }
@@ -353,20 +375,10 @@ public class DentistController {
     // DELETE METHODS
     // =====================================================
 
-    /**
-     * Delete a dentist
-     * @param dentistId The dentist ID to delete
-     * @return true if successful, false otherwise
-     */
     public boolean deleteDentist(int dentistId) {
         return dentistDAO.deleteDentist(dentistId);
     }
 
-    /**
-     * Unlink a dentist from a user account
-     * @param dentistId The dentist ID
-     * @return true if successful, false otherwise
-     */
     public boolean unlinkDentistFromUser(int dentistId) {
         return dentistDAO.unlinkDentistFromUser(dentistId);
     }
@@ -375,41 +387,18 @@ public class DentistController {
     // VALIDATION METHODS
     // =====================================================
 
-    /**
-     * Check if license number exists
-     * @param licenseNumber The license number to check
-     * @return true if exists, false otherwise
-     */
     public boolean licenseNumberExists(String licenseNumber) {
         return dentistDAO.licenseNumberExists(licenseNumber);
     }
 
-    /**
-     * Check if license number exists for another dentist
-     * @param licenseNumber The license number to check
-     * @param excludeDentistId Dentist ID to exclude from check
-     * @return true if exists, false otherwise
-     */
     public boolean licenseNumberExists(String licenseNumber, int excludeDentistId) {
         return dentistDAO.licenseNumberExists(licenseNumber, excludeDentistId);
     }
 
-    /**
-     * Check if email exists for another dentist
-     * @param email The email to check
-     * @param excludeDentistId Dentist ID to exclude from check
-     * @return true if email exists, false otherwise
-     */
     public boolean emailExists(String email, int excludeDentistId) {
         return dentistDAO.emailExists(email, excludeDentistId);
     }
 
-    /**
-     * Check if phone exists for another dentist
-     * @param phone The phone to check
-     * @param excludeDentistId Dentist ID to exclude from check
-     * @return true if phone exists, false otherwise
-     */
     public boolean phoneExists(String phone, int excludeDentistId) {
         return dentistDAO.phoneExists(phone, excludeDentistId);
     }
@@ -418,52 +407,43 @@ public class DentistController {
     // COUNT METHODS
     // =====================================================
 
-    /**
-     * Get total dentist count
-     * @return Total number of dentists
-     */
     public int getDentistCount() {
         return dentistDAO.getDentistCount();
     }
 
-    /**
-     * Get available dentist count
-     * @return Number of available dentists
-     */
     public int getAvailableDentistCount() {
         return dentistDAO.getAvailableDentistCount();
     }
 
-    /**
-     * Get dentist count by specialization
-     * @param specialization The specialization to count
-     * @return Number of dentists with the specified specialization
-     */
     public int getDentistCountBySpecialization(String specialization) {
         return dentistDAO.getDentistCountBySpecialization(specialization);
     }
 
     // =====================================================
-    // HELPER METHODS FOR LIST VIEW
+    // HELPER METHODS
     // =====================================================
 
-    /**
-     * Load dentists for the list view
-     * @param searchText The search text
-     * @param filter The filter (All, Available, Unavailable)
-     */
     public void loadDentists(String searchText, String filter) {
         if (listView != null) {
             listView.loadDentists();
         }
     }
 
-    /**
-     * Refresh the dentist list
-     */
     public void refreshDentistList() {
         if (listView != null) {
             listView.loadDentists();
+        }
+    }
+
+    public void navigateBack() {
+        if (detailsView != null) {
+            Container parent = detailsView.getParent();
+            while (parent != null && !(parent instanceof MainFrame)) {
+                parent = parent.getParent();
+            }
+            if (parent instanceof MainFrame) {
+                ((MainFrame) parent).showCard("DENTIST_LIST");
+            }
         }
     }
 }

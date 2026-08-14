@@ -81,7 +81,7 @@ public class UserDAO {
             pstmt.setString(5, role.name());
             pstmt.setBoolean(6, true);
             
-            // ✅ FIX: Handle created_by - if 0 or negative, set to NULL
+            // Handle created_by - if 0 or negative, set to NULL
             if (createdBy > 0) {
                 pstmt.setInt(7, createdBy);
             } else {
@@ -112,7 +112,7 @@ public class UserDAO {
                 updateCreatedBySelf(conn, userId);
             }
             
-            // 2. Create profile based on role
+            // 2. Create/Update profile based on role
             boolean profileCreated = false;
             
             switch (role) {
@@ -126,7 +126,8 @@ public class UserDAO {
                     break;
                     
                 case DENTIST:
-                    profileCreated = createDentistProfile(conn, userId, profileData);
+                    // ✅ FIX: Use UPDATE instead of INSERT for dentist
+                    profileCreated = updateDentistProfile(conn, userId, profileData);
                     break;
                     
                 case PATIENT:
@@ -326,35 +327,32 @@ public class UserDAO {
     }
 
     /**
-     * Create dentist profile for a user
+     * ✅ FIXED: UPDATE dentist profile with user_id (instead of INSERT)
      * @param conn Database connection
      * @param userId User ID to link
      * @param data Profile data map
      * @return true if successful, false otherwise
      */
-    private boolean createDentistProfile(Connection conn, int userId, Map<String, Object> data) {
+    private boolean updateDentistProfile(Connection conn, int userId, Map<String, Object> data) {
         try {
-            String sql = "INSERT INTO dentists (user_id, dentist_name, specialization, license_number, "
-                       + "working_hours, phone, email, years_of_experience, consultation_fee, is_available) "
-                       + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            // ✅ UPDATE instead of INSERT - links user to existing dentist
+            String sql = "UPDATE dentists SET user_id = ? WHERE license_number = ?";
             
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, userId);
-            pstmt.setString(2, (String) data.getOrDefault("dentistName", ""));
-            pstmt.setString(3, (String) data.getOrDefault("specialization", ""));
-            pstmt.setString(4, (String) data.getOrDefault("licenseNumber", ""));
-            pstmt.setString(5, (String) data.getOrDefault("workingHours", ""));
-            pstmt.setString(6, (String) data.getOrDefault("phone", ""));
-            pstmt.setString(7, (String) data.getOrDefault("email", ""));
-            pstmt.setInt(8, (Integer) data.getOrDefault("yearsOfExperience", 0));
-            pstmt.setDouble(9, (Double) data.getOrDefault("consultationFee", 0.0));
-            pstmt.setBoolean(10, true);
+            pstmt.setString(2, (String) data.get("licenseNumber"));
             
-            boolean result = pstmt.executeUpdate() > 0;
+            int rowsAffected = pstmt.executeUpdate();
             pstmt.close();
-            return result;
+            
+            if (rowsAffected == 0) {
+                System.err.println("No dentist found with license number: " + data.get("licenseNumber"));
+                return false;
+            }
+            
+            return true;
         } catch (SQLException e) {
-            System.err.println("Error creating dentist profile: " + e.getMessage());
+            System.err.println("Error updating dentist profile: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -378,10 +376,10 @@ public class UserDAO {
             pstmt.setInt(1, userId);
             pstmt.setString(2, (String) data.getOrDefault("patientName", ""));
             
-            // ✅ FIX: Validate gender - must be 'Male', 'Female', or 'Other'
+            // Validate gender - must be 'Male', 'Female', or 'Other'
             String gender = (String) data.getOrDefault("gender", "Other");
             if (!gender.equals("Male") && !gender.equals("Female") && !gender.equals("Other")) {
-                gender = "Other"; // Default if invalid
+                gender = "Other";
             }
             pstmt.setString(3, gender);
             
@@ -434,7 +432,6 @@ public class UserDAO {
             pstmt.setString(5, user.getRole().name());
             pstmt.setBoolean(6, user.isActive());
             
-            // ✅ FIX: Handle created_by - if 0 or negative, set to NULL
             if (user.getCreatedBy() > 0) {
                 pstmt.setInt(7, user.getCreatedBy());
             } else {
