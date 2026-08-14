@@ -62,39 +62,64 @@ public class AppointmentListPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header Panel
-        add(createHeaderPanel(), BorderLayout.NORTH);
+        // Title Panel - At the top
+        add(createTitlePanel(), BorderLayout.NORTH);
         
-        // Table Panel
-        add(createTablePanel(), BorderLayout.CENTER);
-        
-        // Footer Panel
-        add(createFooterPanel(), BorderLayout.SOUTH);
+        // Main Content Panel (Search + Table + Footer)
+        add(createMainContentPanel(), BorderLayout.CENTER);
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(SOFT_SURFACE);
-        header.setBorder(new EmptyBorder(0, 0, 15, 0));
-
-        // Title
+    /**
+     * ✅ Title Panel - Separate from other content
+     */
+    private JPanel createTitlePanel() {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
-        titlePanel.setOpaque(false);
+        titlePanel.setBackground(SOFT_SURFACE);
+        titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Appointment Management");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("Manage all appointments in the system");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
+        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         titlePanel.add(titleLabel);
+        titlePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         titlePanel.add(subtitleLabel);
+        
+        return titlePanel;
+    }
+
+    /**
+     * ✅ Main Content Panel - Contains search, table, and footer
+     */
+    private JPanel createMainContentPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(15, 15, 15, 15)
+        ));
 
         // Search Panel
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        mainPanel.add(createSearchPanel(), BorderLayout.NORTH);
+        
+        // Table Panel
+        mainPanel.add(createTablePanel(), BorderLayout.CENTER);
+        
+        // Footer Panel
+        mainPanel.add(createFooterPanel(), BorderLayout.SOUTH);
+
+        return mainPanel;
+    }
+
+    private JPanel createSearchPanel() {
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         searchPanel.setOpaque(false);
 
         // Date filter
@@ -150,19 +175,15 @@ public class AppointmentListPanel extends JPanel {
         searchPanel.add(addButton);
         searchPanel.add(refreshButton);
 
-        header.add(titlePanel, BorderLayout.WEST);
-        header.add(searchPanel, BorderLayout.EAST);
-
-        return header;
+        return searchPanel;
     }
 
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
 
-        // Create table model
-        String[] columns = {"ID", "Patient", "Dentist", "Date", "Time", "Status", "Reason", "Actions"};
+        // ✅ Removed "Actions" column - No buttons inside table
+        String[] columns = {"ID", "Patient", "Dentist", "Date", "Time", "Status", "Reason"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -185,8 +206,6 @@ public class AppointmentListPanel extends JPanel {
         appointmentTable.getColumnModel().getColumn(1).setPreferredWidth(150);
         appointmentTable.getColumnModel().getColumn(2).setPreferredWidth(150);
         appointmentTable.getColumnModel().getColumn(5).setMaxWidth(120);
-        appointmentTable.getColumnModel().getColumn(7).setMaxWidth(200);
-        appointmentTable.getColumnModel().getColumn(7).setMinWidth(180);
 
         // Custom header
         JTableHeader header = appointmentTable.getTableHeader();
@@ -206,31 +225,6 @@ public class AppointmentListPanel extends JPanel {
                     int row = appointmentTable.getSelectedRow();
                     if (row != -1) {
                         viewAppointment(row);
-                    }
-                }
-            }
-        });
-
-        // Action buttons for each row
-        appointmentTable.getColumnModel().getColumn(7).setCellRenderer(new ActionButtonRenderer());
-        appointmentTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int column = appointmentTable.getColumnModel().getColumnIndex("Actions");
-                int row = appointmentTable.rowAtPoint(e.getPoint());
-                int col = appointmentTable.columnAtPoint(e.getPoint());
-                
-                if (row >= 0 && col == column) {
-                    int x = e.getX();
-                    int cellWidth = appointmentTable.getCellRect(row, col, true).width;
-                    int buttonWidth = cellWidth / 3;
-                    
-                    if (x < buttonWidth) {
-                        viewAppointment(row);
-                    } else if (x < buttonWidth * 2) {
-                        editAppointment(row);
-                    } else {
-                        cancelAppointment(row);
                     }
                 }
             }
@@ -258,7 +252,7 @@ public class AppointmentListPanel extends JPanel {
         countLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         countLabel.setForeground(new Color(107, 123, 121));
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
         
         viewButton = createStyledButton("View", SOFT_SURFACE, PRIMARY_DARK);
@@ -440,49 +434,6 @@ public class AppointmentListPanel extends JPanel {
         }
     }
 
-    // Action Button Renderer for table
-    private class ActionButtonRenderer extends javax.swing.table.DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-            
-            JPanel panel = new JPanel(new GridLayout(1, 3, 3, 3));
-            panel.setOpaque(true);
-            panel.setBackground(isSelected ? new Color(235, 245, 240) : Color.WHITE);
-            panel.setBorder(BorderFactory.createEmptyBorder(2, 3, 2, 3));
-            
-            JButton viewBtn = new JButton("View");
-            viewBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            viewBtn.setBackground(MINT);
-            viewBtn.setForeground(PRIMARY_DARK);
-            viewBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            viewBtn.setFocusPainted(false);
-            viewBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            JButton editBtn = new JButton("Edit");
-            editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            editBtn.setBackground(new Color(200, 220, 240));
-            editBtn.setForeground(PRIMARY_DARK);
-            editBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            editBtn.setFocusPainted(false);
-            editBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            JButton cancelBtn = new JButton("Cancel");
-            cancelBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            cancelBtn.setBackground(new Color(240, 200, 200));
-            cancelBtn.setForeground(ERROR_COLOR);
-            cancelBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            cancelBtn.setFocusPainted(false);
-            cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            panel.add(viewBtn);
-            panel.add(editBtn);
-            panel.add(cancelBtn);
-            
-            return panel;
-        }
-    }
-
     // ========================
     // Public methods
     // ========================
@@ -492,18 +443,15 @@ public class AppointmentListPanel extends JPanel {
         String status = statusCombo != null ? (String) statusCombo.getSelectedItem() : "All Status";
         String dateFilter = dateFilterCombo != null ? (String) dateFilterCombo.getSelectedItem() : "All Dates";
         
-        // Use SwingWorker to load in background
         SwingWorker<List<Appointment>, Void> worker = new SwingWorker<List<Appointment>, Void>() {
             @Override
             protected List<Appointment> doInBackground() throws Exception {
                 List<Appointment> appointments = controller.getAllAppointments();
                 
-                // Apply status filter
                 if (status != null && !status.equals("All Status") && appointments != null) {
                     appointments.removeIf(a -> !a.getStatus().equals(status));
                 }
                 
-                // Apply date filter
                 if (dateFilter != null && !dateFilter.equals("All Dates") && appointments != null) {
                     java.time.LocalDate today = java.time.LocalDate.now();
                     switch (dateFilter) {
@@ -532,7 +480,6 @@ public class AppointmentListPanel extends JPanel {
                     }
                 }
                 
-                // Apply search filter
                 if (searchText != null && !searchText.isEmpty() && appointments != null) {
                     appointments.removeIf(a -> {
                         String patientName = getPatientName(a.getPatientId());
@@ -597,8 +544,7 @@ public class AppointmentListPanel extends JPanel {
                 date,
                 time,
                 appointment.getStatus() != null ? appointment.getStatus() : "N/A",
-                appointment.getReason() != null ? appointment.getReason() : "N/A",
-                "Actions"
+                appointment.getReason() != null ? appointment.getReason() : "N/A"
             };
             tableModel.addRow(row);
         }
@@ -610,18 +556,14 @@ public class AppointmentListPanel extends JPanel {
     public void viewAppointment(int row) {
         int appointmentId = (int) tableModel.getValueAt(row, 0);
         
-        // Navigate to appointment details
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
         }
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
-            
-            // Get the appointment from database
             Appointment appointment = controller.getAppointmentById(appointmentId);
             if (appointment != null) {
-                // Create a new details panel with the appointment
                 AppointmentDetailsPanel detailsPanel = new AppointmentDetailsPanel(appointment);
                 detailsPanel.setName("APPOINTMENT_DETAILS");
                 mainFrame.addScreen("APPOINTMENT_DETAILS", detailsPanel);
@@ -635,23 +577,18 @@ public class AppointmentListPanel extends JPanel {
     public void editAppointment(int row) {
         int appointmentId = (int) tableModel.getValueAt(row, 0);
         
-        // Navigate to appointment details in edit mode
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
         }
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
-            
-            // Get the appointment from database
             Appointment appointment = controller.getAppointmentById(appointmentId);
             if (appointment != null) {
-                // Create a new details panel with the appointment
                 AppointmentDetailsPanel detailsPanel = new AppointmentDetailsPanel(appointment);
                 detailsPanel.setName("APPOINTMENT_DETAILS");
                 mainFrame.addScreen("APPOINTMENT_DETAILS", detailsPanel);
                 mainFrame.showCard("APPOINTMENT_DETAILS");
-                // Switch to edit mode
                 detailsPanel.toggleEditMode();
             } else {
                 showError("Appointment not found.");
@@ -675,7 +612,7 @@ public class AppointmentListPanel extends JPanel {
             boolean success = controller.cancelAppointment(appointmentId);
             if (success) {
                 showSuccess("Appointment cancelled successfully!");
-                loadAppointments(); // Refresh the list
+                loadAppointments();
             } else {
                 showError("Failed to cancel appointment.");
             }
@@ -698,7 +635,7 @@ public class AppointmentListPanel extends JPanel {
             boolean success = controller.deleteAppointment(appointmentId);
             if (success) {
                 showSuccess("Appointment deleted successfully!");
-                loadAppointments(); // Refresh the list
+                loadAppointments();
             } else {
                 showError("Failed to delete appointment.");
             }

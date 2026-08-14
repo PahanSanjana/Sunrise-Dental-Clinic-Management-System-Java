@@ -5,6 +5,7 @@ import model.User.UserRole;
 import model.LoginSession;
 import java.awt.*;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
 public class MainFrame extends JFrame {
 
@@ -12,6 +13,9 @@ public class MainFrame extends JFrame {
     private JPanel contentPanel;
     private SidebarPanel sidebarPanel;
     private TopBarPanel topBarPanel;
+    private JPanel contentWrapper;
+    
+    private static final int TOP_BAR_HEIGHT = 72;
 
     public MainFrame() {
         setTitle("Sunrise Dental Clinic - Management System");
@@ -21,14 +25,22 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
+        // Initialize components
         initContentPanel();
         
         sidebarPanel = new SidebarPanel(this);
         topBarPanel = new TopBarPanel();
         
-        add(sidebarPanel, BorderLayout.WEST);
+        // ✅ Content wrapper with NO padding - content starts immediately after TopBar
+        contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.setBackground(Color.WHITE);
+        contentWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));  // No padding
+        contentWrapper.add(contentPanel, BorderLayout.CENTER);
+        
+        // Add to frame
         add(topBarPanel, BorderLayout.NORTH);
-        add(contentPanel, BorderLayout.CENTER);
+        add(sidebarPanel, BorderLayout.WEST);
+        add(contentWrapper, BorderLayout.CENTER);
         
         // Setup logout listener
         topBarPanel.addLogoutListener(e -> handleLogout());
@@ -43,17 +55,33 @@ public class MainFrame extends JFrame {
 
         System.out.println("MainFrame: Adding cards to content panel...");
 
-        // Dashboard - Default (will be replaced based on role)
+        // =====================================================
+        // DASHBOARD - Default (will be replaced based on role)
+        // =====================================================
         JPanel dashboardPlaceholder = createDashboardPlaceholder();
         dashboardPlaceholder.setName("DASHBOARD");
         contentPanel.add(dashboardPlaceholder, "DASHBOARD");
         System.out.println("MainFrame: Added DASHBOARD placeholder");
 
         // =====================================================
+        // USER PROFILE SCREEN (All roles)
+        // =====================================================
+        try {
+            UserProfilePanel userProfilePanel = new UserProfilePanel();
+            userProfilePanel.setName("USER_PROFILE");
+            contentPanel.add(userProfilePanel, "USER_PROFILE");
+            System.out.println("MainFrame: Added USER_PROFILE card");
+        } catch (Exception e) {
+            System.err.println("MainFrame: Error creating UserProfilePanel: " + e.getMessage());
+            e.printStackTrace();
+            JPanel placeholder = createPlaceholderPanel();
+            placeholder.setName("USER_PROFILE");
+            contentPanel.add(placeholder, "USER_PROFILE");
+        }
+
+        // =====================================================
         // USER MANAGEMENT SCREENS (Admin only)
         // =====================================================
-        
-        // User Management
         try {
             UserManagementPanel userManagementPanel = new UserManagementPanel();
             userManagementPanel.setName("USER_MANAGEMENT");
@@ -62,7 +90,7 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating UserManagementPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("User Management");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("USER_MANAGEMENT");
             contentPanel.add(placeholder, "USER_MANAGEMENT");
         }
@@ -70,8 +98,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // PATIENT SCREENS
         // =====================================================
-        
-        // Patient List
         try {
             PatientListPanel patientListPanel = new PatientListPanel();
             patientListPanel.setName("PATIENT_LIST");
@@ -80,12 +106,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating PatientListPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Patient List");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("PATIENT_LIST");
             contentPanel.add(placeholder, "PATIENT_LIST");
         }
 
-        // Add Patient
         try {
             AddPatientPanel addPatientPanel = new AddPatientPanel();
             addPatientPanel.setName("PATIENT_ADD");
@@ -94,13 +119,12 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating AddPatientPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Add Patient");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("PATIENT_ADD");
             contentPanel.add(placeholder, "PATIENT_ADD");
         }
 
-        // Patient Details - Placeholder (will be replaced dynamically)
-        JPanel patientDetailsPlaceholder = createPlaceholderPanel("Patient Details");
+        JPanel patientDetailsPlaceholder = createPlaceholderPanel();
         patientDetailsPlaceholder.setName("PATIENT_DETAILS");
         contentPanel.add(patientDetailsPlaceholder, "PATIENT_DETAILS");
         System.out.println("MainFrame: Added PATIENT_DETAILS placeholder");
@@ -108,8 +132,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // APPOINTMENT SCREENS
         // =====================================================
-        
-        // Appointment List
         try {
             AppointmentListPanel appointmentListPanel = new AppointmentListPanel();
             appointmentListPanel.setName("APPOINTMENT_LIST");
@@ -118,12 +140,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating AppointmentListPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Appointment List");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("APPOINTMENT_LIST");
             contentPanel.add(placeholder, "APPOINTMENT_LIST");
         }
         
-        // Book Appointment
         try {
             BookAppointmentPanel bookAppointmentPanel = new BookAppointmentPanel();
             bookAppointmentPanel.setName("APPOINTMENT_BOOK");
@@ -132,17 +153,15 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating BookAppointmentPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Book Appointment");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("APPOINTMENT_BOOK");
             contentPanel.add(placeholder, "APPOINTMENT_BOOK");
         }
         
-        // Appointment Details - Placeholder (will be replaced dynamically)
-        JPanel appointmentDetails = createPlaceholderPanel("Appointment Details");
+        JPanel appointmentDetails = createPlaceholderPanel();
         appointmentDetails.setName("APPOINTMENT_DETAILS");
         contentPanel.add(appointmentDetails, "APPOINTMENT_DETAILS");
         
-        // Daily Schedule
         try {
             DailySchedulePanel dailySchedulePanel = new DailySchedulePanel();
             dailySchedulePanel.setName("APPOINTMENT_SCHEDULE");
@@ -152,7 +171,7 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating DailySchedulePanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Daily Schedule");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("APPOINTMENT_SCHEDULE");
             contentPanel.add(placeholder, "APPOINTMENT_SCHEDULE");
         }
@@ -161,8 +180,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // BILLING SCREENS
         // =====================================================
-
-        // Bill List
         try {
             BillListPanel billListPanel = new BillListPanel();
             billListPanel.setName("BILL_LIST");
@@ -171,12 +188,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating BillListPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Bill List");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("BILL_LIST");
             contentPanel.add(placeholder, "BILL_LIST");
         }
 
-        // Generate Bill
         try {
             GenerateBillPanel generateBillPanel = new GenerateBillPanel();
             generateBillPanel.setName("BILL_GENERATE");
@@ -185,13 +201,12 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating GenerateBillPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Generate Bill");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("BILL_GENERATE");
             contentPanel.add(placeholder, "BILL_GENERATE");
         }
 
-        // Bill Details - Placeholder (will be replaced dynamically)
-        JPanel billDetailsPlaceholder = createPlaceholderPanel("Bill Details");
+        JPanel billDetailsPlaceholder = createPlaceholderPanel();
         billDetailsPlaceholder.setName("BILL_DETAILS");
         contentPanel.add(billDetailsPlaceholder, "BILL_DETAILS");
         System.out.println("MainFrame: Added BILL_DETAILS card");
@@ -200,8 +215,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // REPORTS SCREENS
         // =====================================================
-        
-        // Report Dashboard
         try {
             ReportDashboardPanel reportDashboardPanel = new ReportDashboardPanel();
             reportDashboardPanel.setName("REPORT_DASHBOARD");
@@ -210,12 +223,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating ReportDashboardPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Report Dashboard");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("REPORT_DASHBOARD");
             contentPanel.add(placeholder, "REPORT_DASHBOARD");
         }
         
-        // Patient Report
         try {
             PatientReportPanel patientReportPanel = new PatientReportPanel();
             patientReportPanel.setName("REPORT_PATIENT");
@@ -224,12 +236,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating PatientReportPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Patient Report");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("REPORT_PATIENT");
             contentPanel.add(placeholder, "REPORT_PATIENT");
         }
         
-        // Schedule Report
         try {
             ScheduleReportPanel scheduleReportPanel = new ScheduleReportPanel();
             scheduleReportPanel.setName("REPORT_SCHEDULE");
@@ -238,12 +249,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating ScheduleReportPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Schedule Report");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("REPORT_SCHEDULE");
             contentPanel.add(placeholder, "REPORT_SCHEDULE");
         }
         
-        // Revenue Report
         try {
             RevenueReportPanel revenueReportPanel = new RevenueReportPanel();
             revenueReportPanel.setName("REPORT_REVENUE");
@@ -252,7 +262,7 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating RevenueReportPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Revenue Report");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("REPORT_REVENUE");
             contentPanel.add(placeholder, "REPORT_REVENUE");
         }
@@ -261,8 +271,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // STAFF SCREENS (Admin only)
         // =====================================================
-        
-        // Staff List
         try {
             StaffListPanel staffListPanel = new StaffListPanel();
             staffListPanel.setName("STAFF_LIST");
@@ -271,12 +279,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating StaffListPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Staff List");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("STAFF_LIST");
             contentPanel.add(placeholder, "STAFF_LIST");
         }
         
-        // Add Staff
         try {
             AddStaffPanel addStaffPanel = new AddStaffPanel();
             addStaffPanel.setName("STAFF_ADD");
@@ -285,13 +292,12 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating AddStaffPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Add Staff");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("STAFF_ADD");
             contentPanel.add(placeholder, "STAFF_ADD");
         }
         
-        // Staff Details - Placeholder (will be replaced dynamically)
-        JPanel staffDetailsPlaceholder = createPlaceholderPanel("Staff Details");
+        JPanel staffDetailsPlaceholder = createPlaceholderPanel();
         staffDetailsPlaceholder.setName("STAFF_DETAILS");
         contentPanel.add(staffDetailsPlaceholder, "STAFF_DETAILS");
         System.out.println("MainFrame: Added STAFF_DETAILS card");
@@ -300,8 +306,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // DENTIST SCREENS (Admin only)
         // =====================================================
-        
-        // Add Dentist
         try {
             AddDentistPanel addDentistPanel = new AddDentistPanel();
             addDentistPanel.setName("DENTIST_ADD");
@@ -310,12 +314,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating AddDentistPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Add Dentist");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("DENTIST_ADD");
             contentPanel.add(placeholder, "DENTIST_ADD");
         }
 
-        // Dentist List
         try {
             DentistListPanel dentistListPanel = new DentistListPanel();
             dentistListPanel.setName("DENTIST_LIST");
@@ -324,13 +327,12 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating DentistListPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Dentist List");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("DENTIST_LIST");
             contentPanel.add(placeholder, "DENTIST_LIST");
         }
 
-        // Dentist Details - Placeholder (will be replaced dynamically)
-        JPanel dentistDetailsPlaceholder = createPlaceholderPanel("Dentist Details");
+        JPanel dentistDetailsPlaceholder = createPlaceholderPanel();
         dentistDetailsPlaceholder.setName("DENTIST_DETAILS");
         contentPanel.add(dentistDetailsPlaceholder, "DENTIST_DETAILS");
         System.out.println("MainFrame: Added DENTIST_DETAILS card");
@@ -339,8 +341,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // TREATMENT SCREENS
         // =====================================================
-        
-        // Add Treatment
         try {
             AddTreatmentPanel addTreatmentPanel = new AddTreatmentPanel();
             addTreatmentPanel.setName("TREATMENT_ADD");
@@ -349,12 +349,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating AddTreatmentPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Add Treatment");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("TREATMENT_ADD");
             contentPanel.add(placeholder, "TREATMENT_ADD");
         }
 
-        // Treatment List
         try {
             TreatmentListPanel treatmentListPanel = new TreatmentListPanel();
             treatmentListPanel.setName("TREATMENT_LIST");
@@ -363,13 +362,12 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating TreatmentListPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Treatment List");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("TREATMENT_LIST");
             contentPanel.add(placeholder, "TREATMENT_LIST");
         }
 
-        // Treatment Details - Placeholder (will be replaced dynamically)
-        JPanel treatmentDetailsPlaceholder = createPlaceholderPanel("Treatment Details");
+        JPanel treatmentDetailsPlaceholder = createPlaceholderPanel();
         treatmentDetailsPlaceholder.setName("TREATMENT_DETAILS");
         contentPanel.add(treatmentDetailsPlaceholder, "TREATMENT_DETAILS");
         System.out.println("MainFrame: Added TREATMENT_DETAILS card");
@@ -378,8 +376,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // AUDIT SCREENS (Admin only)
         // =====================================================
-        
-        // Activity Log
         try {
             ActivityLogPanel activityLogPanel = new ActivityLogPanel();
             activityLogPanel.setName("AUDIT_ACTIVITY");
@@ -388,12 +384,11 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating ActivityLogPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Activity Log");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("AUDIT_ACTIVITY");
             contentPanel.add(placeholder, "AUDIT_ACTIVITY");
         }
         
-        // Login History
         try {
             LoginHistoryPanel loginHistoryPanel = new LoginHistoryPanel();
             loginHistoryPanel.setName("AUDIT_LOGIN");
@@ -402,7 +397,7 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating LoginHistoryPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Login History");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("AUDIT_LOGIN");
             contentPanel.add(placeholder, "AUDIT_LOGIN");
         }
@@ -411,8 +406,6 @@ public class MainFrame extends JFrame {
         // =====================================================
         // HELP SCREEN
         // =====================================================
-        
-        // Help
         try {
             HelpPanel helpPanel = new HelpPanel();
             helpPanel.setName("HELP");
@@ -421,7 +414,7 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             System.err.println("MainFrame: Error creating HelpPanel: " + e.getMessage());
             e.printStackTrace();
-            JPanel placeholder = createPlaceholderPanel("Help");
+            JPanel placeholder = createPlaceholderPanel();
             placeholder.setName("HELP");
             contentPanel.add(placeholder, "HELP");
         }
@@ -431,28 +424,17 @@ public class MainFrame extends JFrame {
         System.out.println("MainFrame: Content panel initialized, showing DASHBOARD");
     }
 
-    private JPanel createDashboardPlaceholder() {
+    /**
+     * Create a simple placeholder panel with no title
+     */
+    private JPanel createPlaceholderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         
-        // Header
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBackground(Color.WHITE);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(30, 40, 20, 40));
-        headerPanel.setLayout(new BorderLayout());
-        
-        JLabel welcomeLabel = new JLabel("Dashboard");
-        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        welcomeLabel.setForeground(new Color(0x2F3E3C));
-        headerPanel.add(welcomeLabel, BorderLayout.WEST);
-        
-        panel.add(headerPanel, BorderLayout.NORTH);
-        
-        // Center content
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setBackground(Color.WHITE);
         
-        JLabel placeholderLabel = new JLabel("Loading dashboard...", SwingConstants.CENTER);
+        JLabel placeholderLabel = new JLabel("Loading...", SwingConstants.CENTER);
         placeholderLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         placeholderLabel.setForeground(new Color(122, 138, 135));
         centerPanel.add(placeholderLabel);
@@ -462,28 +444,14 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-    private JPanel createPlaceholderPanel(String title) {
+    private JPanel createDashboardPlaceholder() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         
-        // Header
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBackground(Color.WHITE);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(30, 40, 20, 40));
-        headerPanel.setLayout(new BorderLayout());
-        
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(0x2F3E3C));
-        headerPanel.add(titleLabel, BorderLayout.WEST);
-        
-        panel.add(headerPanel, BorderLayout.NORTH);
-        
-        // Center content
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setBackground(Color.WHITE);
         
-        JLabel placeholderLabel = new JLabel(title + " - Coming Soon", SwingConstants.CENTER);
+        JLabel placeholderLabel = new JLabel("Loading dashboard...", SwingConstants.CENTER);
         placeholderLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
         placeholderLabel.setForeground(new Color(122, 138, 135));
         centerPanel.add(placeholderLabel);
@@ -500,13 +468,11 @@ public class MainFrame extends JFrame {
     public void configureSidebarForRole(UserRole role) {
         sidebarPanel.configureForRole(role);
         
-        // Update top bar with user info
         User currentUser = LoginSession.getInstance().getCurrentUser();
         if (currentUser != null) {
             topBarPanel.setUserInfo(currentUser.getUsername(), currentUser.getRole().name());
         }
         
-        // Set appropriate dashboard based on role
         setDashboardForRole(role);
     }
 
@@ -515,13 +481,11 @@ public class MainFrame extends JFrame {
      * @param role The user role
      */
     private void setDashboardForRole(UserRole role) {
-        // Remove existing dashboard
         removeDashboardCard();
         
         JPanel dashboardPanel = null;
         
         if (role == UserRole.ADMIN) {
-            // Admin gets full Admin Dashboard
             try {
                 AdminDashboardPanel adminDashboard = new AdminDashboardPanel();
                 adminDashboard.setName("DASHBOARD");
@@ -534,7 +498,6 @@ public class MainFrame extends JFrame {
                 dashboardPanel.setName("DASHBOARD");
             }
         } else if (role == UserRole.RECEPTION) {
-            // Reception gets Reception Dashboard
             try {
                 ReceptionDashboardPanel receptionDashboard = new ReceptionDashboardPanel();
                 receptionDashboard.setName("DASHBOARD");
@@ -547,7 +510,6 @@ public class MainFrame extends JFrame {
                 dashboardPanel.setName("DASHBOARD");
             }
         } else if (role == UserRole.DENTIST) {
-            // Dentist gets Dentist Dashboard
             try {
                 DentistDashboardPanel dentistDashboard = new DentistDashboardPanel();
                 dentistDashboard.setName("DASHBOARD");
@@ -560,7 +522,6 @@ public class MainFrame extends JFrame {
                 dashboardPanel.setName("DASHBOARD");
             }
         } else if (role == UserRole.PATIENT) {
-            // Patient gets Patient Dashboard
             try {
                 PatientDashboardPanel patientDashboard = new PatientDashboardPanel();
                 patientDashboard.setName("DASHBOARD");
@@ -573,7 +534,6 @@ public class MainFrame extends JFrame {
                 dashboardPanel.setName("DASHBOARD");
             }
         } else {
-            // Default placeholder dashboard
             dashboardPanel = createDashboardPlaceholder();
             dashboardPanel.setName("DASHBOARD");
             System.out.println("MainFrame: Added default dashboard for " + role);
@@ -587,9 +547,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    /**
-     * Remove existing dashboard card from content panel
-     */
     private void removeDashboardCard() {
         for (Component comp : contentPanel.getComponents()) {
             if (comp.getName() != null && comp.getName().equals("DASHBOARD")) {
@@ -606,7 +563,6 @@ public class MainFrame extends JFrame {
     public void showCard(String cardName) {
         System.out.println("MainFrame: Attempting to show card: " + cardName);
         
-        // Check if the card exists
         boolean cardExists = false;
         for (Component comp : contentPanel.getComponents()) {
             if (comp.getName() != null && comp.getName().equals(cardName)) {
@@ -620,7 +576,6 @@ public class MainFrame extends JFrame {
             System.out.println("MainFrame: Successfully showed card: " + cardName);
         } else {
             System.err.println("MainFrame: Card not found: " + cardName);
-            // Show dashboard as fallback
             cardLayout.show(contentPanel, "DASHBOARD");
             System.out.println("MainFrame: Showing DASHBOARD as fallback");
         }
@@ -632,7 +587,6 @@ public class MainFrame extends JFrame {
      * @param screen The panel to add
      */
     public void addScreen(String cardName, JPanel screen) {
-        // Remove existing card if it exists
         for (Component comp : contentPanel.getComponents()) {
             if (comp.getName() != null && comp.getName().equals(cardName)) {
                 contentPanel.remove(comp);
@@ -671,6 +625,14 @@ public class MainFrame extends JFrame {
     }
 
     /**
+     * Get the top bar panel
+     * @return The top bar panel
+     */
+    public TopBarPanel getTopBarPanel() {
+        return topBarPanel;
+    }
+
+    /**
      * Handle logout action
      */
     private void handleLogout() {
@@ -683,13 +645,9 @@ public class MainFrame extends JFrame {
         );
         
         if (confirm == JOptionPane.YES_OPTION) {
-            // Clear session
             LoginSession.getInstance().logout();
-            
-            // Close main frame
             this.dispose();
             
-            // Open login screen
             SwingUtilities.invokeLater(() -> {
                 Login loginView = new Login();
                 new controller.LoginController(loginView);

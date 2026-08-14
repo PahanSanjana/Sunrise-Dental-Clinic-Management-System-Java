@@ -10,41 +10,28 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 
 /**
- * TopBarPanel - premium top navigation bar for the dental clinic dashboard.
- *
- * Matches SidebarPanel's design system exactly: same palette, same font
- * fallback chain, and the same "no font-glyph icons" rule - every icon here
- * (search, bell, gear) is hand-drawn with Java2D so it renders identically
- * on every OS instead of depending on which symbol glyphs happen to be
- * installed.
- *
- * Pure View layer: no business logic, no data access. The logout button
- * exposes an addLogoutListener() hook for MainFrame/Controller to wire up.
+ * TopBarPanel - Clean top navigation bar (only branding + search + user)
+ * No page title - each panel handles its own title
  */
 public class TopBarPanel extends JPanel {
 
-    // ---- Palette (matches SidebarPanel) --------------------------------
-    private static final Color PRIMARY_DARK     = Color.decode("#2F3E3C");
-    private static final Color MINT_ACCENT      = Color.decode("#BDDBD1");
-    private static final Color SOFT_BG          = Color.decode("#FBF9F1");
-    private static final Color LIGHT_SURFACE    = Color.decode("#E7E9E3");
-    private static final Color HOVER_SURFACE    = Color.decode("#E8F0F1");
+    private static final Color PRIMARY_DARK = Color.decode("#2F3E3C");
+    private static final Color MINT_ACCENT = Color.decode("#BDDBD1");
+    private static final Color SOFT_BG = Color.decode("#FBF9F1");
+    private static final Color LIGHT_SURFACE = Color.decode("#E7E9E3");
+    private static final Color HOVER_SURFACE = Color.decode("#E8F0F1");
     private static final Color SECONDARY_ACCENT = Color.decode("#C7E7EC");
-    private static final Color SECONDARY_TEXT   = new Color(122, 138, 135); // #7A8A87
+    private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
 
-    // ---- Typography ------------------------------------------------
     private static final String FONT_FAMILY = resolveFontFamily();
-    private static final Font FONT_SEARCH    = new Font(FONT_FAMILY, Font.PLAIN, 13);
-    private static final Font FONT_LOGOUT    = new Font(FONT_FAMILY, Font.BOLD, 13);
-    private static final Font FONT_USER      = new Font(FONT_FAMILY, Font.BOLD, 13);
-    private static final Font FONT_ROLE      = new Font(FONT_FAMILY, Font.PLAIN, 11);
+    private static final Font FONT_SEARCH = new Font(FONT_FAMILY, Font.PLAIN, 13);
+    private static final Font FONT_LOGOUT = new Font(FONT_FAMILY, Font.BOLD, 13);
+    private static final Font FONT_USER = new Font(FONT_FAMILY, Font.BOLD, 13);
+    private static final Font FONT_ROLE = new Font(FONT_FAMILY, Font.PLAIN, 11);
 
-    // ---- Layout constants --------------------------------------------
-    private static final int BAR_HEIGHT     = 72;
-    private static final int LOGO_HEIGHT    = 52;
-    private static final String LOGO_PATH =
-            "C:\\Users\\HP\\OneDrive\\Documents\\Project\\Sunrise-Dental-Clinic-Management-System-Java"
-          + "\\SunriseDentalClinic\\src\\resources\\Remove Bg light.png";
+    private static final int BAR_HEIGHT = 72;
+    private static final int LOGO_HEIGHT = 48;
+    private static final String LOGO_PATH = "src/resources/Remove Bg light.png";
 
     private JTextField searchField;
     private LogoutButton logoutButton;
@@ -75,59 +62,41 @@ public class TopBarPanel extends JPanel {
     }
 
     // =================================================================
-    // LEFT: brand (logo only - name/subtitle removed, sidebar already
-    // carries the clinic name so the top bar doesn't need to repeat it)
+    // LEFT: Brand (Logo only - clean and simple)
     // =================================================================
     private JPanel buildBrandSection() {
-        JPanel section = new JPanel(new GridBagLayout());
+        JPanel section = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         section.setOpaque(false);
-        section.setBorder(new EmptyBorder(0, 24, 0, 16));
-        section.add(buildLogoComponent());
+        section.setBorder(new EmptyBorder(0, 20, 0, 0));
+
+        JComponent logo = buildLogoComponent();
+        section.add(logo);
+
         return section;
     }
 
-    /**
-     * Loads the clinic logo from disk with high-quality scaling, preserving
-     * aspect ratio at a fixed display height. Falls back to a small hand-drawn
-     * mark (consistent with the sidebar's vector-icon approach) if the file
-     * isn't found on this machine, so the bar never breaks visually.
-     */
     private JComponent buildLogoComponent() {
         File logoFile = new File(LOGO_PATH);
         if (logoFile.exists()) {
-            ImageIcon rawIcon = new ImageIcon(LOGO_PATH);
-            int originalWidth = rawIcon.getIconWidth();
-            int originalHeight = rawIcon.getIconHeight();
-            if (originalWidth > 0 && originalHeight > 0) {
-                int scaledWidth = Math.round(((float) originalWidth / originalHeight) * LOGO_HEIGHT);
-                Image scaled = rawIcon.getImage()
-                        .getScaledInstance(scaledWidth, LOGO_HEIGHT, Image.SCALE_SMOOTH);
-                JLabel logoLabel = new JLabel(new ImageIcon(scaled));
-                logoLabel.setPreferredSize(new Dimension(scaledWidth, LOGO_HEIGHT));
-                return logoLabel;
+            try {
+                ImageIcon rawIcon = new ImageIcon(LOGO_PATH);
+                int originalWidth = rawIcon.getIconWidth();
+                int originalHeight = rawIcon.getIconHeight();
+                if (originalWidth > 0 && originalHeight > 0) {
+                    int scaledWidth = Math.round(((float) originalWidth / originalHeight) * LOGO_HEIGHT);
+                    Image scaled = rawIcon.getImage()
+                            .getScaledInstance(scaledWidth, LOGO_HEIGHT, Image.SCALE_SMOOTH);
+                    JLabel logoLabel = new JLabel(new ImageIcon(scaled));
+                    logoLabel.setPreferredSize(new Dimension(scaledWidth, LOGO_HEIGHT));
+                    return logoLabel;
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading logo: " + e.getMessage());
             }
         }
-        // Fallback mark: simple hand-drawn tooth glyph, no external asset needed.
         return new LogoFallbackMark();
     }
 
-    /**
-     * Set user information in the top bar
-     * @param username The username to display
-     * @param role The role to display
-     */
-    public void setUserInfo(String username, String role) {
-        if (userNameLabel != null) {
-            userNameLabel.setText(username != null ? username : "Guest");
-        }
-        if (userRoleLabel != null) {
-            userRoleLabel.setText(role != null ? role : "User");
-        }
-        revalidate();
-        repaint();
-    }
-
-    /** Minimal vector "tooth" mark used only if the logo file can't be loaded. */
     private static class LogoFallbackMark extends JPanel {
         LogoFallbackMark() {
             setOpaque(false);
@@ -155,7 +124,22 @@ public class TopBarPanel extends JPanel {
     }
 
     // =================================================================
-    // CENTER: global search
+    // USER INFO METHODS
+    // =================================================================
+
+    public void setUserInfo(String username, String role) {
+        if (userNameLabel != null) {
+            userNameLabel.setText(username != null ? username : "Guest");
+        }
+        if (userRoleLabel != null) {
+            userRoleLabel.setText(role != null ? role : "User");
+        }
+        revalidate();
+        repaint();
+    }
+
+    // =================================================================
+    // CENTER: Search
     // =================================================================
     private JPanel buildSearchSection() {
         JPanel wrapper = new JPanel(new GridBagLayout());
@@ -170,10 +154,15 @@ public class TopBarPanel extends JPanel {
     }
 
     public String getSearchText() {
-        return searchField.getText();
+        return searchField != null ? searchField.getText() : "";
     }
 
-    /** Self-painted rounded search pill with a hand-drawn magnifier icon. */
+    public void clearSearch() {
+        if (searchField != null) {
+            searchField.setText("");
+        }
+    }
+
     private static class RoundedSearchField extends JPanel {
         private static final int FIELD_WIDTH = 340;
         private static final int FIELD_HEIGHT = 40;
@@ -247,8 +236,7 @@ public class TopBarPanel extends JPanel {
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            g2.setColor(HOVER_SURFACE); // #E8F0F1 fill at all times per spec
+            g2.setColor(HOVER_SURFACE);
             g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), getHeight(), getHeight()));
 
             if (focused) {
@@ -257,13 +245,11 @@ public class TopBarPanel extends JPanel {
                 g2.draw(new RoundRectangle2D.Float(0.8f, 0.8f, getWidth() - 1.6f, getHeight() - 1.6f,
                         getHeight(), getHeight()));
             }
-
             g2.dispose();
             super.paintComponent(g);
         }
     }
 
-    /** Hand-drawn magnifying glass icon - no font glyph dependency. */
     private static class SearchIcon extends JPanel {
         SearchIcon() {
             setOpaque(false);
@@ -281,10 +267,6 @@ public class TopBarPanel extends JPanel {
             g2.setColor(SECONDARY_TEXT);
             g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-            // Same fix as the sidebar icons: BorderLayout.WEST stretches this
-            // panel to the search field's full height, so we translate to the
-            // center of whatever space we actually got instead of drawing at
-            // a fixed (0,0) origin - otherwise the glass sits above-center.
             int offsetX = (getWidth() - 18) / 2;
             int offsetY = (getHeight() - 18) / 2;
             g2.translate(offsetX, offsetY);
@@ -296,33 +278,63 @@ public class TopBarPanel extends JPanel {
     }
 
     // =================================================================
-    // RIGHT: User info + Logout
+    // RIGHT: User Info + Logout
     // =================================================================
     private JPanel buildActionsSection() {
-        JPanel section = new JPanel(new FlowLayout(FlowLayout.RIGHT, 18, 0));
+        JPanel section = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 0));
         section.setOpaque(false);
         section.setBorder(new EmptyBorder(0, 16, 0, 24));
+
+        // User Avatar
+        JPanel avatar = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(SECONDARY_ACCENT);
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                
+                // Draw user initial
+                g2.setColor(PRIMARY_DARK);
+                g2.setFont(new Font(FONT_FAMILY, Font.BOLD, 14));
+                FontMetrics fm = g2.getFontMetrics();
+                String initial = userNameLabel != null && !userNameLabel.getText().equals("Guest") 
+                    ? String.valueOf(userNameLabel.getText().charAt(0)).toUpperCase() : "U";
+                int textX = (getWidth() - fm.stringWidth(initial)) / 2;
+                int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(initial, textX, textY);
+                g2.dispose();
+            }
+        };
+        avatar.setOpaque(false);
+        avatar.setPreferredSize(new Dimension(36, 36));
+        section.add(avatar);
 
         // User info panel
         JPanel userPanel = new JPanel();
         userPanel.setLayout(new BoxLayout(userPanel, BoxLayout.Y_AXIS));
         userPanel.setOpaque(false);
-        
+
         userNameLabel = new JLabel("Guest");
         userNameLabel.setFont(FONT_USER);
         userNameLabel.setForeground(PRIMARY_DARK);
         userNameLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        
+
         userRoleLabel = new JLabel("User");
         userRoleLabel.setFont(FONT_ROLE);
         userRoleLabel.setForeground(SECONDARY_TEXT);
         userRoleLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-        
+
         userPanel.add(userNameLabel);
         userPanel.add(Box.createRigidArea(new Dimension(0, 2)));
         userPanel.add(userRoleLabel);
 
         section.add(userPanel);
+
+        JSeparator sep = new JSeparator(SwingConstants.VERTICAL);
+        sep.setPreferredSize(new Dimension(1, 36));
+        sep.setForeground(LIGHT_SURFACE);
+        section.add(sep);
 
         logoutButton = new LogoutButton();
         section.add(logoutButton);
@@ -331,10 +343,11 @@ public class TopBarPanel extends JPanel {
     }
 
     public void addLogoutListener(ActionListener listener) {
-        logoutButton.addActionListener(listener);
+        if (logoutButton != null) {
+            logoutButton.addActionListener(listener);
+        }
     }
 
-    /** Premium outline logout button - mint fill on hover, no red anywhere. */
     private static class LogoutButton extends JPanel {
         private static final int HEIGHT = 36;
         private boolean hovered = false;

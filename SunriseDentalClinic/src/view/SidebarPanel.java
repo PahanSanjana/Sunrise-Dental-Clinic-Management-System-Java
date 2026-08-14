@@ -97,13 +97,23 @@ public class SidebarPanel extends JPanel {
         // Dashboard - All roles
         groups.add(new NavGroup(IconType.DASHBOARD, "Dashboard", "DASHBOARD"));
 
+        // =====================================================
+        // ✅ NEW: My Profile - All roles
+        // =====================================================
+        NavGroup profile = new NavGroup(IconType.PROFILE, "My Profile", "USER_PROFILE");
+        groups.add(profile);
+
+        // =====================================================
         // User Management - Admin only
+        // =====================================================
         if (currentRole == UserRole.ADMIN) {
             NavGroup users = new NavGroup(IconType.USERS, "User Management", "USER_MANAGEMENT");
             groups.add(users);
         }
 
+        // =====================================================
         // Patients - All roles can see, but Dentist cannot add
+        // =====================================================
         NavGroup patients = new NavGroup(IconType.PATIENTS, "Patients", null);
         patients.children.add(new NavChild("Patient List", "PATIENT_LIST"));
         
@@ -114,7 +124,9 @@ public class SidebarPanel extends JPanel {
         patients.children.add(new NavChild("Patient Details", "PATIENT_DETAILS"));
         groups.add(patients);
 
+        // =====================================================
         // Appointments - Different access for different roles
+        // =====================================================
         NavGroup appointments = new NavGroup(IconType.APPOINTMENTS, "Appointments", null);
         
         if (currentRole == UserRole.PATIENT) {
@@ -130,7 +142,9 @@ public class SidebarPanel extends JPanel {
         }
         groups.add(appointments);
 
+        // =====================================================
         // Billing
+        // =====================================================
         NavGroup billing = new NavGroup(IconType.BILLING, "Billing", null);
         if (currentRole == UserRole.PATIENT) {
             // Patients only see their bill details
@@ -142,7 +156,9 @@ public class SidebarPanel extends JPanel {
         }
         groups.add(billing);
 
+        // =====================================================
         // Reports
+        // =====================================================
         NavGroup reports = new NavGroup(IconType.REPORTS, "Reports", null);
         if (currentRole == UserRole.PATIENT) {
             // Patients only see patient report
@@ -155,7 +171,9 @@ public class SidebarPanel extends JPanel {
         }
         groups.add(reports);
 
+        // =====================================================
         // Staff - Only ADMIN can access
+        // =====================================================
         if (currentRole == UserRole.ADMIN) {
             NavGroup staff = new NavGroup(IconType.STAFF, "Staff", null);
             staff.children.add(new NavChild("Staff List", "STAFF_LIST"));
@@ -164,7 +182,9 @@ public class SidebarPanel extends JPanel {
             groups.add(staff);
         }
 
+        // =====================================================
         // Dentists - Only ADMIN can access
+        // =====================================================
         if (currentRole == UserRole.ADMIN) {
             NavGroup dentists = new NavGroup(IconType.DENTISTS, "Dentists", null);
             dentists.children.add(new NavChild("Dentist List", "DENTIST_LIST"));
@@ -172,7 +192,9 @@ public class SidebarPanel extends JPanel {
             groups.add(dentists);
         }
 
+        // =====================================================
         // Treatments
+        // =====================================================
         NavGroup treatments = new NavGroup(IconType.TREATMENTS, "Treatments", null);
         if (currentRole == UserRole.PATIENT) {
             // Patients only see treatment list
@@ -183,7 +205,9 @@ public class SidebarPanel extends JPanel {
         }
         groups.add(treatments);
 
+        // =====================================================
         // Audit Log - Only ADMIN can access
+        // =====================================================
         if (currentRole == UserRole.ADMIN) {
             NavGroup audit = new NavGroup(IconType.AUDIT, "Audit Logs", null);
             audit.children.add(new NavChild("Activity Log", "AUDIT_ACTIVITY"));
@@ -191,7 +215,9 @@ public class SidebarPanel extends JPanel {
             groups.add(audit);
         }
 
+        // =====================================================
         // Help - All roles
+        // =====================================================
         NavGroup help = new NavGroup(IconType.HELP, "Help", "HELP");
         groups.add(help);
 
@@ -305,7 +331,9 @@ public class SidebarPanel extends JPanel {
                 g2.setColor(PRIMARY_DARK);
                 g2.setFont(new Font(FONT_FAMILY, Font.BOLD, 16));
                 FontMetrics fm = g2.getFontMetrics();
-                String initial = "U";
+                User currentUser = model.LoginSession.getInstance().getCurrentUser();
+                String initial = currentUser != null ? 
+                    String.valueOf(currentUser.getUsername().charAt(0)).toUpperCase() : "U";
                 int textX = (getWidth() - fm.stringWidth(initial)) / 2;
                 int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
                 g2.drawString(initial, textX, textY);
@@ -345,10 +373,17 @@ public class SidebarPanel extends JPanel {
         if (currentUser != null) {
             userNameLabel.setText(currentUser.getUsername());
             userRoleLabel.setText(currentUser.getRole().name());
+        } else {
+            userNameLabel.setText("Guest");
+            userRoleLabel.setText("User");
         }
+        revalidate();
+        repaint();
     }
 
+    // =================================================================
     // Inner class for RowClickHandler
+    // =================================================================
     private class RowClickHandler extends MouseAdapter {
         private final RoundedRow row;
         private final Runnable onClick;
@@ -374,7 +409,9 @@ public class SidebarPanel extends JPanel {
         }
     }
 
+    // =================================================================
     // Inner class for RoundedRow
+    // =================================================================
     private static class RoundedRow extends JPanel {
         private final int rowHeight;
         private boolean hovered = false;
@@ -459,7 +496,9 @@ public class SidebarPanel extends JPanel {
         }
     }
 
-    // Inner class for IconCanvas
+    // =================================================================
+    // Inner class for IconCanvas (Hand-drawn icons)
+    // =================================================================
     private static class IconCanvas extends JPanel {
         private final IconType type;
         private Color color = PRIMARY_DARK;
@@ -496,6 +535,17 @@ public class SidebarPanel extends JPanel {
                     g2.drawRoundRect(11, 1, 6, 6, 2, 2);
                     g2.drawRoundRect(1, 11, 6, 6, 2, 2);
                     g2.drawRoundRect(11, 11, 6, 6, 2, 2);
+                    break;
+
+                // ✅ NEW: Profile Icon
+                case PROFILE:
+                    // Person silhouette
+                    g2.drawOval(5, 2, 8, 8);
+                    g2.drawArc(1, 12, 16, 10, 0, 180);
+                    // Small gear/cog symbol
+                    g2.drawOval(12, 10, 5, 5);
+                    g2.drawLine(13, 11, 16, 14);
+                    g2.drawLine(12, 12, 17, 12);
                     break;
 
                 case PATIENTS:
@@ -553,14 +603,12 @@ public class SidebarPanel extends JPanel {
                     break;
 
                 case HELP:
-                    // Question mark icon
                     g2.drawOval(2, 2, 14, 14);
                     g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
                     g2.drawString("?", 6, 13);
                     break;
 
                 case USERS:
-                    // User icon - two people
                     g2.drawOval(2, 2, 5, 5);
                     g2.drawArc(0, 9, 9, 7, 0, 180);
                     g2.drawOval(11, 2, 5, 5);
@@ -571,7 +619,9 @@ public class SidebarPanel extends JPanel {
         }
     }
 
+    // =================================================================
     // Inner classes for navigation data
+    // =================================================================
     private static class NavGroup {
         IconType icon;
         String label;
@@ -595,8 +645,21 @@ public class SidebarPanel extends JPanel {
         }
     }
 
-    // IconType enum
+    // =================================================================
+    // IconType enum - ✅ Added PROFILE
+    // =================================================================
     private enum IconType {
-        DASHBOARD, USERS, PATIENTS, APPOINTMENTS, BILLING, REPORTS, STAFF, DENTISTS, TREATMENTS, AUDIT, HELP
+        DASHBOARD,
+        PROFILE,      // ✅ NEW
+        USERS,
+        PATIENTS,
+        APPOINTMENTS,
+        BILLING,
+        REPORTS,
+        STAFF,
+        DENTISTS,
+        TREATMENTS,
+        AUDIT,
+        HELP
     }
 }
