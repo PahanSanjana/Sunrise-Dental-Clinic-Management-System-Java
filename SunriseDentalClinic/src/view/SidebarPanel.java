@@ -97,23 +97,17 @@ public class SidebarPanel extends JPanel {
         // Dashboard - All roles
         groups.add(new NavGroup(IconType.DASHBOARD, "Dashboard", "DASHBOARD"));
 
-        // =====================================================
-        // ✅ NEW: My Profile - All roles
-        // =====================================================
+        // My Profile - All roles
         NavGroup profile = new NavGroup(IconType.PROFILE, "My Profile", "USER_PROFILE");
         groups.add(profile);
 
-        // =====================================================
         // User Management - Admin only
-        // =====================================================
         if (currentRole == UserRole.ADMIN) {
             NavGroup users = new NavGroup(IconType.USERS, "User Management", "USER_MANAGEMENT");
             groups.add(users);
         }
 
-        // =====================================================
-        // Patients - All roles can see, but Dentist cannot add
-        // =====================================================
+        // Patients - All roles can see
         NavGroup patients = new NavGroup(IconType.PATIENTS, "Patients", null);
         patients.children.add(new NavChild("Patient List", "PATIENT_LIST"));
         
@@ -121,44 +115,37 @@ public class SidebarPanel extends JPanel {
         if (currentRole == UserRole.ADMIN || currentRole == UserRole.RECEPTION) {
             patients.children.add(new NavChild("Add Patient", "PATIENT_ADD"));
         }
-        patients.children.add(new NavChild("Patient Details", "PATIENT_DETAILS"));
+        // ❌ REMOVED: Patient Details (linked from Patient List)
         groups.add(patients);
 
-        // =====================================================
         // Appointments - Different access for different roles
-        // =====================================================
         NavGroup appointments = new NavGroup(IconType.APPOINTMENTS, "Appointments", null);
         
         if (currentRole == UserRole.PATIENT) {
-            // Patients only see booking and their details
+            // Patients only see booking
             appointments.children.add(new NavChild("Book Appointment", "APPOINTMENT_BOOK"));
-            appointments.children.add(new NavChild("Appointment Details", "APPOINTMENT_DETAILS"));
         } else {
             // Other roles see full appointment management
             appointments.children.add(new NavChild("Appointment List", "APPOINTMENT_LIST"));
             appointments.children.add(new NavChild("Book Appointment", "APPOINTMENT_BOOK"));
-            appointments.children.add(new NavChild("Appointment Details", "APPOINTMENT_DETAILS"));
             appointments.children.add(new NavChild("Daily Schedule", "APPOINTMENT_SCHEDULE"));
         }
+        // ❌ REMOVED: Appointment Details (linked from Appointment List)
         groups.add(appointments);
 
-        // =====================================================
         // Billing
-        // =====================================================
         NavGroup billing = new NavGroup(IconType.BILLING, "Billing", null);
         if (currentRole == UserRole.PATIENT) {
-            // Patients only see their bill details
-            billing.children.add(new NavChild("Bill Details", "BILL_DETAILS"));
+            // Patients only see their bills
+            billing.children.add(new NavChild("My Bills", "BILL_LIST"));
         } else {
             billing.children.add(new NavChild("Bill List", "BILL_LIST"));
             billing.children.add(new NavChild("Generate Bill", "BILL_GENERATE"));
-            billing.children.add(new NavChild("Bill Details", "BILL_DETAILS"));
         }
+        // ❌ REMOVED: Bill Details (linked from Bill List)
         groups.add(billing);
 
-        // =====================================================
         // Reports
-        // =====================================================
         NavGroup reports = new NavGroup(IconType.REPORTS, "Reports", null);
         if (currentRole == UserRole.PATIENT) {
             // Patients only see patient report
@@ -171,20 +158,16 @@ public class SidebarPanel extends JPanel {
         }
         groups.add(reports);
 
-        // =====================================================
         // Staff - Only ADMIN can access
-        // =====================================================
         if (currentRole == UserRole.ADMIN) {
             NavGroup staff = new NavGroup(IconType.STAFF, "Staff", null);
             staff.children.add(new NavChild("Staff List", "STAFF_LIST"));
             staff.children.add(new NavChild("Add Staff", "STAFF_ADD"));
-            staff.children.add(new NavChild("Staff Details", "STAFF_DETAILS"));
+            // ❌ REMOVED: Staff Details (linked from Staff List)
             groups.add(staff);
         }
 
-        // =====================================================
         // Dentists - Only ADMIN can access
-        // =====================================================
         if (currentRole == UserRole.ADMIN) {
             NavGroup dentists = new NavGroup(IconType.DENTISTS, "Dentists", null);
             dentists.children.add(new NavChild("Dentist List", "DENTIST_LIST"));
@@ -192,9 +175,7 @@ public class SidebarPanel extends JPanel {
             groups.add(dentists);
         }
 
-        // =====================================================
         // Treatments
-        // =====================================================
         NavGroup treatments = new NavGroup(IconType.TREATMENTS, "Treatments", null);
         if (currentRole == UserRole.PATIENT) {
             // Patients only see treatment list
@@ -205,19 +186,9 @@ public class SidebarPanel extends JPanel {
         }
         groups.add(treatments);
 
-        // =====================================================
-        // Audit Log - Only ADMIN can access
-        // =====================================================
-        if (currentRole == UserRole.ADMIN) {
-            NavGroup audit = new NavGroup(IconType.AUDIT, "Audit Logs", null);
-            audit.children.add(new NavChild("Activity Log", "AUDIT_ACTIVITY"));
-            audit.children.add(new NavChild("Login History", "AUDIT_LOGIN"));
-            groups.add(audit);
-        }
+        // ❌ REMOVED: Audit Logs (completely removed from system)
 
-        // =====================================================
         // Help - All roles
-        // =====================================================
         NavGroup help = new NavGroup(IconType.HELP, "Help", "HELP");
         groups.add(help);
 
@@ -537,7 +508,6 @@ public class SidebarPanel extends JPanel {
                     g2.drawRoundRect(11, 11, 6, 6, 2, 2);
                     break;
 
-                // ✅ NEW: Profile Icon
                 case PROFILE:
                     // Person silhouette
                     g2.drawOval(5, 2, 8, 8);
@@ -594,14 +564,6 @@ public class SidebarPanel extends JPanel {
                     g2.drawLine(2, 9, 16, 9);
                     break;
 
-                case AUDIT:
-                    for (int row = 0; row < 3; row++) {
-                        int y = 3 + (row * 6);
-                        g2.fillOval(1, y - 1, 3, 3);
-                        g2.drawLine(7, y, 16, y);
-                    }
-                    break;
-
                 case HELP:
                     g2.drawOval(2, 2, 14, 14);
                     g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -646,11 +608,11 @@ public class SidebarPanel extends JPanel {
     }
 
     // =================================================================
-    // IconType enum - ✅ Added PROFILE
+    // IconType enum
     // =================================================================
     private enum IconType {
         DASHBOARD,
-        PROFILE,      // ✅ NEW
+        PROFILE,
         USERS,
         PATIENTS,
         APPOINTMENTS,
@@ -659,7 +621,7 @@ public class SidebarPanel extends JPanel {
         STAFF,
         DENTISTS,
         TREATMENTS,
-        AUDIT,
         HELP
+       
     }
 }
