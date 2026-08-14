@@ -66,39 +66,64 @@ public class BillListPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header Panel
-        add(createHeaderPanel(), BorderLayout.NORTH);
+        // Title Panel - At the top
+        add(createTitlePanel(), BorderLayout.NORTH);
         
-        // Table Panel
-        add(createTablePanel(), BorderLayout.CENTER);
-        
-        // Footer Panel
-        add(createFooterPanel(), BorderLayout.SOUTH);
+        // Main Content Panel (Search + Table + Footer)
+        add(createMainContentPanel(), BorderLayout.CENTER);
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(SOFT_SURFACE);
-        header.setBorder(new EmptyBorder(0, 0, 15, 0));
-
-        // Title
+    /**
+     * ✅ Title Panel - Separate from other content
+     */
+    private JPanel createTitlePanel() {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
-        titlePanel.setOpaque(false);
+        titlePanel.setBackground(SOFT_SURFACE);
+        titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Bill Management");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("Manage all bills in the system");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
+        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         titlePanel.add(titleLabel);
+        titlePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         titlePanel.add(subtitleLabel);
+        
+        return titlePanel;
+    }
+
+    /**
+     * ✅ Main Content Panel - Contains search, table, and footer
+     */
+    private JPanel createMainContentPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(15, 15, 15, 15)
+        ));
 
         // Search Panel
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        mainPanel.add(createSearchPanel(), BorderLayout.NORTH);
+        
+        // Table Panel
+        mainPanel.add(createTablePanel(), BorderLayout.CENTER);
+        
+        // Footer Panel
+        mainPanel.add(createFooterPanel(), BorderLayout.SOUTH);
+
+        return mainPanel;
+    }
+
+    private JPanel createSearchPanel() {
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         searchPanel.setOpaque(false);
 
         // Date filter
@@ -154,19 +179,15 @@ public class BillListPanel extends JPanel {
         searchPanel.add(addButton);
         searchPanel.add(refreshButton);
 
-        header.add(titlePanel, BorderLayout.WEST);
-        header.add(searchPanel, BorderLayout.EAST);
-
-        return header;
+        return searchPanel;
     }
 
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
 
-        // Create table model
-        String[] columns = {"ID", "Bill Number", "Patient", "Date", "Due Date", "Total", "Status", "Actions"};
+        // ✅ Removed "Actions" column - No buttons inside table
+        String[] columns = {"ID", "Bill Number", "Patient", "Date", "Due Date", "Total", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -190,8 +211,6 @@ public class BillListPanel extends JPanel {
         billTable.getColumnModel().getColumn(2).setPreferredWidth(150);
         billTable.getColumnModel().getColumn(5).setMaxWidth(100);
         billTable.getColumnModel().getColumn(6).setMaxWidth(120);
-        billTable.getColumnModel().getColumn(7).setMaxWidth(180);
-        billTable.getColumnModel().getColumn(7).setMinWidth(150);
 
         // Custom header
         JTableHeader header = billTable.getTableHeader();
@@ -216,31 +235,6 @@ public class BillListPanel extends JPanel {
             }
         });
 
-        // Action buttons for each row
-        billTable.getColumnModel().getColumn(7).setCellRenderer(new ActionButtonRenderer());
-        billTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int column = billTable.getColumnModel().getColumnIndex("Actions");
-                int row = billTable.rowAtPoint(e.getPoint());
-                int col = billTable.columnAtPoint(e.getPoint());
-                
-                if (row >= 0 && col == column) {
-                    int x = e.getX();
-                    int cellWidth = billTable.getCellRect(row, col, true).width;
-                    int buttonWidth = cellWidth / 3;
-                    
-                    if (x < buttonWidth) {
-                        viewBill(row);
-                    } else if (x < buttonWidth * 2) {
-                        editBill(row);
-                    } else {
-                        deleteBill(row);
-                    }
-                }
-            }
-        });
-
         JScrollPane scrollPane = new JScrollPane(billTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
@@ -259,6 +253,61 @@ public class BillListPanel extends JPanel {
         statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         statusLabel.setForeground(new Color(107, 123, 121));
 
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        leftPanel.setOpaque(false);
+        
+        viewButton = createStyledButton("View", SOFT_SURFACE, PRIMARY_DARK);
+        viewButton.setBorderColor(LIGHT_SURFACE);
+        viewButton.setPreferredSize(new Dimension(80, 30));
+        viewButton.addActionListener(e -> {
+            int row = billTable.getSelectedRow();
+            if (row != -1) {
+                viewBill(row);
+            } else {
+                showError("Please select a bill to view.");
+            }
+        });
+
+        editButton = createStyledButton("Edit", SOFT_SURFACE, PRIMARY_DARK);
+        editButton.setBorderColor(LIGHT_SURFACE);
+        editButton.setPreferredSize(new Dimension(80, 30));
+        editButton.addActionListener(e -> {
+            int row = billTable.getSelectedRow();
+            if (row != -1) {
+                editBill(row);
+            } else {
+                showError("Please select a bill to edit.");
+            }
+        });
+
+        markPaidButton = createStyledButton("Mark Paid", SUCCESS_COLOR, Color.WHITE);
+        markPaidButton.setPreferredSize(new Dimension(100, 30));
+        markPaidButton.addActionListener(e -> {
+            int row = billTable.getSelectedRow();
+            if (row != -1) {
+                markBillAsPaid(row);
+            } else {
+                showError("Please select a bill to mark as paid.");
+            }
+        });
+
+        deleteButton = createStyledButton("Delete", SOFT_SURFACE, ERROR_COLOR);
+        deleteButton.setBorderColor(LIGHT_SURFACE);
+        deleteButton.setPreferredSize(new Dimension(80, 30));
+        deleteButton.addActionListener(e -> {
+            int row = billTable.getSelectedRow();
+            if (row != -1) {
+                deleteBill(row);
+            } else {
+                showError("Please select a bill to delete.");
+            }
+        });
+
+        leftPanel.add(viewButton);
+        leftPanel.add(editButton);
+        leftPanel.add(markPaidButton);
+        leftPanel.add(deleteButton);
+
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         rightPanel.setOpaque(false);
 
@@ -274,7 +323,7 @@ public class BillListPanel extends JPanel {
         rightPanel.add(new JLabel("|"));
         rightPanel.add(totalRevenueLabel);
 
-        footer.add(statusLabel, BorderLayout.WEST);
+        footer.add(leftPanel, BorderLayout.WEST);
         footer.add(rightPanel, BorderLayout.EAST);
 
         return footer;
@@ -309,6 +358,8 @@ public class BillListPanel extends JPanel {
                 hoverColor = new Color(40, 55, 53);
             } else if (bg.equals(ERROR_COLOR)) {
                 hoverColor = new Color(180, 60, 60);
+            } else if (bg.equals(SUCCESS_COLOR)) {
+                hoverColor = new Color(40, 180, 90);
             } else {
                 hoverColor = new Color(220, 220, 210);
             }
@@ -400,49 +451,6 @@ public class BillListPanel extends JPanel {
         }
     }
 
-    // Action Button Renderer for table
-    private class ActionButtonRenderer extends javax.swing.table.DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-            
-            JPanel panel = new JPanel(new GridLayout(1, 3, 3, 3));
-            panel.setOpaque(true);
-            panel.setBackground(isSelected ? new Color(235, 245, 240) : Color.WHITE);
-            panel.setBorder(BorderFactory.createEmptyBorder(2, 3, 2, 3));
-            
-            JButton viewBtn = new JButton("View");
-            viewBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            viewBtn.setBackground(MINT);
-            viewBtn.setForeground(PRIMARY_DARK);
-            viewBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            viewBtn.setFocusPainted(false);
-            viewBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            JButton editBtn = new JButton("Edit");
-            editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            editBtn.setBackground(new Color(200, 220, 240));
-            editBtn.setForeground(PRIMARY_DARK);
-            editBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            editBtn.setFocusPainted(false);
-            editBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            JButton delBtn = new JButton("Delete");
-            delBtn.setFont(new Font("Segoe UI", Font.PLAIN, 9));
-            delBtn.setBackground(new Color(240, 200, 200));
-            delBtn.setForeground(ERROR_COLOR);
-            delBtn.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
-            delBtn.setFocusPainted(false);
-            delBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
-            panel.add(viewBtn);
-            panel.add(editBtn);
-            panel.add(delBtn);
-            
-            return panel;
-        }
-    }
-
     // ========================
     // Public methods
     // ========================
@@ -452,7 +460,6 @@ public class BillListPanel extends JPanel {
         String status = statusCombo != null ? (String) statusCombo.getSelectedItem() : "All Status";
         String dateFilter = dateFilterCombo != null ? (String) dateFilterCombo.getSelectedItem() : "All Dates";
         
-        // Use SwingWorker to load in background
         SwingWorker<List<Bill>, Void> worker = new SwingWorker<List<Bill>, Void>() {
             @Override
             protected List<Bill> doInBackground() throws Exception {
@@ -500,8 +507,7 @@ public class BillListPanel extends JPanel {
                 date,
                 dueDate,
                 "$" + df.format(bill.getTotalAmount()),
-                bill.getStatus() != null ? bill.getStatus() : "N/A",
-                "Actions"
+                bill.getStatus() != null ? bill.getStatus() : "N/A"
             };
             tableModel.addRow(row);
         }
@@ -523,7 +529,6 @@ public class BillListPanel extends JPanel {
     public void viewBill(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
         
-        // Navigate to bill details
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
@@ -531,11 +536,9 @@ public class BillListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            // Get the bill from database
             Bill bill = controller.getBillById(billId);
             if (bill != null) {
                 List<BillItem> items = controller.getBillItemsByBillId(billId);
-                // Create a new details panel with the bill
                 BillDetailsPanel detailsPanel = new BillDetailsPanel(bill, items);
                 detailsPanel.setName("BILL_DETAILS");
                 mainFrame.addScreen("BILL_DETAILS", detailsPanel);
@@ -549,7 +552,6 @@ public class BillListPanel extends JPanel {
     public void editBill(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
         
-        // Navigate to bill details in edit mode
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
@@ -557,16 +559,13 @@ public class BillListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            // Get the bill from database
             Bill bill = controller.getBillById(billId);
             if (bill != null) {
                 List<BillItem> items = controller.getBillItemsByBillId(billId);
-                // Create a new details panel with the bill
                 BillDetailsPanel detailsPanel = new BillDetailsPanel(bill, items);
                 detailsPanel.setName("BILL_DETAILS");
                 mainFrame.addScreen("BILL_DETAILS", detailsPanel);
                 mainFrame.showCard("BILL_DETAILS");
-                // Switch to edit mode
                 detailsPanel.toggleEditMode();
             } else {
                 showError("Bill not found.");
@@ -590,7 +589,7 @@ public class BillListPanel extends JPanel {
             boolean success = controller.deleteBill(billId);
             if (success) {
                 showSuccess("Bill deleted successfully!");
-                loadBills(); // Refresh the list
+                loadBills();
             } else {
                 showError("Failed to delete bill.");
             }
@@ -619,7 +618,7 @@ public class BillListPanel extends JPanel {
             boolean success = controller.updateBillStatus(billId, "Paid");
             if (success) {
                 showSuccess("Bill marked as paid!");
-                loadBills(); // Refresh the list
+                loadBills();
             } else {
                 showError("Failed to update bill status.");
             }

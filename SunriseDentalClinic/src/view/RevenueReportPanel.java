@@ -42,8 +42,6 @@ public class RevenueReportPanel extends JPanel {
     private JComboBox<String> periodCombo;
     private JComboBox<String> paymentMethodCombo;
     private RoundedButton generateButton;
-    private RoundedButton exportButton;
-    private RoundedButton printButton;
     private RoundedButton refreshButton;
     private JLabel statusLabel;
     private JLabel summaryLabel;
@@ -83,13 +81,17 @@ public class RevenueReportPanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header Panel
-        add(createHeaderPanel(), BorderLayout.NORTH);
+        // Title Panel - At the top
+        add(createTitlePanel(), BorderLayout.NORTH);
         
         // Main Content Panel
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(SOFT_SURFACE);
+        
+        // Search/Filter Panel
+        mainPanel.add(createFilterPanel());
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Summary Cards
         mainPanel.add(createSummaryPanel());
@@ -111,36 +113,48 @@ public class RevenueReportPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
-    private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(SOFT_SURFACE);
-        header.setBorder(new EmptyBorder(0, 0, 15, 0));
-
-        // Title
+    /**
+     * ✅ Title Panel - Separate from other content
+     */
+    private JPanel createTitlePanel() {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
-        titlePanel.setOpaque(false);
+        titlePanel.setBackground(SOFT_SURFACE);
+        titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Revenue Report");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("View revenue statistics and financial overview");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
+        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         titlePanel.add(titleLabel);
+        titlePanel.add(Box.createRigidArea(new Dimension(0, 2)));
         titlePanel.add(subtitleLabel);
+        
+        return titlePanel;
+    }
 
-        // Search Panel
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        searchPanel.setOpaque(false);
+    /**
+     * ✅ Filter Panel - Search and filter controls
+     */
+    private JPanel createFilterPanel() {
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        filterPanel.setBackground(Color.WHITE);
+        filterPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(10, 15, 10, 15)
+        ));
 
         // Period filter
         String[] periods = {"Today", "This Week", "This Month", "Last Month", "This Quarter", "This Year", "Custom Range"};
         periodCombo = new JComboBox<>(periods);
         periodCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        periodCombo.setPreferredSize(new Dimension(120, 35));
+        periodCombo.setPreferredSize(new Dimension(130, 35));
         periodCombo.addActionListener(e -> {
             if ("Custom Range".equals(periodCombo.getSelectedItem())) {
                 showCustomDateDialog();
@@ -157,34 +171,19 @@ public class RevenueReportPanel extends JPanel {
         generateButton.setPreferredSize(new Dimension(150, 35));
         generateButton.addActionListener(e -> generateReport());
 
-        exportButton = createStyledButton("Export PDF", SOFT_SURFACE, PRIMARY_DARK);
-        exportButton.setBorderColor(LIGHT_SURFACE);
-        exportButton.setPreferredSize(new Dimension(120, 35));
-        exportButton.addActionListener(e -> exportReport());
-
-        printButton = createStyledButton("Print", SOFT_SURFACE, PRIMARY_DARK);
-        printButton.setBorderColor(LIGHT_SURFACE);
-        printButton.setPreferredSize(new Dimension(100, 35));
-        printButton.addActionListener(e -> printReport());
-
         refreshButton = createStyledButton("Refresh", SOFT_SURFACE, PRIMARY_DARK);
         refreshButton.setBorderColor(LIGHT_SURFACE);
         refreshButton.setPreferredSize(new Dimension(100, 35));
         refreshButton.addActionListener(e -> loadData());
 
-        searchPanel.add(new JLabel("Period:"));
-        searchPanel.add(periodCombo);
-        searchPanel.add(new JLabel("Payment Method:"));
-        searchPanel.add(paymentMethodCombo);
-        searchPanel.add(generateButton);
-        searchPanel.add(exportButton);
-        searchPanel.add(printButton);
-        searchPanel.add(refreshButton);
+        filterPanel.add(new JLabel("Period:"));
+        filterPanel.add(periodCombo);
+        filterPanel.add(new JLabel("Payment Method:"));
+        filterPanel.add(paymentMethodCombo);
+        filterPanel.add(generateButton);
+        filterPanel.add(refreshButton);
 
-        header.add(titlePanel, BorderLayout.WEST);
-        header.add(searchPanel, BorderLayout.EAST);
-
-        return header;
+        return filterPanel;
     }
 
     private JPanel createSummaryPanel() {
@@ -608,24 +607,6 @@ public class RevenueReportPanel extends JPanel {
         }
 
         summaryLabel.setText("Total: " + totalBills + " bills | Total Revenue: $" + df.format(totalRevenue));
-    }
-
-    private void exportReport() {
-        if (tableModel.getRowCount() == 0) {
-            showError("No data to export. Please generate a report first.");
-            return;
-        }
-        // TODO: Implement PDF export
-        showInfo("PDF export functionality coming soon...");
-    }
-
-    private void printReport() {
-        if (tableModel.getRowCount() == 0) {
-            showError("No data to print. Please generate a report first.");
-            return;
-        }
-        // TODO: Implement print functionality
-        showInfo("Print functionality coming soon...");
     }
 
     // ========================
