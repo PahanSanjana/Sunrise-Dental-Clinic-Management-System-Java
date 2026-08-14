@@ -1,7 +1,11 @@
 package controller;
 
 import dao.StaffDAO;
+import dao.UserDAO;
 import model.Staff;
+import model.User;
+import model.User.UserRole;
+import model.LoginSession;
 import view.AddStaffPanel;
 import view.StaffListPanel;
 import view.StaffDetailsPanel;
@@ -12,44 +16,38 @@ import java.awt.*;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class StaffController {
     private AddStaffPanel addView;
     private StaffListPanel listView;
     private StaffDetailsPanel detailsView;
     private StaffDAO staffDAO;
+    private UserDAO userDAO;
 
     // =====================================================
     // CONSTRUCTORS
     // =====================================================
 
-    /**
-     * Constructor for AddStaffPanel
-     * @param view The AddStaffPanel instance
-     */
     public StaffController(AddStaffPanel view) {
         this.addView = view;
         this.staffDAO = new StaffDAO();
+        this.userDAO = new UserDAO();
         initAddController();
     }
 
-    /**
-     * Constructor for StaffListPanel
-     * @param view The StaffListPanel instance
-     */
     public StaffController(StaffListPanel view) {
         this.listView = view;
         this.staffDAO = new StaffDAO();
+        this.userDAO = new UserDAO();
     }
 
-    /**
-     * Constructor for StaffDetailsPanel
-     * @param view The StaffDetailsPanel instance
-     */
     public StaffController(StaffDetailsPanel view) {
         this.detailsView = view;
         this.staffDAO = new StaffDAO();
+        this.userDAO = new UserDAO();
     }
 
     // =====================================================
@@ -90,7 +88,17 @@ public class StaffController {
         String salaryStr = addView.getSalary();
         boolean isActive = addView.isActive();
 
-        // Validate required fields
+        // Check if login account is requested
+        boolean createLogin = addView.isCreateLogin();
+        String username = addView.getUsername();
+        String password = addView.getPassword();
+        String confirmPassword = addView.getConfirmPassword();
+
+        // =============================================
+        // VALIDATE REQUIRED FIELDS
+        // =============================================
+
+        // Validate Name
         if (firstName.isEmpty() || lastName.isEmpty()) {
             addView.showError("First Name and Last Name are required.");
             return;
@@ -106,19 +114,19 @@ public class StaffController {
             return;
         }
 
-        // Validate position
+        // Validate Position
         if (position.isEmpty()) {
             addView.showError("Position is required.");
             return;
         }
 
-        // Validate department
+        // Validate Department
         if (department.isEmpty()) {
             addView.showError("Department is required.");
             return;
         }
 
-        // Validate phone
+        // Validate Phone
         if (phone.isEmpty()) {
             addView.showError("Phone number is required.");
             return;
@@ -129,7 +137,7 @@ public class StaffController {
             return;
         }
 
-        // Validate email
+        // Validate Email
         if (email.isEmpty()) {
             addView.showError("Email is required.");
             return;
@@ -139,7 +147,7 @@ public class StaffController {
             return;
         }
 
-        // Validate hire date
+        // Validate Hire Date
         if (hireDateStr.isEmpty()) {
             addView.showError("Hire Date is required.");
             return;
@@ -159,7 +167,7 @@ public class StaffController {
             return;
         }
 
-        // Validate salary
+        // Validate Salary
         double salary = 0;
         if (salaryStr.isEmpty()) {
             addView.showError("Salary is required.");
@@ -176,21 +184,105 @@ public class StaffController {
             return;
         }
 
-        // Create Staff object
+        // =============================================
+        // VALIDATE LOGIN CREDENTIALS
+        // =============================================
+        if (createLogin) {
+            if (username.isEmpty()) {
+                addView.showError("Username is required for login account.");
+                return;
+            }
+            if (username.length() < 3) {
+                addView.showError("Username must be at least 3 characters.");
+                return;
+            }
+            if (!username.matches("^[a-zA-Z0-9_]+$")) {
+                addView.showError("Username can only contain letters, numbers, and underscores.");
+                return;
+            }
+            if (userDAO.usernameExists(username)) {
+                addView.showError("Username already exists. Please choose another.");
+                return;
+            }
+            
+            if (password.isEmpty()) {
+                addView.showError("Password is required for login account.");
+                return;
+            }
+            if (password.length() < 6) {
+                addView.showError("Password must be at least 6 characters.");
+                return;
+            }
+            if (!password.equals(confirmPassword)) {
+                addView.showError("Passwords do not match.");
+                return;
+            }
+        }
+
+        // =============================================
+        // CREATE STAFF OBJECT
+        // =============================================
         Staff staff = new Staff(
             firstName, lastName, position, department,
             phone, email, hireDate, salary, isActive
         );
 
-        // Show loading message
+        // =============================================
+        // SAVE WITH SWINGWORKER
+        // =============================================
         addView.showSuccess("Saving staff... Please wait.");
         addView.setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
-        // Use SwingWorker to save in background
+        // Store final values for use in SwingWorker
+        final Date finalHireDate = hireDate;
+        final double finalSalary = salary;
+        final String finalFirstName = firstName;
+        final String finalLastName = lastName;
+        final String finalPosition = position;
+        final String finalDepartment = department;
+        final String finalPhone = phone;
+        final String finalEmail = email;
+
         SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
             @Override
             protected Boolean doInBackground() throws Exception {
-                return staffDAO.addStaff(staff);
+                // 1. Save staff
+                boolean staffSaved = staffDAO.addStaff(staff);
+                if (!staffSaved) {
+                    return false;
+                }
+                
+                // 2. If login required, create user and link
+                if (createLogin) {
+                    UserRole role = determineStaffRole(finalPosition);
+                    int createdBy = LoginSession.getInstance().getCurrentUserId();
+                    
+                    // ✅ FIX: Create profile data using final variables
+                    Map<String, Object> profileData = new HashMap<>();
+                    profileData.put("firstName", finalFirstName);
+                    profileData.put("lastName", finalLastName);
+                    profileData.put("position", finalPosition);
+                    profileData.put("department", finalDepartment);
+                    profileData.put("phone", finalPhone);
+                    profileData.put("email", finalEmail);
+                    profileData.put("hireDate", finalHireDate);   // ✅ java.sql.Date
+                    profileData.put("salary", finalSalary);       // ✅ Double
+                    
+                    // Create user with appropriate role
+                    User newUser = userDAO.createUserWithProfile(
+                        username, password, email, role,
+                        createdBy, profileData
+                    );
+                    
+                    if (newUser == null) {
+                        return false;
+                    }
+                    
+                    // Link staff to user
+                    return staffDAO.linkStaffToUser(staff.getStaffId(), newUser.getUserId());
+                }
+                
+                return true;
             }
 
             @Override
@@ -199,11 +291,15 @@ public class StaffController {
                 try {
                     boolean success = get();
                     if (success) {
-                        addView.showSuccess("Staff saved successfully!");
+                        String message = "Staff saved successfully! Staff ID: " + staff.getStaffId();
+                        if (createLogin) {
+                            message += "\nLogin account created for: " + username;
+                            message += "\nRole: " + determineStaffRole(finalPosition).name();
+                        }
+                        addView.showSuccess(message);
                         addView.clearForm();
                         
-                        // Show success and navigate back after delay
-                        Timer timer = new Timer(1500, e -> {
+                        Timer timer = new Timer(2000, e -> {
                             Container parent = addView.getParent();
                             while (parent != null && !(parent instanceof MainFrame)) {
                                 parent = parent.getParent();
@@ -226,67 +322,52 @@ public class StaffController {
         worker.execute();
     }
 
+    /**
+     * Determine user role based on staff position
+     */
+    private UserRole determineStaffRole(String position) {
+        String pos = position.toLowerCase().trim();
+        
+        if (pos.contains("reception") || pos.contains("front desk") || pos.contains("receptionist")) {
+            return UserRole.RECEPTION;
+        } else if (pos.contains("dentist") || pos.contains("doctor") || pos.contains("surgeon")) {
+            return UserRole.DENTIST;
+        } else if (pos.contains("admin") || pos.contains("manager") || 
+                   pos.contains("director") || pos.contains("ceo") || pos.contains("owner")) {
+            return UserRole.ADMIN;
+        } else {
+            return UserRole.RECEPTION;
+        }
+    }
+
     // =====================================================
     // READ METHODS
     // =====================================================
 
-    /**
-     * Get staff by ID
-     * @param staffId The staff ID
-     * @return Staff object if found, null otherwise
-     */
     public Staff getStaffById(int staffId) {
         return staffDAO.getStaffById(staffId);
     }
 
-    /**
-     * Get staff by user ID
-     * @param userId The user ID
-     * @return Staff object if found, null otherwise
-     */
     public Staff getStaffByUserId(int userId) {
         return staffDAO.getStaffByUserId(userId);
     }
 
-    /**
-     * Get all staff members
-     * @return List of all staff
-     */
     public List<Staff> getAllStaff() {
         return staffDAO.getAllStaff();
     }
 
-    /**
-     * Get staff by position
-     * @param position The position to filter by
-     * @return List of staff with the specified position
-     */
     public List<Staff> getStaffByPosition(String position) {
         return staffDAO.getStaffByPosition(position);
     }
 
-    /**
-     * Get staff by department
-     * @param department The department to filter by
-     * @return List of staff in the specified department
-     */
     public List<Staff> getStaffByDepartment(String department) {
         return staffDAO.getStaffByDepartment(department);
     }
 
-    /**
-     * Get active staff members
-     * @return List of active staff
-     */
     public List<Staff> getActiveStaff() {
         return staffDAO.getActiveStaff();
     }
 
-    /**
-     * Search staff by name, position, department, or phone
-     * @param searchTerm The search term
-     * @return List of matching staff
-     */
     public List<Staff> searchStaff(String searchTerm) {
         return staffDAO.searchStaff(searchTerm);
     }
@@ -295,39 +376,18 @@ public class StaffController {
     // UPDATE METHODS
     // =====================================================
 
-    /**
-     * Update staff information
-     * @param staff The staff to update
-     * @return true if successful, false otherwise
-     */
     public boolean updateStaff(Staff staff) {
         return staffDAO.updateStaff(staff);
     }
 
-    /**
-     * Deactivate a staff member (soft delete)
-     * @param staffId The staff ID
-     * @return true if successful, false otherwise
-     */
     public boolean deactivateStaff(int staffId) {
         return staffDAO.deactivateStaff(staffId);
     }
 
-    /**
-     * Activate a staff member
-     * @param staffId The staff ID
-     * @return true if successful, false otherwise
-     */
     public boolean activateStaff(int staffId) {
         return staffDAO.activateStaff(staffId);
     }
 
-    /**
-     * Link staff to a user account
-     * @param staffId The staff ID
-     * @param userId The user ID to link
-     * @return true if successful, false otherwise
-     */
     public boolean linkStaffToUser(int staffId, int userId) {
         return staffDAO.linkStaffToUser(staffId, userId);
     }
@@ -336,11 +396,6 @@ public class StaffController {
     // DELETE METHODS
     // =====================================================
 
-    /**
-     * Delete a staff member
-     * @param staffId The staff ID to delete
-     * @return true if successful, false otherwise
-     */
     public boolean deleteStaff(int staffId) {
         return staffDAO.deleteStaff(staffId);
     }
@@ -349,56 +404,42 @@ public class StaffController {
     // COUNT METHODS
     // =====================================================
 
-    /**
-     * Get total staff count
-     * @return Total number of staff
-     */
     public int getStaffCount() {
         return staffDAO.getStaffCount();
     }
 
-    /**
-     * Get active staff count
-     * @return Number of active staff
-     */
     public int getActiveStaffCount() {
         return staffDAO.getActiveStaffCount();
     }
 
     // =====================================================
-    // HELPER METHODS FOR LIST VIEW
+    // HELPER METHODS
     // =====================================================
 
-    /**
-     * Load staff for the list view
-     * @param searchText The search text
-     * @param filter The status filter (All, Active, Inactive)
-     * @param department The department filter
-     */
     public void loadStaff(String searchText, String filter, String department) {
         if (listView != null) {
             listView.loadStaff();
         }
     }
 
-    /**
-     * Refresh the staff list
-     */
     public void refreshStaffList() {
         if (listView != null) {
             listView.loadStaff();
         }
     }
 
-    // =====================================================
-    // VALIDATION METHODS
-    // =====================================================
+    public void navigateBack() {
+        if (detailsView != null) {
+            Container parent = detailsView.getParent();
+            while (parent != null && !(parent instanceof MainFrame)) {
+                parent = parent.getParent();
+            }
+            if (parent instanceof MainFrame) {
+                ((MainFrame) parent).showCard("STAFF_LIST");
+            }
+        }
+    }
 
-    /**
-     * Validate staff data before saving
-     * @param staff The staff to validate
-     * @return Error message if invalid, null if valid
-     */
     public String validateStaff(Staff staff) {
         if (staff.getFirstName() == null || staff.getFirstName().isEmpty()) {
             return "First Name is required.";

@@ -7,6 +7,7 @@ import model.User;
 import model.User.UserRole;
 import model.LoginSession;
 import view.AddPatientPanel;
+import view.PatientDetailsPanel;
 import view.MainFrame;
 
 import javax.swing.*;
@@ -19,16 +20,34 @@ import java.util.Map;
 
 public class PatientController {
     private AddPatientPanel addView;
+    private PatientDetailsPanel detailsView;
     private PatientDAO patientDAO;
     private UserDAO userDAO;
 
-    // Constructor for AddPatientPanel
+    // =====================================================
+    // CONSTRUCTOR FOR AddPatientPanel
+    // =====================================================
+    
     public PatientController(AddPatientPanel view) {
         this.addView = view;
         this.patientDAO = new PatientDAO();
         this.userDAO = new UserDAO();
         initAddController();
     }
+
+    // =====================================================
+    // CONSTRUCTOR FOR PatientDetailsPanel
+    // =====================================================
+    
+    public PatientController(PatientDetailsPanel view) {
+        this.detailsView = view;
+        this.patientDAO = new PatientDAO();
+        this.userDAO = new UserDAO();
+    }
+
+    // =====================================================
+    // INIT ADD CONTROLLER
+    // =====================================================
 
     private void initAddController() {
         addView.addSaveListener(e -> handleSavePatient());
@@ -43,6 +62,10 @@ public class PatientController {
             }
         });
     }
+
+    // =====================================================
+    // HANDLE SAVE PATIENT (For AddPatientPanel)
+    // =====================================================
 
     private void handleSavePatient() {
         // Get patient details
@@ -110,9 +133,7 @@ public class PatientController {
             return;
         }
 
-        // =============================================
-        // CHECK IF LOGIN ACCOUNT IS REQUESTED
-        // =============================================
+        // Check if login account is requested
         boolean createLogin = addView.isCreateLogin();
         String username = addView.getUsername();
         String password = addView.getPassword();
@@ -151,12 +172,11 @@ public class PatientController {
             }
         }
 
-        // Create Patient object (without user_id first)
+        // Create Patient object
         Patient patient = new Patient(
             patientName, gender, address, contactNumber,
             email, dateOfBirth, emergencyContact, emergencyPhone,
-            0, // temporary user_id (will be set later if login created)
-            medicalHistory, allergies
+            0, medicalHistory, allergies
         );
 
         addView.showSuccess("Saving patient... Please wait.");
@@ -174,7 +194,6 @@ public class PatientController {
                 
                 // 2. If login required, create user and link
                 if (createLogin) {
-                    String salt = "salt_" + System.currentTimeMillis();
                     int createdBy = LoginSession.getInstance().getCurrentUserId();
                     
                     // Create user with PATIENT role
@@ -230,16 +249,78 @@ public class PatientController {
         worker.execute();
     }
 
-    // Other patient methods...
+    // =====================================================
+    // CRUD METHODS (For both AddPatientPanel and PatientDetailsPanel)
+    // =====================================================
+
+    /**
+     * Get patient by ID
+     */
     public Patient getPatientById(int patientId) {
         return patientDAO.getPatientById(patientId);
     }
 
+    /**
+     * Update patient information
+     */
     public boolean updatePatient(Patient patient) {
         return patientDAO.updatePatient(patient);
     }
 
+    /**
+     * Delete a patient
+     */
     public boolean deletePatient(int patientId) {
         return patientDAO.deletePatient(patientId);
+    }
+
+    /**
+     * Link patient to a user account
+     */
+    public boolean linkPatientToUser(int patientId, int userId) {
+        return patientDAO.linkPatientToUser(patientId, userId);
+    }
+
+    /**
+     * Navigate back to patient list
+     */
+    public void navigateBack() {
+        if (detailsView != null) {
+            Container parent = detailsView.getParent();
+            while (parent != null && !(parent instanceof MainFrame)) {
+                parent = parent.getParent();
+            }
+            if (parent instanceof MainFrame) {
+                ((MainFrame) parent).showCard("PATIENT_LIST");
+            }
+        }
+    }
+
+    /**
+     * Search patients by name or contact number
+     */
+    public java.util.List<Patient> searchPatients(String searchTerm) {
+        return patientDAO.searchPatients(searchTerm);
+    }
+
+    /**
+     * Get all patients
+     */
+    public java.util.List<Patient> getAllPatients() {
+        return patientDAO.getAllPatients();
+    }
+
+    /**
+     * Get patient count
+     */
+    public int getPatientCount() {
+        return patientDAO.getPatientCount();
+    }
+
+    /**
+     * Get recent patients
+     */
+    public java.util.List<Patient> getRecentPatients(int limit) {
+        return patientDAO.getRecentPatients(limit);
     }
 }

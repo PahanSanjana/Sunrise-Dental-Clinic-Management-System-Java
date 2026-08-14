@@ -10,11 +10,10 @@ public class TreatmentDAO {
 
     /**
      * Add a new treatment to the database
-     * @param treatment The treatment object to save
-     * @return true if successful, false otherwise
      */
     public boolean addTreatment(Treatment treatment) {
-        String sql = "INSERT INTO treatments (treatment_name, description, category, cost, estimated_duration, is_active) "
+        // ✅ FIXED: Using 'duration' (not 'estimated_duration')
+        String sql = "INSERT INTO treatments (treatment_name, description, category, cost, duration, is_active) "
                    + "VALUES (?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DBconnection.getConnection();
@@ -24,7 +23,7 @@ public class TreatmentDAO {
             pstmt.setString(2, treatment.getDescription());
             pstmt.setString(3, treatment.getCategory());
             pstmt.setDouble(4, treatment.getCost());
-            pstmt.setInt(5, treatment.getDuration());
+            pstmt.setInt(5, treatment.getDuration()); // ✅ Using duration
             pstmt.setBoolean(6, treatment.isActive());
             
             int affectedRows = pstmt.executeUpdate();
@@ -45,8 +44,6 @@ public class TreatmentDAO {
 
     /**
      * Get treatment by ID
-     * @param treatmentId The treatment ID
-     * @return Treatment object if found, null otherwise
      */
     public Treatment getTreatmentById(int treatmentId) {
         String sql = "SELECT * FROM treatments WHERE treatment_id = ?";
@@ -69,8 +66,6 @@ public class TreatmentDAO {
 
     /**
      * Get treatment by name
-     * @param treatmentName The treatment name
-     * @return Treatment object if found, null otherwise
      */
     public Treatment getTreatmentByName(String treatmentName) {
         String sql = "SELECT * FROM treatments WHERE treatment_name = ?";
@@ -93,7 +88,6 @@ public class TreatmentDAO {
 
     /**
      * Get all treatments
-     * @return List of all treatments
      */
     public List<Treatment> getAllTreatments() {
         List<Treatment> treatments = new ArrayList<>();
@@ -115,7 +109,6 @@ public class TreatmentDAO {
 
     /**
      * Get active treatments
-     * @return List of active treatments
      */
     public List<Treatment> getActiveTreatments() {
         List<Treatment> treatments = new ArrayList<>();
@@ -137,8 +130,6 @@ public class TreatmentDAO {
 
     /**
      * Get treatments by category
-     * @param category The category to filter by
-     * @return List of treatments in the specified category
      */
     public List<Treatment> getTreatmentsByCategory(String category) {
         List<Treatment> treatments = new ArrayList<>();
@@ -162,8 +153,6 @@ public class TreatmentDAO {
 
     /**
      * Search treatments by name or category
-     * @param searchTerm The search term
-     * @return List of matching treatments
      */
     public List<Treatment> searchTreatments(String searchTerm) {
         List<Treatment> treatments = new ArrayList<>();
@@ -191,12 +180,11 @@ public class TreatmentDAO {
 
     /**
      * Update treatment information
-     * @param treatment The treatment to update
-     * @return true if successful, false otherwise
      */
     public boolean updateTreatment(Treatment treatment) {
+        // ✅ FIXED: Using 'duration' (not 'estimated_duration')
         String sql = "UPDATE treatments SET treatment_name=?, description=?, category=?, "
-                   + "cost=?, estimated_duration=?, is_active=? WHERE treatment_id=?";
+                   + "cost=?, duration=?, is_active=? WHERE treatment_id=?";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -205,7 +193,7 @@ public class TreatmentDAO {
             pstmt.setString(2, treatment.getDescription());
             pstmt.setString(3, treatment.getCategory());
             pstmt.setDouble(4, treatment.getCost());
-            pstmt.setInt(5, treatment.getDuration());
+            pstmt.setInt(5, treatment.getDuration()); // ✅ Using duration
             pstmt.setBoolean(6, treatment.isActive());
             pstmt.setInt(7, treatment.getTreatmentId());
             
@@ -219,8 +207,6 @@ public class TreatmentDAO {
 
     /**
      * Delete a treatment
-     * @param treatmentId The treatment ID to delete
-     * @return true if successful, false otherwise
      */
     public boolean deleteTreatment(int treatmentId) {
         String sql = "DELETE FROM treatments WHERE treatment_id = ?";
@@ -238,9 +224,7 @@ public class TreatmentDAO {
     }
 
     /**
-     * Deactivate a treatment (soft delete)
-     * @param treatmentId The treatment ID
-     * @return true if successful, false otherwise
+     * Deactivate a treatment
      */
     public boolean deactivateTreatment(int treatmentId) {
         String sql = "UPDATE treatments SET is_active = false WHERE treatment_id = ?";
@@ -259,8 +243,6 @@ public class TreatmentDAO {
 
     /**
      * Activate a treatment
-     * @param treatmentId The treatment ID
-     * @return true if successful, false otherwise
      */
     public boolean activateTreatment(int treatmentId) {
         String sql = "UPDATE treatments SET is_active = true WHERE treatment_id = ?";
@@ -279,8 +261,6 @@ public class TreatmentDAO {
 
     /**
      * Check if treatment name already exists
-     * @param treatmentName The treatment name to check
-     * @return true if exists, false otherwise
      */
     public boolean treatmentNameExists(String treatmentName) {
         String sql = "SELECT COUNT(*) FROM treatments WHERE treatment_name = ?";
@@ -303,7 +283,6 @@ public class TreatmentDAO {
 
     /**
      * Get treatment count
-     * @return Total number of treatments
      */
     public int getTreatmentCount() {
         String sql = "SELECT COUNT(*) FROM treatments";
@@ -324,9 +303,6 @@ public class TreatmentDAO {
 
     /**
      * Get treatments with pagination
-     * @param offset The offset (starting point)
-     * @param limit The number of records to fetch
-     * @return List of treatments
      */
     public List<Treatment> getTreatmentsPaginated(int offset, int limit) {
         List<Treatment> treatments = new ArrayList<>();
@@ -351,7 +327,6 @@ public class TreatmentDAO {
 
     /**
      * Get categories with treatment count
-     * @return List of category stats
      */
     public List<Object[]> getCategoryStats() {
         List<Object[]> stats = new ArrayList<>();
@@ -376,18 +351,16 @@ public class TreatmentDAO {
 
     /**
      * Map ResultSet to Treatment object
-     * @param rs The ResultSet
-     * @return Treatment object
-     * @throws SQLException if there's an error accessing the ResultSet
      */
     private Treatment mapResultSetToTreatment(ResultSet rs) throws SQLException {
+        // ✅ FIXED: Using 'duration' (not 'estimated_duration')
         return new Treatment(
             rs.getInt("treatment_id"),
             rs.getString("treatment_name"),
             rs.getString("description"),
             rs.getString("category"),
             rs.getDouble("cost"),
-            rs.getInt("estimated_duration"),
+            rs.getInt("duration"), // ✅ FIXED: was 'estimated_duration'
             rs.getBoolean("is_active"),
             rs.getString("created_at"),
             rs.getString("updated_at")

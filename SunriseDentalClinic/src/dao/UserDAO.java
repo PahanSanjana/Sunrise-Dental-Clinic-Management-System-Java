@@ -80,7 +80,13 @@ public class UserDAO {
             pstmt.setString(4, email);
             pstmt.setString(5, role.name());
             pstmt.setBoolean(6, true);
-            pstmt.setInt(7, createdBy);
+            
+            // ✅ FIX: Handle created_by - if 0 or negative, set to NULL
+            if (createdBy > 0) {
+                pstmt.setInt(7, createdBy);
+            } else {
+                pstmt.setNull(7, Types.INTEGER);
+            }
             
             int affectedRows = pstmt.executeUpdate();
             
@@ -100,6 +106,11 @@ public class UserDAO {
             
             // Close the statement
             pstmt.close();
+            
+            // If this is the first user (created_by was NULL), update to self
+            if (createdBy <= 0) {
+                updateCreatedBySelf(conn, userId);
+            }
             
             // 2. Create profile based on role
             boolean profileCreated = false;
@@ -158,6 +169,22 @@ public class UserDAO {
         }
     }
 
+    /**
+     * Update created_by to self for the first user
+     */
+    private void updateCreatedBySelf(Connection conn, int userId) {
+        String sql = "UPDATE users SET created_by = ? WHERE user_id = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, userId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error updating created_by: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     // =====================================================
     // CREATE PATIENT USER (SIGNUP METHOD)
     // =====================================================
@@ -183,8 +210,8 @@ public class UserDAO {
             conn.setAutoCommit(false);
             
             // First, create the user with PATIENT role
-            String userSql = "INSERT INTO users (username, password_hash, salt, email, role, is_active) "
-                           + "VALUES (?, ?, ?, ?, 'PATIENT', 1)";
+            String userSql = "INSERT INTO users (username, password_hash, salt, email, role, is_active, created_by) "
+                           + "VALUES (?, ?, ?, ?, 'PATIENT', 1, NULL)";
             pstmt = conn.prepareStatement(userSql, Statement.RETURN_GENERATED_KEYS);
             pstmt.setString(1, username);
             pstmt.setString(2, passwordHash);
@@ -209,6 +236,9 @@ public class UserDAO {
             
             // Close the first statement
             pstmt.close();
+            
+            // Update created_by to self
+            updateCreatedBySelf(conn, userId);
             
             // Then, create the patient record
             String patientSql = "INSERT INTO patients (user_id, patient_name, email, contact_number) "
@@ -347,7 +377,14 @@ public class UserDAO {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, userId);
             pstmt.setString(2, (String) data.getOrDefault("patientName", ""));
-            pstmt.setString(3, (String) data.getOrDefault("gender", ""));
+            
+            // ✅ FIX: Validate gender - must be 'Male', 'Female', or 'Other'
+            String gender = (String) data.getOrDefault("gender", "Other");
+            if (!gender.equals("Male") && !gender.equals("Female") && !gender.equals("Other")) {
+                gender = "Other"; // Default if invalid
+            }
+            pstmt.setString(3, gender);
+            
             pstmt.setString(4, (String) data.getOrDefault("address", ""));
             pstmt.setString(5, (String) data.getOrDefault("contactNumber", ""));
             pstmt.setString(6, (String) data.getOrDefault("email", ""));
@@ -396,7 +433,13 @@ public class UserDAO {
             pstmt.setString(4, user.getEmail());
             pstmt.setString(5, user.getRole().name());
             pstmt.setBoolean(6, user.isActive());
-            pstmt.setInt(7, user.getCreatedBy());
+            
+            // ✅ FIX: Handle created_by - if 0 or negative, set to NULL
+            if (user.getCreatedBy() > 0) {
+                pstmt.setInt(7, user.getCreatedBy());
+            } else {
+                pstmt.setNull(7, Types.INTEGER);
+            }
             
             int affectedRows = pstmt.executeUpdate();
             
