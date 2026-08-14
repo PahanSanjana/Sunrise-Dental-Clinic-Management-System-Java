@@ -5,6 +5,7 @@ import controller.SignupController;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
@@ -13,31 +14,40 @@ import javax.swing.border.EmptyBorder;
 
 public class SunriseDentalWelcome extends JFrame {
 
-    // Color Palette
+    // Color Palette - Modern & Minimal
     private static final Color PRIMARY_DARK = new Color(0x2F3E3C);
+    private static final Color PRIMARY_LIGHT = new Color(0x4A6A65);
     private static final Color MINT = new Color(0xBDDBD1);
+    private static final Color MINT_LIGHT = new Color(0xE8F5F0);
     private static final Color SOFT_SURFACE = new Color(0xFBF9F1);
     private static final Color LIGHT_SURFACE = new Color(0xE7E9E3);
-    private static final Color HOVER_SURFACE = new Color(0xE8F0F1);
-    private static final Color SECONDARY_ACCENT = new Color(0xC7E7EC);
+    private static final Color CARD_BG = new Color(0xFFFFFF);
+    private static final Color SECONDARY_TEXT = new Color(107, 123, 121);
+    private static final Color ACCENT_GRADIENT_START = new Color(0xBDDBD1);
+    private static final Color ACCENT_GRADIENT_END = new Color(0xA8C8BC);
 
     private BufferedImage logoImage;
     private BufferedImage welcomeImage;
     private RoundedButton loginBtn;
     private RoundedButton signupBtn;
 
+    // Frame size matching MainFrame
+    private static final int FRAME_WIDTH = 1400;
+    private static final int FRAME_HEIGHT = 820;
+
     public SunriseDentalWelcome() {
-        
-        // Load images
         loadImages();
 
         setTitle("SUNRISE DENTAL - Clinic Management System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setSize(FRAME_WIDTH, FRAME_HEIGHT);
+        setMinimumSize(new Dimension(1100, 700));
+        setLocationRelativeTo(null);
+        setResizable(true);
 
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(SOFT_SURFACE);
-        root.setBorder(new EmptyBorder(20, 40, 20, 40));
+        root.setBorder(new EmptyBorder(0, 0, 0, 0));
 
         root.add(createTopNavigation(), BorderLayout.NORTH);
         root.add(createMainContent(), BorderLayout.CENTER);
@@ -48,52 +58,22 @@ public class SunriseDentalWelcome extends JFrame {
 
     private void loadImages() {
         try {
-            // Load logo with high quality
-            logoImage = ImageIO.read(new File(
-                "src/resources/Remove Bg light.png"
-            ));
-            
-            // Load welcome hero image (without background)
-            welcomeImage = ImageIO.read(new File(
-                "src/resources/Welcome.png"
-            ));
-            
+            logoImage = ImageIO.read(new File("src/resources/Remove Bg light.png"));
+            welcomeImage = ImageIO.read(new File("src/resources/Welcome.png"));
         } catch (Exception e) {
             System.err.println("Error loading images: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
     private BufferedImage resizeImage(BufferedImage original, int width, int height) {
         if (original == null) return null;
-        
-        BufferedImage resized = new BufferedImage(
-                width,
-                height,
-                BufferedImage.TYPE_INT_ARGB);
 
+        BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = resized.createGraphics();
 
-        // Highest quality rendering settings
-        g2.setRenderingHint(
-                RenderingHints.KEY_INTERPOLATION,
-                RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-
-        g2.setRenderingHint(
-                RenderingHints.KEY_RENDERING,
-                RenderingHints.VALUE_RENDER_QUALITY);
-
-        g2.setRenderingHint(
-                RenderingHints.KEY_ALPHA_INTERPOLATION,
-                RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-
-        g2.setRenderingHint(
-                RenderingHints.KEY_COLOR_RENDERING,
-                RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-
-        g2.setRenderingHint(
-                RenderingHints.KEY_DITHERING,
-                RenderingHints.VALUE_DITHER_ENABLE);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 
         g2.drawImage(original, 0, 0, width, height, null);
         g2.dispose();
@@ -101,72 +81,70 @@ public class SunriseDentalWelcome extends JFrame {
         return resized;
     }
 
+    // =====================================================
+    // TOP NAVIGATION - Clean & Minimal
+    // =====================================================
     private JPanel createTopNavigation() {
         JPanel nav = new JPanel(new BorderLayout());
         nav.setOpaque(false);
-        nav.setBorder(new EmptyBorder(10, 0, 25, 0));
+        nav.setBorder(new EmptyBorder(20, 40, 20, 40));
 
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         left.setOpaque(false);
 
-        // Logo - using high-quality rendering with crisp edges
+        // Logo
         if (logoImage != null) {
-            // Use larger size for sharper logo (120x120 then scale down with quality)
-            BufferedImage tempScaled = resizeImage(logoImage, 120, 120);
-            BufferedImage scaledLogo = resizeImage(tempScaled, 60, 60);
-            
-            JLabel logo = new JLabel(new ImageIcon(scaledLogo)) {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
-                                       RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setRenderingHint(RenderingHints.KEY_RENDERING, 
-                                       RenderingHints.VALUE_RENDER_QUALITY);
-                    super.paintComponent(g2);
-                    g2.dispose();
-                }
-            };
+            BufferedImage scaledLogo = resizeImage(logoImage, 50, 50);
+            JLabel logo = new JLabel(new ImageIcon(scaledLogo));
             left.add(logo);
         }
 
+        // Brand
         JPanel brandPanel = new JPanel();
         brandPanel.setLayout(new BoxLayout(brandPanel, BoxLayout.Y_AXIS));
         brandPanel.setOpaque(false);
 
         JLabel title = new JLabel("SUNRISE DENTAL");
-        title.setFont(font(Font.BOLD, 24));
+        title.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        title.setForeground(PRIMARY_DARK);
 
         JLabel subtitle = new JLabel("Clinic Management System");
-        subtitle.setForeground(new Color(107, 123, 121));
-        subtitle.setFont(font(Font.PLAIN, 13));
+        subtitle.setForeground(SECONDARY_TEXT);
+        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         brandPanel.add(title);
+        brandPanel.add(Box.createRigidArea(new Dimension(0, 1)));
         brandPanel.add(subtitle);
 
         left.add(brandPanel);
 
+        nav.add(left, BorderLayout.WEST);
+
+        // Right - Version Badge
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         right.setOpaque(false);
 
-        JLabel badge = new JLabel("v1.0");
+        JLabel badge = new JLabel("v2.0");
         badge.setOpaque(true);
         badge.setBackground(MINT);
         badge.setForeground(PRIMARY_DARK);
-        badge.setBorder(new EmptyBorder(8, 18, 8, 18));
-        badge.setFont(font(Font.BOLD, 12));
-
+        badge.setBorder(new EmptyBorder(6, 16, 6, 16));
+        badge.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        badge.setBorder(BorderFactory.createLineBorder(MINT, 1));
         right.add(badge);
 
-        nav.add(left, BorderLayout.WEST);
         nav.add(right, BorderLayout.EAST);
 
         return nav;
     }
 
+    // =====================================================
+    // MAIN CONTENT - Modern Split Layout
+    // =====================================================
     private JPanel createMainContent() {
-        JPanel main = new JPanel(new GridLayout(1, 2, 40, 0));
+        JPanel main = new JPanel(new GridLayout(1, 2, 50, 0));
         main.setOpaque(false);
+        main.setBorder(new EmptyBorder(10, 40, 20, 40));
 
         main.add(createLeftSection());
         main.add(createRightSection());
@@ -174,142 +152,137 @@ public class SunriseDentalWelcome extends JFrame {
         return main;
     }
 
+    // =====================================================
+    // LEFT SECTION - Content with spacing
+    // =====================================================
     private JPanel createLeftSection() {
         JPanel panel = new JPanel();
         panel.setOpaque(false);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(new EmptyBorder(20, 10, 20, 10));
 
         panel.add(Box.createVerticalGlue());
 
+        // Badge
+        JLabel badge = new JLabel("✦ SMART CLINIC MANAGEMENT");
+        badge.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        badge.setForeground(PRIMARY_LIGHT);
+        badge.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(badge);
+        panel.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        // Heading
         JLabel heading = new JLabel(
-                "<html>Transforming Dental Care<br>Through Smart Management</html>");
-        heading.setForeground(PRIMARY_DARK);
-        heading.setFont(font(Font.BOLD, 42));
+                "<html><span style='font-size:38px; font-weight:700; color:#2F3E3C;'>Transforming Dental Care</span><br>" +
+                "<span style='font-size:32px; font-weight:300; color:#4A6A65;'>Through Smart Management</span></html>");
         heading.setAlignmentX(Component.LEFT_ALIGNMENT);
-
         panel.add(heading);
-        panel.add(Box.createVerticalStrut(25));
+        panel.add(Box.createRigidArea(new Dimension(0, 16)));
 
+        // Description
         JLabel desc = new JLabel(
-                "<html><div style='width:550px;'>"
-                        + "Manage patients, appointments, treatments, billing, "
-                        + "staff, and clinic operations from one powerful and "
-                        + "beautifully designed platform."
-                        + "</div></html>");
-        desc.setForeground(new Color(107, 123, 121));
-        desc.setFont(font(Font.PLAIN, 18));
-
+                "<html><div style='width:480px; font-size:15px; color:#6B7B79; line-height:1.6;'>" +
+                "Manage patients, appointments, treatments, billing, staff, and clinic operations " +
+                "from one powerful and beautifully designed platform." +
+                "</div></html>");
+        desc.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(desc);
-        panel.add(Box.createVerticalStrut(30));
+        panel.add(Box.createRigidArea(new Dimension(0, 28)));
 
-        panel.add(createTrustIndicators());
-        panel.add(Box.createVerticalStrut(35));
+        // Features Grid
+        panel.add(createFeatureGrid());
+        panel.add(Box.createRigidArea(new Dimension(0, 30)));
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
+        // Buttons
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
         btnPanel.setOpaque(false);
 
-        loginBtn = new RoundedButton("Login to Portal", PRIMARY_DARK, Color.WHITE);
+        loginBtn = new RoundedButton("Login", PRIMARY_DARK, Color.WHITE);
+        loginBtn.setPreferredSize(new Dimension(160, 48));
+        loginBtn.addActionListener(e -> openLoginView());
+
         signupBtn = new RoundedButton("Create Account", SOFT_SURFACE, PRIMARY_DARK);
         signupBtn.setBorderColor(MINT);
-
-        // Add action listeners for navigation
-        loginBtn.addActionListener(e -> openLoginView());
+        signupBtn.setPreferredSize(new Dimension(160, 48));
         signupBtn.addActionListener(e -> openSignupView());
 
         btnPanel.add(loginBtn);
         btnPanel.add(signupBtn);
 
         panel.add(btnPanel);
-        panel.add(Box.createVerticalStrut(30));
-
-        panel.add(createWelcomeCard());
         panel.add(Box.createVerticalGlue());
 
         return panel;
     }
 
-    private JPanel createTrustIndicators() {
-        JPanel trust = new JPanel(new GridLayout(3, 2, 10, 12));
-        trust.setOpaque(false);
-        trust.setMaximumSize(new Dimension(500, 120));
+    // =====================================================
+    // FEATURE GRID - Clean & Minimal
+    // =====================================================
+    private JPanel createFeatureGrid() {
+        JPanel grid = new JPanel(new GridLayout(2, 3, 12, 10));
+        grid.setOpaque(false);
+        grid.setMaximumSize(new Dimension(500, 80));
 
-        String[] items = {
-                "Patient Management",
-                "Appointment Scheduling",
-                "Billing & Payments",
-                "Staff & Dentist Management",
-                "Reports & Analytics"
+        String[] features = {
+            "Patient Management",
+            "Appointment Scheduling",
+            "Billing & Payments",
+            "Staff & Dentist Management",
+            "Reports & Analytics",
+            "Secure & Reliable"
         };
 
-        for (String text : items) {
+        for (String text : features) {
             JLabel lbl = new JLabel("✓ " + text);
-            lbl.setFont(font(Font.PLAIN, 15));
+            lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
             lbl.setForeground(PRIMARY_DARK);
-            trust.add(lbl);
+            grid.add(lbl);
         }
 
-        return trust;
+        return grid;
     }
 
-    private JPanel createWelcomeCard() {
-        JPanel card = new ShadowPanel();
-        card.setLayout(new BorderLayout());
-        card.setBackground(Color.WHITE);
-        card.setMaximumSize(new Dimension(620, 140));
-        card.setPreferredSize(new Dimension(620, 140));
-        card.setBorder(new EmptyBorder(20, 25, 20, 25));
-
-        JLabel title = new JLabel("Welcome to Sunrise Dental Management System");
-        title.setForeground(PRIMARY_DARK);
-        title.setFont(font(Font.BOLD, 18));
-
-        JLabel body = new JLabel(
-                "<html>Providing excellence in dental healthcare "
-                        + "administration through modern technology and "
-                        + "intelligent workflow management.</html>");
-        body.setForeground(new Color(107, 123, 121));
-        body.setFont(font(Font.PLAIN, 14));
-
-        card.add(title, BorderLayout.NORTH);
-        card.add(body, BorderLayout.CENTER);
-
-        return card;
-    }
-
+    // =====================================================
+    // RIGHT SECTION - Hero Image
+    // =====================================================
     private JPanel createRightSection() {
-        JPanel hero = new HeroPanel(welcomeImage);
-        hero.setPreferredSize(new Dimension(650, 650));
-        return hero;
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setOpaque(false);
+
+        JPanel heroContainer = new JPanel(new BorderLayout());
+        heroContainer.setOpaque(false);
+        heroContainer.setPreferredSize(new Dimension(550, 500));
+
+        HeroPanel hero = new HeroPanel(welcomeImage);
+        heroContainer.add(hero, BorderLayout.CENTER);
+
+        wrapper.add(heroContainer);
+
+        return wrapper;
     }
 
+    // =====================================================
+    // FOOTER - Minimal
+    // =====================================================
     private JPanel createFooter() {
         JPanel footer = new JPanel();
         footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(10, 40, 20, 40));
 
-        JLabel text = new JLabel(
-                "© 2026 Sunrise Dental Clinic    |    Version 1.0    |    Designed for Modern Healthcare Excellence");
+        JLabel text = new JLabel("© 2026 Sunrise Dental Clinic | Version 2.0 | Designed for Modern Healthcare");
         text.setForeground(new Color(138, 151, 148));
-        text.setFont(font(Font.PLAIN, 12));
+        text.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         footer.add(text);
-
         return footer;
     }
 
-    private Font font(int style, int size) {
-        return new Font("Segoe UI", style, size);
-    }
-
-    // =======================
-    // Navigation Methods
-    // =======================
-
+    // =====================================================
+    // NAVIGATION METHODS
+    // =====================================================
     private void openLoginView() {
         SwingUtilities.invokeLater(() -> {
-            // Close the welcome window
             this.dispose();
-            
-            // Open login window
             Login loginView = new Login();
             new LoginController(loginView);
             loginView.setVisible(true);
@@ -318,20 +291,20 @@ public class SunriseDentalWelcome extends JFrame {
 
     private void openSignupView() {
         SwingUtilities.invokeLater(() -> {
-            // Close the welcome window
             this.dispose();
-            
-            // Open signup window
             Signup signupView = new Signup();
             new SignupController(signupView);
             signupView.setVisible(true);
         });
     }
 
-    // =======================
-    // Hero Panel - Transparent Background Blending
-    // =======================
+    private Font font(int style, int size) {
+        return new Font("Segoe UI", style, size);
+    }
 
+    // =====================================================
+    // HERO PANEL - Clean Image Display
+    // =====================================================
     static class HeroPanel extends JPanel {
         private BufferedImage welcomeImage;
 
@@ -345,109 +318,76 @@ public class SunriseDentalWelcome extends JFrame {
             super.paintComponent(g);
 
             Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 
-            // Highest quality rendering
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
 
-            g2.setRenderingHint(
-                    RenderingHints.KEY_RENDERING,
-                    RenderingHints.VALUE_RENDER_QUALITY);
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_INTERPOLATION,
-                    RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ALPHA_INTERPOLATION,
-                    RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_COLOR_RENDERING,
-                    RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-
-            int width = getWidth();
-            int height = getHeight();
-
-            // Subtle decorative elements behind the image
+            // Soft gradient background
             GradientPaint gradient = new GradientPaint(
                 0, 0, new Color(0xE8F0F1),
-                width, height, new Color(0xFBF9F1)
+                w, h, new Color(0xFBF9F1)
             );
             g2.setPaint(gradient);
-            g2.fillRoundRect(20, 20, width - 40, height - 40, 40, 40);
+            g2.fillRoundRect(10, 10, w - 20, h - 20, 30, 30);
 
-            // Soft shadow effect
-            g2.setColor(new Color(0, 0, 0, 8));
-            g2.fillRoundRect(25, 25, width - 50, height - 50, 40, 40);
+            // Subtle shadow
+            g2.setColor(new Color(0, 0, 0, 6));
+            g2.fillRoundRect(15, 15, w - 30, h - 30, 30, 30);
 
-            // Display the welcome image with transparency
             if (welcomeImage != null) {
                 int imgW = welcomeImage.getWidth();
                 int imgH = welcomeImage.getHeight();
 
-                // Calculate padding (10% on each side for breathing room)
-                int paddingX = (int) (width * 0.10);
-                int paddingY = (int) (height * 0.10);
-
-                int availableW = width - (paddingX * 2);
-                int availableH = height - (paddingY * 2);
+                int padding = (int) (Math.min(w, h) * 0.08);
+                int availableW = w - (padding * 2);
+                int availableH = h - (padding * 2);
 
                 double scaleX = availableW / (double) imgW;
                 double scaleY = availableH / (double) imgH;
-
-                // Use contain mode to show entire image without cropping
-                double scale = Math.min(scaleX, scaleY);
-
-                // Slightly reduce scale to give more breathing room
-                scale = scale * 0.92;
+                double scale = Math.min(scaleX, scaleY) * 0.92;
 
                 int drawW = (int) (imgW * scale);
                 int drawH = (int) (imgH * scale);
+                int x = (w - drawW) / 2;
+                int y = (h - drawH) / 2;
 
-                int x = (width - drawW) / 2;
-                int y = (height - drawH) / 2;
-
-                // Draw image with transparency preserved
                 g2.drawImage(welcomeImage, x, y, drawW, drawH, null);
-                
-                // Add a subtle glow effect around the image
-                Color glowColor = new Color(47, 62, 60, 20);
-                g2.setColor(glowColor);
-                g2.setStroke(new BasicStroke(2f));
-                g2.drawRoundRect(x - 10, y - 10, drawW + 20, drawH + 20, 30, 30);
-                
+
+                // Subtle glow
+                g2.setColor(new Color(47, 62, 60, 15));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(x - 8, y - 8, drawW + 16, drawH + 16, 25, 25);
+
             } else {
-                // Fallback display
+                // Fallback
                 g2.setColor(new Color(200, 200, 200));
-                g2.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-                String message = "Welcome Image Here";
+                g2.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+                String msg = "Welcome Image";
                 FontMetrics fm = g2.getFontMetrics();
-                int textX = (width - fm.stringWidth(message)) / 2;
-                int textY = (height - fm.getHeight()) / 2 + fm.getAscent();
-                g2.drawString(message, textX, textY);
+                int tx = (w - fm.stringWidth(msg)) / 2;
+                int ty = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(msg, tx, ty);
 
                 g2.setColor(new Color(180, 180, 180));
-                g2.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-                String subMsg = "Place Welcome.png in src/resources/";
+                g2.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                String sub = "Place Welcome.png in src/resources/";
                 fm = g2.getFontMetrics();
-                textX = (width - fm.stringWidth(subMsg)) / 2;
-                textY = textY + 30;
-                g2.drawString(subMsg, textX, textY);
+                tx = (w - fm.stringWidth(sub)) / 2;
+                g2.drawString(sub, tx, ty + 28);
             }
 
             g2.dispose();
         }
     }
 
-    // =======================
-    // Premium Rounded Button
-    // =======================
-
+    // =====================================================
+    // ROUNDED BUTTON - Modern
+    // =====================================================
     static class RoundedButton extends JButton {
         private Color bg;
-        private Color fg;
         private Color borderColor;
         private Color hoverColor;
         private Color originalBg;
@@ -456,23 +396,19 @@ public class SunriseDentalWelcome extends JFrame {
             super(text);
             this.bg = bg;
             this.originalBg = bg;
-            this.fg = fg;
             this.borderColor = bg;
-            this.hoverColor = bg;
 
             setForeground(fg);
-            setFont(new Font("Segoe UI", Font.BOLD, 15));
-            setPreferredSize(new Dimension(180, 48));
+            setFont(new Font("Segoe UI", Font.BOLD, 14));
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);
             setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-            // Calculate hover color (darker version)
-            if (bg.equals(PRIMARY_DARK)) {
+            if (bg.equals(new Color(0x2F3E3C))) {
                 hoverColor = new Color(40, 55, 53);
             } else {
-                hoverColor = new Color(220, 220, 210);
+                hoverColor = new Color(230, 230, 225);
             }
 
             addMouseListener(new MouseAdapter() {
@@ -497,17 +433,14 @@ public class SunriseDentalWelcome extends JFrame {
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             g2.setColor(bg);
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
 
             if (borderColor != bg && borderColor != null) {
                 g2.setColor(borderColor);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 24, 24);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
             }
 
             super.paintComponent(g);
@@ -515,37 +448,9 @@ public class SunriseDentalWelcome extends JFrame {
         }
     }
 
-    // =======================
-    // Shadow Card
-    // =======================
-
-    static class ShadowPanel extends JPanel {
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // Shadow
-            g2.setColor(new Color(0, 0, 0, 15));
-            g2.fillRoundRect(6, 6, getWidth() - 12, getHeight() - 12, 20, 20);
-
-            // Main card
-            g2.setColor(getBackground());
-            g2.fillRoundRect(0, 0, getWidth() - 12, getHeight() - 12, 20, 20);
-
-            g2.dispose();
-            super.paintComponent(g);
-        }
-
-        @Override
-        public boolean isOpaque() {
-            return false;
-        }
-    }
-
+    // =====================================================
+    // MAIN METHOD
+    // =====================================================
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
