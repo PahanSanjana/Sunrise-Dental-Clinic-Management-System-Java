@@ -194,7 +194,7 @@ public class PatientReportPanel extends JPanel {
         panel.add(billPanel);
 
         // Total Spent
-        JPanel spentPanel = createSummaryCard("💵", "Total Spent", "$0.00", new Color(200, 240, 220));
+        JPanel spentPanel = createSummaryCard("💵", "Total Spent", "RS0.00", new Color(200, 240, 220));
         panel.add(spentPanel);
 
         return panel;
@@ -567,7 +567,7 @@ public class PatientReportPanel extends JPanel {
         totalAppointmentsLabel.setText(String.valueOf(apptCount));
         totalTreatmentsLabel.setText(String.valueOf(treatmentCount));
         totalBillsLabel.setText(String.valueOf(billCount));
-        totalSpentLabel.setText("$" + df.format(totalSpent));
+        totalSpentLabel.setText("RS" + df.format(totalSpent));
 
         // Update appointment table
         appointmentTableModel.setRowCount(0);
@@ -595,7 +595,7 @@ public class PatientReportPanel extends JPanel {
                     treatment.getCategory() != null ? treatment.getCategory() : "N/A",
                     treatment.getCreatedAt() != null ? treatment.getCreatedAt().substring(0, 10) : "N/A",
                     "N/A",
-                    "$" + df.format(treatment.getCost()),
+                    "RS" + df.format(treatment.getCost()),
                     treatment.isActive() ? "Active" : "Inactive"
                 };
                 treatmentTableModel.addRow(row);
@@ -610,9 +610,9 @@ public class PatientReportPanel extends JPanel {
                     bill.getBillId(),
                     bill.getBillNumber(),
                     bill.getBillDate() != null ? sdf.format(bill.getBillDate()) : "N/A",
-                    "$" + df.format(bill.getTotalAmount()),
-                    "$" + df.format(bill.getAmountPaid()),
-                    "$" + df.format(bill.getBalance()),
+                    "RS" + df.format(bill.getTotalAmount()),
+                    "RS" + df.format(bill.getAmountPaid()),
+                    "RS" + df.format(bill.getBalance()),
                     bill.getStatus() != null ? bill.getStatus() : "N/A"
                 };
                 billTableModel.addRow(row);

@@ -205,7 +205,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel costLabel = new JLabel("Cost ($):");
+        JLabel costLabel = new JLabel("Cost (RS):");
         costLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         costLabel.setForeground(PRIMARY_DARK);
         panel.add(costLabel, gbc);

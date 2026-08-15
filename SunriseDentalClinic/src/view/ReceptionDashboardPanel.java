@@ -152,7 +152,7 @@ public class ReceptionDashboardPanel extends JPanel {
         todayAppointmentsLabel = findValueLabel(todayCard);
 
         // Total Revenue
-        JPanel revenueCard = createStatCard("💰", "Total Revenue", "$0.00", COLOR_REVENUE);
+        JPanel revenueCard = createStatCard("💰", "Total Revenue", "RS0.00", COLOR_REVENUE);
         panel.add(revenueCard);
         totalRevenueLabel = findValueLabel(revenueCard);
 
@@ -446,14 +446,14 @@ public class ReceptionDashboardPanel extends JPanel {
             totalPatientsLabel.setText("0");
             totalAppointmentsLabel.setText("0");
             todayAppointmentsLabel.setText("0");
-            totalRevenueLabel.setText("$0.00");
+            totalRevenueLabel.setText("RS0.00");
             return;
         }
 
         totalPatientsLabel.setText(String.valueOf(stats.getTotalPatients()));
         totalAppointmentsLabel.setText(String.valueOf(stats.getTotalAppointments()));
         todayAppointmentsLabel.setText(String.valueOf(stats.getTodayAppointments()));
-        totalRevenueLabel.setText("$" + df.format(stats.getTotalRevenue()));
+        totalRevenueLabel.setText("RS" + df.format(stats.getTotalRevenue()));
     }
 
     private void displayActivities(List<RecentActivity> activities) {

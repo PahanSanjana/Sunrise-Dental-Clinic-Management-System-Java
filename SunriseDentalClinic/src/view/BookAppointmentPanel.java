@@ -595,7 +595,7 @@ public class BookAppointmentPanel extends JPanel {
         Dentist selected = (Dentist) dentistCombo.getSelectedItem();
         if (selected != null) {
             dentistSpecializationLabel.setText(selected.getSpecialization() != null ? selected.getSpecialization() : "--");
-            consultationFeeLabel.setText(selected.getConsultationFee() > 0 ? "$" + selected.getConsultationFee() : "--");
+            consultationFeeLabel.setText(selected.getConsultationFee() > 0 ? "RS" + selected.getConsultationFee() : "--");
         } else {
             dentistSpecializationLabel.setText("--");
             consultationFeeLabel.setText("--");

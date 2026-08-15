@@ -195,22 +195,22 @@ public class RevenueReportPanel extends JPanel {
         ));
 
         // Total Revenue
-        JPanel totalPanel = createRevenueCard("💰", "Total Revenue", "$0.00", COLOR_TOTAL);
+        JPanel totalPanel = createRevenueCard("💰", "Total Revenue", "RS0.00", COLOR_TOTAL);
         panel.add(totalPanel);
         totalRevenueLabel = findValueLabel(totalPanel);
 
         // Paid Revenue
-        JPanel paidPanel = createRevenueCard("✅", "Paid", "$0.00", COLOR_PAID);
+        JPanel paidPanel = createRevenueCard("✅", "Paid", "RS0.00", COLOR_PAID);
         panel.add(paidPanel);
         paidRevenueLabel = findValueLabel(paidPanel);
 
         // Pending Revenue
-        JPanel pendingPanel = createRevenueCard("⏳", "Pending", "$0.00", COLOR_PENDING);
+        JPanel pendingPanel = createRevenueCard("⏳", "Pending", "RS0.00", COLOR_PENDING);
         panel.add(pendingPanel);
         pendingRevenueLabel = findValueLabel(pendingPanel);
 
         // Overdue Revenue
-        JPanel overduePanel = createRevenueCard("⚠️", "Overdue", "$0.00", COLOR_OVERDUE);
+        JPanel overduePanel = createRevenueCard("⚠️", "Overdue", "RS0.00", COLOR_OVERDUE);
         panel.add(overduePanel);
         overdueRevenueLabel = findValueLabel(overduePanel);
 
@@ -572,20 +572,20 @@ public class RevenueReportPanel extends JPanel {
         
         if (bills == null || bills.isEmpty()) {
             summaryLabel.setText("Total: 0 bills");
-            totalRevenueLabel.setText("$0.00");
-            paidRevenueLabel.setText("$0.00");
-            pendingRevenueLabel.setText("$0.00");
-            overdueRevenueLabel.setText("$0.00");
+            totalRevenueLabel.setText("RS0.00");
+            paidRevenueLabel.setText("RS0.00");
+            pendingRevenueLabel.setText("RS0.00");
+            overdueRevenueLabel.setText("RS0.00");
             totalBillsLabel.setText("0");
             return;
         }
 
         // Update summary
         int totalBills = bills.size();
-        totalRevenueLabel.setText("$" + df.format(totalRevenue));
-        paidRevenueLabel.setText("$" + df.format(paidRevenue));
-        pendingRevenueLabel.setText("$" + df.format(pendingRevenue));
-        overdueRevenueLabel.setText("$" + df.format(overdueRevenue));
+        totalRevenueLabel.setText("RS" + df.format(totalRevenue));
+        paidRevenueLabel.setText("RS" + df.format(paidRevenue));
+        pendingRevenueLabel.setText("RS" + df.format(pendingRevenue));
+        overdueRevenueLabel.setText("RS" + df.format(overdueRevenue));
         totalBillsLabel.setText(String.valueOf(totalBills));
 
         // Update table
@@ -597,16 +597,16 @@ public class RevenueReportPanel extends JPanel {
                 bill.getBillNumber(),
                 patientName,
                 bill.getBillDate() != null ? sdf.format(bill.getBillDate()) : "N/A",
-                "$" + df.format(bill.getTotalAmount()),
-                "$" + df.format(bill.getAmountPaid()),
-                "$" + df.format(bill.getBalance()),
+                "RS" + df.format(bill.getTotalAmount()),
+                "RS" + df.format(bill.getAmountPaid()),
+                "RS" + df.format(bill.getBalance()),
                 bill.getStatus() != null ? bill.getStatus() : "N/A",
                 bill.getPaymentMethod() != null ? bill.getPaymentMethod() : "N/A"
             };
             tableModel.addRow(row);
         }
 
-        summaryLabel.setText("Total: " + totalBills + " bills | Total Revenue: $" + df.format(totalRevenue));
+        summaryLabel.setText("Total: " + totalBills + " bills | Total Revenue: RS" + df.format(totalRevenue));
     }
 
     // ========================

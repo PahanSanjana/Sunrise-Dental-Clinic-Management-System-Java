@@ -1,15 +1,12 @@
 package view;
 
 import controller.TreatmentController;
-import model.Treatment;
+import java.awt.*;
+import java.awt.event.MouseEvent;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
-import java.awt.*;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.text.DecimalFormat;
+import model.Treatment;
 
 public class TreatmentDetailsPanel extends JPanel {
     
@@ -253,7 +250,7 @@ public class TreatmentDetailsPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel costLabel = new JLabel("Cost ($):");
+        JLabel costLabel = new JLabel("Cost (RS):");
         costLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         costLabel.setForeground(PRIMARY_DARK);
         panel.add(costLabel, gbc);

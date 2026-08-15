@@ -157,7 +157,7 @@ public class AdminDashboardPanel extends JPanel {
         totalAppointmentsLabel = findValueLabel(appointmentCard);
 
         // Total Revenue
-        JPanel revenueCard = createStatCard("💰", "Total Revenue", "$0.00", COLOR_REVENUE);
+        JPanel revenueCard = createStatCard("💰", "Total Revenue", "RS0.00", COLOR_REVENUE);
         panel.add(revenueCard);
         totalRevenueLabel = findValueLabel(revenueCard);
 
@@ -463,7 +463,7 @@ public class AdminDashboardPanel extends JPanel {
             totalUsersLabel.setText("0");
             totalPatientsLabel.setText("0");
             totalAppointmentsLabel.setText("0");
-            totalRevenueLabel.setText("$0.00");
+            totalRevenueLabel.setText("RS0.00");
             totalStaffLabel.setText("0");
             totalDentistsLabel.setText("0");
             return;
@@ -472,7 +472,7 @@ public class AdminDashboardPanel extends JPanel {
         totalUsersLabel.setText(String.valueOf(stats.getTotalUsers()));
         totalPatientsLabel.setText(String.valueOf(stats.getTotalPatients()));
         totalAppointmentsLabel.setText(String.valueOf(stats.getTotalAppointments()));
-        totalRevenueLabel.setText("$" + df.format(stats.getTotalRevenue()));
+        totalRevenueLabel.setText("RS" + df.format(stats.getTotalRevenue()));
         totalStaffLabel.setText(String.valueOf(stats.getTotalStaff()));
         totalDentistsLabel.setText(String.valueOf(stats.getTotalDentists()));
     }

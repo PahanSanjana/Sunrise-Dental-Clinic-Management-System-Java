@@ -315,7 +315,7 @@ public class BillListPanel extends JPanel {
         countLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         countLabel.setForeground(new Color(107, 123, 121));
 
-        totalRevenueLabel = new JLabel("Total Revenue: $0.00");
+        totalRevenueLabel = new JLabel("Total Revenue: RS0.00");
         totalRevenueLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         totalRevenueLabel.setForeground(SUCCESS_COLOR);
 
@@ -489,7 +489,7 @@ public class BillListPanel extends JPanel {
         if (bills == null || bills.isEmpty()) {
             statusLabel.setText("No bills found");
             countLabel.setText("Total: 0 bills");
-            totalRevenueLabel.setText("Total Revenue: $0.00");
+            totalRevenueLabel.setText("Total Revenue: RS0.00");
             return;
         }
 
@@ -506,7 +506,7 @@ public class BillListPanel extends JPanel {
                 patientName,
                 date,
                 dueDate,
-                "$" + df.format(bill.getTotalAmount()),
+                "RS" + df.format(bill.getTotalAmount()),
                 bill.getStatus() != null ? bill.getStatus() : "N/A"
             };
             tableModel.addRow(row);
@@ -518,12 +518,12 @@ public class BillListPanel extends JPanel {
 
     private void updateSummary(List<Bill> bills) {
         if (bills == null || bills.isEmpty()) {
-            totalRevenueLabel.setText("Total Revenue: $0.00");
+            totalRevenueLabel.setText("Total Revenue: RS0.00");
             return;
         }
         
         double totalRevenue = controller.getTotalRevenueFromBills(bills);
-        totalRevenueLabel.setText("Total Revenue: $" + df.format(totalRevenue));
+        totalRevenueLabel.setText("Total Revenue: RS" + df.format(totalRevenue));
     }
 
     public void viewBill(int row) {

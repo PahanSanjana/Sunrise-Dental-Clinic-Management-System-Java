@@ -1,14 +1,12 @@
 package view;
 
 import controller.DentistController;
-import model.Dentist;
+import java.awt.*;
+import java.awt.event.MouseEvent;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
-import java.awt.*;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import model.Dentist;
 
 public class DentistDetailsPanel extends JPanel {
     
@@ -280,7 +278,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel feeLabel = new JLabel("Consultation Fee ($):");
+        JLabel feeLabel = new JLabel("Consultation Fee (RS):");
         feeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         feeLabel.setForeground(PRIMARY_DARK);
         panel.add(feeLabel, gbc);

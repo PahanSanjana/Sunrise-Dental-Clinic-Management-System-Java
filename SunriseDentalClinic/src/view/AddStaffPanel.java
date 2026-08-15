@@ -1,14 +1,10 @@
 package view;
 
 import controller.StaffController;
-import model.User.UserRole;
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.sql.Date;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -402,7 +398,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel salaryLabel = new JLabel("Salary ($):");
+        JLabel salaryLabel = new JLabel("Salary (RS):");
         salaryLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         salaryLabel.setForeground(PRIMARY_DARK);
         panel.add(salaryLabel, gbc);

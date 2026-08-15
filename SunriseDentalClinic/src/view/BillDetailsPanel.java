@@ -388,7 +388,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        subtotalLabel = new JLabel("$0.00");
+        subtotalLabel = new JLabel("RS0.00");
         subtotalLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         subtotalLabel.setForeground(SECONDARY_TEXT);
         panel.add(subtotalLabel, gbc);
@@ -405,7 +405,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.gridx = 3;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        taxLabel = new JLabel("$0.00");
+        taxLabel = new JLabel("RS0.00");
         taxLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         taxLabel.setForeground(SECONDARY_TEXT);
         panel.add(taxLabel, gbc);
@@ -423,7 +423,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        discountLabel = new JLabel("$0.00");
+        discountLabel = new JLabel("RS0.00");
         discountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         discountLabel.setForeground(SECONDARY_TEXT);
         panel.add(discountLabel, gbc);
@@ -440,7 +440,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.gridx = 3;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        totalAmountLabel = new JLabel("$0.00");
+        totalAmountLabel = new JLabel("RS0.00");
         totalAmountLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         totalAmountLabel.setForeground(SUCCESS_COLOR);
         panel.add(totalAmountLabel, gbc);
@@ -458,7 +458,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        amountPaidLabel = new JLabel("$0.00");
+        amountPaidLabel = new JLabel("RS0.00");
         amountPaidLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         amountPaidLabel.setForeground(SECONDARY_TEXT);
         panel.add(amountPaidLabel, gbc);
@@ -475,7 +475,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.gridx = 3;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        balanceLabel = new JLabel("$0.00");
+        balanceLabel = new JLabel("RS0.00");
         balanceLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         balanceLabel.setForeground(ERROR_COLOR);
         panel.add(balanceLabel, gbc);
@@ -783,12 +783,12 @@ public class BillDetailsPanel extends JPanel {
         dueDateLabel.setText(bill.getDueDate() != null ? sdf.format(bill.getDueDate()) : "--");
         
         // Set payment info
-        subtotalLabel.setText("$" + df.format(bill.getSubtotal()));
-        taxLabel.setText("$" + df.format(bill.getTax()));
-        discountLabel.setText("$" + df.format(bill.getDiscount()));
-        totalAmountLabel.setText("$" + df.format(bill.getTotalAmount()));
-        amountPaidLabel.setText("$" + df.format(bill.getAmountPaid()));
-        balanceLabel.setText("$" + df.format(bill.getBalance()));
+        subtotalLabel.setText("RS" + df.format(bill.getSubtotal()));
+        taxLabel.setText("RS" + df.format(bill.getTax()));
+        discountLabel.setText("RS" + df.format(bill.getDiscount()));
+        totalAmountLabel.setText("RS" + df.format(bill.getTotalAmount()));
+        amountPaidLabel.setText("RS" + df.format(bill.getAmountPaid()));
+        balanceLabel.setText("RS" + df.format(bill.getBalance()));
         
         // Set status and payment method
         statusCombo.setSelectedItem(bill.getStatus() != null ? bill.getStatus() : "Pending");
@@ -826,8 +826,8 @@ public class BillDetailsPanel extends JPanel {
                 item.getTreatmentId() > 0 ? "Treatment" : "Other",
                 item.getDescription(),
                 item.getQuantity(),
-                "$" + df.format(item.getUnitPrice()),
-                "$" + df.format(item.getTotalPrice())
+                "RS" + df.format(item.getUnitPrice()),
+                "RS" + df.format(item.getTotalPrice())
             };
             tableModel.addRow(row);
         }
@@ -841,12 +841,12 @@ public class BillDetailsPanel extends JPanel {
         patientEmailLabel.setText("--");
         billDateLabel.setText("--");
         dueDateLabel.setText("--");
-        subtotalLabel.setText("$0.00");
-        taxLabel.setText("$0.00");
-        discountLabel.setText("$0.00");
-        totalAmountLabel.setText("$0.00");
-        amountPaidLabel.setText("$0.00");
-        balanceLabel.setText("$0.00");
+        subtotalLabel.setText("RS0.00");
+        taxLabel.setText("RS0.00");
+        discountLabel.setText("RS0.00");
+        totalAmountLabel.setText("RS0.00");
+        amountPaidLabel.setText("RS0.00");
+        balanceLabel.setText("RS0.00");
         statusCombo.setSelectedIndex(0);
         paymentMethodCombo.setSelectedIndex(0);
         notesArea.setText("");

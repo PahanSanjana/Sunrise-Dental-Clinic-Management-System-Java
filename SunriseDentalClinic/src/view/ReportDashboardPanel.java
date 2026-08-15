@@ -154,7 +154,7 @@ public class ReportDashboardPanel extends JPanel {
         totalAppointmentsLabel = findValueLabel(appointmentCard);
 
         // Total Revenue
-        JPanel revenueCard = createStatCard("💰", "Total Revenue", "$0.00", COLOR_REVENUE);
+        JPanel revenueCard = createStatCard("💰", "Total Revenue", "RS0.00", COLOR_REVENUE);
         panel.add(revenueCard);
         totalRevenueLabel = findValueLabel(revenueCard);
 
@@ -473,7 +473,7 @@ public class ReportDashboardPanel extends JPanel {
                               int dentists, int treatments, int staff) {
         totalPatientsLabel.setText(String.valueOf(patients));
         totalAppointmentsLabel.setText(String.valueOf(appointments));
-        totalRevenueLabel.setText("$" + df.format(revenue));
+        totalRevenueLabel.setText("RS" + df.format(revenue));
         totalDentistsLabel.setText(String.valueOf(dentists));
         totalTreatmentsLabel.setText(String.valueOf(treatments));
         totalStaffLabel.setText(String.valueOf(staff));
@@ -500,7 +500,7 @@ public class ReportDashboardPanel extends JPanel {
             for (Bill bill : recentBills) {
                 String patientName = controller.getPatientName(bill.getPatientId());
                 activities.add("💰 Bill: " + bill.getBillNumber() + 
-                    " - " + patientName + " ($" + df.format(bill.getTotalAmount()) + ")");
+                    " - " + patientName + " (RS" + df.format(bill.getTotalAmount()) + ")");
             }
         }
         

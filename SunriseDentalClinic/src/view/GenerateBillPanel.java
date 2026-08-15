@@ -387,7 +387,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
-        JLabel subtotalLabel = new JLabel("Subtotal ($):");
+        JLabel subtotalLabel = new JLabel("Subtotal (RS):");
         subtotalLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         subtotalLabel.setForeground(PRIMARY_DARK);
         panel.add(subtotalLabel, gbc);
@@ -427,7 +427,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
-        JLabel discountLabel = new JLabel("Discount ($):");
+        JLabel discountLabel = new JLabel("Discount (RS):");
         discountLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         discountLabel.setForeground(PRIMARY_DARK);
         panel.add(discountLabel, gbc);
@@ -449,7 +449,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
-        JLabel totalLabel = new JLabel("Total Amount ($):");
+        JLabel totalLabel = new JLabel("Total Amount (RS):");
         totalLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         totalLabel.setForeground(PRIMARY_DARK);
         panel.add(totalLabel, gbc);
@@ -469,7 +469,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridy = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
-        JLabel paidLabel = new JLabel("Amount Paid ($):");
+        JLabel paidLabel = new JLabel("Amount Paid (RS):");
         paidLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         paidLabel.setForeground(PRIMARY_DARK);
         panel.add(paidLabel, gbc);
@@ -491,7 +491,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
-        JLabel balanceLabel = new JLabel("Balance ($):");
+        JLabel balanceLabel = new JLabel("Balance (RS):");
         balanceLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         balanceLabel.setForeground(PRIMARY_DARK);
         panel.add(balanceLabel, gbc);

@@ -464,7 +464,7 @@ public class DentistListPanel extends JPanel {
                 dentist.getPhone() != null ? dentist.getPhone() : "N/A",
                 dentist.getEmail() != null ? dentist.getEmail() : "N/A",
                 dentist.getYearsOfExperience() + " yrs",
-                "$" + df.format(dentist.getConsultationFee()),
+                "RS" + df.format(dentist.getConsultationFee()),
                 status
             };
             tableModel.addRow(row);

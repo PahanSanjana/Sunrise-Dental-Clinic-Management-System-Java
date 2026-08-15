@@ -477,7 +477,7 @@ public class TreatmentListPanel extends JPanel {
                 treatment.getTreatmentId(),
                 treatment.getTreatmentName(),
                 treatment.getCategory() != null ? treatment.getCategory() : "N/A",
-                "$" + df.format(treatment.getCost()),
+                "RS" + df.format(treatment.getCost()),
                 treatment.getDuration() + " min",
                 status
             };
