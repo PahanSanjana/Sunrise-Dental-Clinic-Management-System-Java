@@ -1,6 +1,9 @@
 package view;
 
 import controller.DentistController;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -18,6 +21,19 @@ public class AddDentistPanel extends JPanel {
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
 
     // Form Fields - Dentist Details
     private JTextField dentistNameField;
@@ -46,10 +62,15 @@ public class AddDentistPanel extends JPanel {
     private JLabel statusLabel;
     private DentistController controller;
 
+    // Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public AddDentistPanel() {
         initComponents();
         this.controller = new DentistController(this);
         loginPanel.setVisible(false); // Initially hidden
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -71,6 +92,34 @@ public class AddDentistPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    // Auto-refresh logic - e.g., check for session expiry
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -81,11 +130,11 @@ public class AddDentistPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Add New Dentist");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JLabel subtitleLabel = new JLabel("Register a new dentist with optional login account");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
@@ -130,7 +179,7 @@ public class AddDentistPanel extends JPanel {
             "Login Account (Optional)",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         
@@ -142,7 +191,7 @@ public class AddDentistPanel extends JPanel {
         JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         checkPanel.setOpaque(false);
         createLoginCheckBox = new JCheckBox("Create login account for this dentist");
-        createLoginCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        createLoginCheckBox.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         createLoginCheckBox.setForeground(PRIMARY_DARK);
         createLoginCheckBox.addActionListener(e -> loginPanel.setVisible(createLoginCheckBox.isSelected()));
         checkPanel.add(createLoginCheckBox);
@@ -169,7 +218,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel usernameLabel = new JLabel("Username:");
-        usernameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        usernameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         usernameLabel.setForeground(PRIMARY_DARK);
         loginPanel.add(usernameLabel, gbc);
         
@@ -177,7 +226,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         usernameField = new JTextField();
-        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        usernameField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         usernameField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -190,7 +239,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel passwordLabel = new JLabel("Password:");
-        passwordLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        passwordLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         passwordLabel.setForeground(PRIMARY_DARK);
         loginPanel.add(passwordLabel, gbc);
         
@@ -198,7 +247,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         passwordField = new JPasswordField();
-        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        passwordField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         passwordField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -215,7 +264,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel confirmLabel = new JLabel("Confirm Password:");
-        confirmLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        confirmLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         confirmLabel.setForeground(PRIMARY_DARK);
         loginPanel.add(confirmLabel, gbc);
         
@@ -223,7 +272,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         confirmPasswordField = new JPasswordField();
-        confirmPasswordField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        confirmPasswordField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         confirmPasswordField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -236,7 +285,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         passwordStrengthLabel = new JLabel(" ");
-        passwordStrengthLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        passwordStrengthLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         passwordStrengthLabel.setForeground(SECONDARY_TEXT);
         loginPanel.add(passwordStrengthLabel, gbc);
         
@@ -262,13 +311,16 @@ public class AddDentistPanel extends JPanel {
         if (password.matches(".*[!@#$%^&*].*")) strength++;
         
         if (strength <= 2) {
-            passwordStrengthLabel.setText("🔴 Weak");
+            passwordStrengthLabel.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 12, ERROR_COLOR));
+            passwordStrengthLabel.setText(" Weak");
             passwordStrengthLabel.setForeground(ERROR_COLOR);
         } else if (strength <= 4) {
-            passwordStrengthLabel.setText("🟡 Medium");
+            passwordStrengthLabel.setIcon(icon(FontAwesomeSolid.EXCLAMATION_TRIANGLE, 12, new Color(200, 180, 0)));
+            passwordStrengthLabel.setText(" Medium");
             passwordStrengthLabel.setForeground(new Color(200, 180, 0));
         } else {
-            passwordStrengthLabel.setText("🟢 Strong");
+            passwordStrengthLabel.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 12, SUCCESS_COLOR));
+            passwordStrengthLabel.setText(" Strong");
             passwordStrengthLabel.setForeground(SUCCESS_COLOR);
         }
     }
@@ -281,7 +333,7 @@ public class AddDentistPanel extends JPanel {
             title,
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         panel.add(content, BorderLayout.CENTER);
@@ -304,7 +356,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel nameLabel = new JLabel("Dentist Name:");
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        nameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         nameLabel.setForeground(PRIMARY_DARK);
         panel.add(nameLabel, gbc);
 
@@ -334,7 +386,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel specializationLabel = new JLabel("Specialization:");
-        specializationLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        specializationLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         specializationLabel.setForeground(PRIMARY_DARK);
         panel.add(specializationLabel, gbc);
 
@@ -351,7 +403,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel licenseLabel = new JLabel("License Number:");
-        licenseLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        licenseLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         licenseLabel.setForeground(PRIMARY_DARK);
         panel.add(licenseLabel, gbc);
 
@@ -367,7 +419,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel workingHoursLabel = new JLabel("Working Hours:");
-        workingHoursLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        workingHoursLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         workingHoursLabel.setForeground(PRIMARY_DARK);
         panel.add(workingHoursLabel, gbc);
 
@@ -384,7 +436,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel experienceLabel = new JLabel("Years of Experience:");
-        experienceLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        experienceLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         experienceLabel.setForeground(PRIMARY_DARK);
         panel.add(experienceLabel, gbc);
 
@@ -400,7 +452,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel feeLabel = new JLabel("Consultation Fee (RS):");
-        feeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        feeLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         feeLabel.setForeground(PRIMARY_DARK);
         panel.add(feeLabel, gbc);
 
@@ -408,7 +460,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         consultationFeeField = createTextField();
-        consultationFeeField.setToolTipText("Fee for consultation in USD");
+        consultationFeeField.setToolTipText("Fee for consultation in RS");
         panel.add(consultationFeeField, gbc);
 
         // Availability
@@ -417,7 +469,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel availableLabel = new JLabel("Availability:");
-        availableLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        availableLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         availableLabel.setForeground(PRIMARY_DARK);
         panel.add(availableLabel, gbc);
 
@@ -425,7 +477,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         availableCheckBox = new JCheckBox("Available for appointments");
-        availableCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        availableCheckBox.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         availableCheckBox.setSelected(true);
         panel.add(availableCheckBox, gbc);
 
@@ -448,7 +500,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel phoneLabel = new JLabel("Phone:");
-        phoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        phoneLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         phoneLabel.setForeground(PRIMARY_DARK);
         panel.add(phoneLabel, gbc);
 
@@ -464,7 +516,7 @@ public class AddDentistPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel emailLabel = new JLabel("Email:");
-        emailLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        emailLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         emailLabel.setForeground(PRIMARY_DARK);
         panel.add(emailLabel, gbc);
 
@@ -484,7 +536,7 @@ public class AddDentistPanel extends JPanel {
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(SECONDARY_TEXT);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -492,14 +544,23 @@ public class AddDentistPanel extends JPanel {
 
         saveButton = createStyledButton("Save Dentist", PRIMARY_DARK, Color.WHITE);
         saveButton.setPreferredSize(new Dimension(160, 40));
+        saveButton.setIcon(icon(FontAwesomeSolid.SAVE, 14, Color.WHITE));
+        saveButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        saveButton.setIconTextGap(8);
 
         clearButton = createStyledButton("Clear", SOFT_SURFACE, PRIMARY_DARK);
         clearButton.setBorderColor(LIGHT_SURFACE);
         clearButton.setPreferredSize(new Dimension(100, 40));
+        clearButton.setIcon(icon(FontAwesomeSolid.ERASER, 14, PRIMARY_DARK));
+        clearButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        clearButton.setIconTextGap(8);
 
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(LIGHT_SURFACE);
         cancelButton.setPreferredSize(new Dimension(100, 40));
+        cancelButton.setIcon(icon(FontAwesomeSolid.TIMES, 14, PRIMARY_DARK));
+        cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        cancelButton.setIconTextGap(8);
 
         buttonPanel.add(clearButton);
         buttonPanel.add(cancelButton);
@@ -513,7 +574,7 @@ public class AddDentistPanel extends JPanel {
 
     private JTextField createTextField() {
         JTextField field = new JTextField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        field.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -524,7 +585,7 @@ public class AddDentistPanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -638,19 +699,22 @@ public class AddDentistPanel extends JPanel {
     }
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 14, ERROR_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 14, SUCCESS_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(SUCCESS_COLOR);
         JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.INFO_CIRCLE, 14, new Color(0, 120, 215)));
+        statusLabel.setText(message);
         statusLabel.setForeground(new Color(0, 120, 215));
     }
 

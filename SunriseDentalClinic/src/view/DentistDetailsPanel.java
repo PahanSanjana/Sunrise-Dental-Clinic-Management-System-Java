@@ -1,12 +1,17 @@
 package view;
 
 import controller.DentistController;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import model.Dentist;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class DentistDetailsPanel extends JPanel {
     
@@ -20,6 +25,23 @@ public class DentistDetailsPanel extends JPanel {
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
     private static final Color AVAILABLE_COLOR = new Color(60, 160, 80);
     private static final Color UNAVAILABLE_COLOR = new Color(200, 80, 80);
+    
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
 
     // Form Fields - View/Edit Mode
     private JTextField dentistNameField;
@@ -35,6 +57,7 @@ public class DentistDetailsPanel extends JPanel {
     private JLabel createdDateLabel;
     private JLabel updatedDateLabel;
     private JLabel statusLabel;
+    private JLabel lastUpdatedLabel;
     private JLabel statusBadge;
     
     // Buttons
@@ -50,11 +73,16 @@ public class DentistDetailsPanel extends JPanel {
     private Dentist currentDentist;
     private DentistController controller;
 
+    // Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public DentistDetailsPanel() {
         this.controller = new DentistController(this);
         initComponents();
         setViewMode(false);
         displayEmptyState();
+        startAutoRefresh();
     }
 
     public DentistDetailsPanel(Dentist dentist) {
@@ -63,6 +91,7 @@ public class DentistDetailsPanel extends JPanel {
         initComponents();
         setViewMode(false);
         displayDentist(dentist);
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -80,6 +109,73 @@ public class DentistDetailsPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing() && currentDentist != null) {
+                    refreshDentistData();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    private void refreshDentistData() {
+        if (currentDentist != null) {
+            Dentist updated = controller.getDentistById(currentDentist.getDentistId());
+            if (updated != null) {
+                currentDentist = updated;
+                displayDentist(currentDentist);
+            }
+        }
+    }
+
+    // =====================================================
+    // CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -91,27 +187,27 @@ public class DentistDetailsPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Dentist Details");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         infoPanel.setOpaque(false);
         
         dentistIdLabel = new JLabel("Dentist ID: --");
-        dentistIdLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        dentistIdLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         dentistIdLabel.setForeground(SECONDARY_TEXT);
         
         createdDateLabel = new JLabel("Created: --");
-        createdDateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        createdDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         createdDateLabel.setForeground(SECONDARY_TEXT);
         
         updatedDateLabel = new JLabel("Last Updated: --");
-        updatedDateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        updatedDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         updatedDateLabel.setForeground(SECONDARY_TEXT);
         
         // Status badge
         statusBadge = new JLabel("--");
-        statusBadge.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        statusBadge.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         statusBadge.setOpaque(true);
         statusBadge.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         statusBadge.setVisible(false);
@@ -126,6 +222,19 @@ public class DentistDetailsPanel extends JPanel {
         titlePanel.add(infoPanel);
 
         header.add(titlePanel, BorderLayout.WEST);
+        
+        // Manual Refresh Button - ICON ONLY
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        
+        JButton refreshBtn = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshBtn.setPreferredSize(new Dimension(40, 40));
+        refreshBtn.setToolTipText("Refresh Now");
+        refreshBtn.addActionListener(e -> refreshDentistData());
+        rightPanel.add(refreshBtn);
+
+        header.add(rightPanel, BorderLayout.EAST);
+
         return header;
     }
 
@@ -160,7 +269,7 @@ public class DentistDetailsPanel extends JPanel {
             title,
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         panel.add(content, BorderLayout.CENTER);
@@ -183,7 +292,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel nameLabel = new JLabel("Dentist Name:");
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        nameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         nameLabel.setForeground(PRIMARY_DARK);
         panel.add(nameLabel, gbc);
 
@@ -213,7 +322,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel specializationLabel = new JLabel("Specialization:");
-        specializationLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        specializationLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         specializationLabel.setForeground(PRIMARY_DARK);
         panel.add(specializationLabel, gbc);
 
@@ -230,7 +339,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel licenseLabel = new JLabel("License Number:");
-        licenseLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        licenseLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         licenseLabel.setForeground(PRIMARY_DARK);
         panel.add(licenseLabel, gbc);
 
@@ -246,7 +355,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel workingHoursLabel = new JLabel("Working Hours:");
-        workingHoursLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        workingHoursLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         workingHoursLabel.setForeground(PRIMARY_DARK);
         panel.add(workingHoursLabel, gbc);
 
@@ -263,7 +372,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel experienceLabel = new JLabel("Years of Experience:");
-        experienceLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        experienceLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         experienceLabel.setForeground(PRIMARY_DARK);
         panel.add(experienceLabel, gbc);
 
@@ -279,7 +388,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel feeLabel = new JLabel("Consultation Fee (RS):");
-        feeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        feeLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         feeLabel.setForeground(PRIMARY_DARK);
         panel.add(feeLabel, gbc);
 
@@ -296,7 +405,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel availableLabel = new JLabel("Availability:");
-        availableLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        availableLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         availableLabel.setForeground(PRIMARY_DARK);
         panel.add(availableLabel, gbc);
 
@@ -304,7 +413,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         availableCheckBox = new JCheckBox("Available for appointments");
-        availableCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        availableCheckBox.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         availableCheckBox.setEnabled(false);
         panel.add(availableCheckBox, gbc);
 
@@ -327,7 +436,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel phoneLabel = new JLabel("Phone:");
-        phoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        phoneLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         phoneLabel.setForeground(PRIMARY_DARK);
         panel.add(phoneLabel, gbc);
 
@@ -343,7 +452,7 @@ public class DentistDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel emailLabel = new JLabel("Email:");
-        emailLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        emailLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         emailLabel.setForeground(PRIMARY_DARK);
         panel.add(emailLabel, gbc);
 
@@ -363,28 +472,55 @@ public class DentistDetailsPanel extends JPanel {
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(SECONDARY_TEXT);
+
+        lastUpdatedLabel = new JLabel("Last updated: --");
+        lastUpdatedLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
+        lastUpdatedLabel.setForeground(SECONDARY_TEXT);
+
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftPanel.setOpaque(false);
+        leftPanel.add(statusLabel);
+        leftPanel.add(lastUpdatedLabel);
 
         buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
 
         // Back button
-        backButton = createStyledButton("← Back", SOFT_SURFACE, PRIMARY_DARK);
+        backButton = createStyledButton("Back", SOFT_SURFACE, PRIMARY_DARK);
         backButton.setBorderColor(LIGHT_SURFACE);
         backButton.setPreferredSize(new Dimension(100, 35));
         backButton.addActionListener(e -> navigateBack());
+        backButton.setIcon(icon(FontAwesomeSolid.ARROW_LEFT, 12, PRIMARY_DARK));
+        backButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        backButton.setIconTextGap(6);
 
         // Edit button
         editButton = createStyledButton("Edit", PRIMARY_DARK, Color.WHITE);
         editButton.setPreferredSize(new Dimension(100, 35));
         editButton.addActionListener(e -> toggleEditMode());
+        editButton.setIcon(icon(FontAwesomeSolid.EDIT, 12, Color.WHITE));
+        editButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        editButton.setIconTextGap(6);
+
+        // Toggle Availability button
+        toggleAvailabilityButton = createStyledButton("Toggle Availability", SOFT_SURFACE, PRIMARY_DARK);
+        toggleAvailabilityButton.setBorderColor(LIGHT_SURFACE);
+        toggleAvailabilityButton.setPreferredSize(new Dimension(160, 35));
+        toggleAvailabilityButton.addActionListener(e -> toggleAvailability());
+        toggleAvailabilityButton.setIcon(icon(FontAwesomeSolid.SYNC, 12, PRIMARY_DARK));
+        toggleAvailabilityButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        toggleAvailabilityButton.setIconTextGap(6);
 
         // Save button (hidden initially)
         saveButton = createStyledButton("Save", PRIMARY_DARK, Color.WHITE);
         saveButton.setPreferredSize(new Dimension(100, 35));
         saveButton.setVisible(false);
         saveButton.addActionListener(e -> saveDentist());
+        saveButton.setIcon(icon(FontAwesomeSolid.SAVE, 12, Color.WHITE));
+        saveButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        saveButton.setIconTextGap(6);
 
         // Cancel button (hidden initially)
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
@@ -392,17 +528,17 @@ public class DentistDetailsPanel extends JPanel {
         cancelButton.setPreferredSize(new Dimension(100, 35));
         cancelButton.setVisible(false);
         cancelButton.addActionListener(e -> cancelEdit());
-
-        // Toggle Availability button
-        toggleAvailabilityButton = createStyledButton("Toggle Availability", SOFT_SURFACE, PRIMARY_DARK);
-        toggleAvailabilityButton.setBorderColor(LIGHT_SURFACE);
-        toggleAvailabilityButton.setPreferredSize(new Dimension(140, 35));
-        toggleAvailabilityButton.addActionListener(e -> toggleAvailability());
+        cancelButton.setIcon(icon(FontAwesomeSolid.TIMES, 12, PRIMARY_DARK));
+        cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        cancelButton.setIconTextGap(6);
 
         // Delete button
         deleteButton = createStyledButton("Delete", ERROR_COLOR, Color.WHITE);
         deleteButton.setPreferredSize(new Dimension(100, 35));
         deleteButton.addActionListener(e -> deleteDentist());
+        deleteButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, Color.WHITE));
+        deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        deleteButton.setIconTextGap(6);
 
         buttonPanel.add(backButton);
         buttonPanel.add(editButton);
@@ -411,7 +547,7 @@ public class DentistDetailsPanel extends JPanel {
         buttonPanel.add(cancelButton);
         buttonPanel.add(deleteButton);
 
-        footer.add(statusLabel, BorderLayout.WEST);
+        footer.add(leftPanel, BorderLayout.WEST);
         footer.add(buttonPanel, BorderLayout.EAST);
 
         return footer;
@@ -419,7 +555,7 @@ public class DentistDetailsPanel extends JPanel {
 
     private JTextField createTextField() {
         JTextField field = new JTextField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        field.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -430,7 +566,7 @@ public class DentistDetailsPanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -530,6 +666,9 @@ public class DentistDetailsPanel extends JPanel {
         // Update status badge
         updateStatusBadge(dentist.isAvailable());
         
+        lastUpdatedLabel.setText("Last updated: " + 
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        
         statusLabel.setText(" ");
         setViewMode(false);
     }
@@ -549,6 +688,7 @@ public class DentistDetailsPanel extends JPanel {
         updatedDateLabel.setText("Last Updated: --");
         statusBadge.setVisible(false);
         statusLabel.setText("No dentist selected");
+        lastUpdatedLabel.setText("Last updated: --");
         setViewMode(false);
     }
 
@@ -727,6 +867,7 @@ public class DentistDetailsPanel extends JPanel {
                 updateStatusBadge(newStatus);
                 availableCheckBox.setSelected(newStatus);
                 showSuccess("Dentist availability updated to " + statusText + "!");
+                refreshDentistData();
             } else {
                 showError("Failed to update dentist availability.");
             }
@@ -774,19 +915,22 @@ public class DentistDetailsPanel extends JPanel {
     // ========================
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 14, ERROR_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 14, SUCCESS_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(SUCCESS_COLOR);
         JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.INFO_CIRCLE, 14, new Color(107, 123, 121)));
+        statusLabel.setText(message);
         statusLabel.setForeground(new Color(107, 123, 121));
     }
 }
