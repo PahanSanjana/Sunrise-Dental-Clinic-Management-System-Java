@@ -6,6 +6,10 @@ import org.kordamp.ikonli.swing.FontIcon;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.awt.print.PrinterException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -43,6 +47,9 @@ public class BillDetailsPanel extends JPanel {
 
     private static final String UI_FONT_FAMILY = "Segoe UI";
 
+    // Change this to your actual clinic name/branding for print & email output
+    private static final String CLINIC_NAME = "Your Dental Clinic";
+
     // =====================================================
     // ICON HELPERS (Ikonli FontIcon)
     // =====================================================
@@ -57,7 +64,6 @@ public class BillDetailsPanel extends JPanel {
     private JLabel patientPhoneLabel;
     private JLabel patientEmailLabel;
     private JLabel billDateLabel;
-    private JLabel dueDateLabel;
     private JLabel subtotalLabel;
     private JLabel taxLabel;
     private JLabel discountLabel;
@@ -91,6 +97,9 @@ public class BillDetailsPanel extends JPanel {
     private boolean isEditMode = false;
     private Bill currentBill;
     private List<BillItem> currentItems;
+    // Cached patient for the currently displayed bill, so print/email
+    // can use their name/email/phone without re-querying the controller.
+    private Patient currentPatient;
     private BillController controller;
     private DecimalFormat df = new DecimalFormat("#.00");
 
@@ -352,22 +361,18 @@ public class BillDetailsPanel extends JPanel {
         billDateLabel.setForeground(SECONDARY_TEXT);
         panel.add(billDateLabel, gbc);
 
-        // Due Date
+        // Due Date - REMOVED
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
-        JLabel dueLabel = new JLabel("Due Date:");
-        dueLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
-        dueLabel.setForeground(PRIMARY_DARK);
-        panel.add(dueLabel, gbc);
+        JLabel emptyLabel = new JLabel("");
+        panel.add(emptyLabel, gbc);
 
         gbc.gridx = 3;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        dueDateLabel = new JLabel("--");
-        dueDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
-        dueDateLabel.setForeground(SECONDARY_TEXT);
-        panel.add(dueDateLabel, gbc);
+        JLabel emptyLabel2 = new JLabel("");
+        panel.add(emptyLabel2, gbc);
 
         return panel;
     }
@@ -509,7 +514,7 @@ public class BillDetailsPanel extends JPanel {
         subtotalLabel.setForeground(SECONDARY_TEXT);
         panel.add(subtotalLabel, gbc);
 
-        // Tax
+        // Tax - Now shows as percentage
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
@@ -521,7 +526,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.gridx = 3;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        taxLabel = new JLabel("RS0.00");
+        taxLabel = new JLabel("0%");  // Changed from RS0.00 to 0%
         taxLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         taxLabel.setForeground(SECONDARY_TEXT);
         panel.add(taxLabel, gbc);
@@ -579,11 +584,11 @@ public class BillDetailsPanel extends JPanel {
         amountPaidLabel.setForeground(SECONDARY_TEXT);
         panel.add(amountPaidLabel, gbc);
 
-        // Balance
+        // Balance (Refund)
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
-        JLabel balanceLabelText = new JLabel("Balance:");
+        JLabel balanceLabelText = new JLabel("Balance (Refund):");
         balanceLabelText.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         balanceLabelText.setForeground(PRIMARY_DARK);
         panel.add(balanceLabelText, gbc);
@@ -593,7 +598,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.weightx = 0.35;
         balanceLabel = new JLabel("RS0.00");
         balanceLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
-        balanceLabel.setForeground(ERROR_COLOR);
+        balanceLabel.setForeground(SUCCESS_COLOR);
         panel.add(balanceLabel, gbc);
 
         // Status (ComboBox for edit mode)
@@ -824,6 +829,16 @@ public class BillDetailsPanel extends JPanel {
         }
     }
 
+    private void updateBalanceColor(double balance) {
+        if (balance < 0) {
+            balanceLabel.setForeground(ERROR_COLOR);  // Red = still owes
+        } else if (balance > 0) {
+            balanceLabel.setForeground(SUCCESS_COLOR);  // Green = refund due
+        } else {
+            balanceLabel.setForeground(PRIMARY_DARK);  // Dark = exact
+        }
+    }
+
     private static class RoundedButton extends JButton {
         private Color bg;
         private Color borderColor;
@@ -910,6 +925,7 @@ public class BillDetailsPanel extends JPanel {
         billNumberLabel.setText("Bill Number: " + bill.getBillNumber());
         
         Patient patient = controller.getPatientById(bill.getPatientId());
+        this.currentPatient = patient;
         if (patient != null) {
             patientNameLabel.setText(patient.getPatientName());
             patientPhoneLabel.setText(patient.getContactNumber() != null ? patient.getContactNumber() : "--");
@@ -918,14 +934,21 @@ public class BillDetailsPanel extends JPanel {
         
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         billDateLabel.setText(bill.getBillDate() != null ? sdf.format(bill.getBillDate()) : "--");
-        dueDateLabel.setText(bill.getDueDate() != null ? sdf.format(bill.getDueDate()) : "--");
         
         subtotalLabel.setText("RS" + df.format(bill.getSubtotal()));
-        taxLabel.setText("RS" + df.format(bill.getTax()));
+        
+        // FIX: Display tax as percentage with % symbol
+        taxLabel.setText(df.format(bill.getTax()) + "%");
+        
         discountLabel.setText("RS" + df.format(bill.getDiscount()));
+        
         totalAmountLabel.setText("RS" + df.format(bill.getTotalAmount()));
         amountPaidLabel.setText("RS" + df.format(bill.getAmountPaid()));
-        balanceLabel.setText("RS" + df.format(bill.getBalance()));
+        
+        // Update balance with new logic
+        double balance = bill.getBalance();
+        balanceLabel.setText("RS" + df.format(balance));
+        updateBalanceColor(balance);
         
         statusCombo.setSelectedItem(bill.getStatus() != null ? bill.getStatus() : "Pending");
         paymentMethodCombo.setSelectedItem(bill.getPaymentMethod() != null ? bill.getPaymentMethod() : "Cash");
@@ -971,13 +994,13 @@ public class BillDetailsPanel extends JPanel {
         patientPhoneLabel.setText("--");
         patientEmailLabel.setText("--");
         billDateLabel.setText("--");
-        dueDateLabel.setText("--");
         subtotalLabel.setText("RS0.00");
-        taxLabel.setText("RS0.00");
+        taxLabel.setText("0%");  // Changed from RS0.00 to 0%
         discountLabel.setText("RS0.00");
         totalAmountLabel.setText("RS0.00");
         amountPaidLabel.setText("RS0.00");
         balanceLabel.setText("RS0.00");
+        balanceLabel.setForeground(PRIMARY_DARK);
         statusCombo.setSelectedIndex(0);
         paymentMethodCombo.setSelectedIndex(0);
         notesArea.setText("");
@@ -1100,20 +1123,188 @@ public class BillDetailsPanel extends JPanel {
         }
     }
 
+    // =====================================================
+    // PRINT — builds an HTML invoice and sends it to the
+    // system print dialog via JEditorPane.print().
+    // =====================================================
     private void printBill() {
         if (currentBill == null) {
             showError("No bill to print.");
             return;
         }
-        showInfo("Print functionality coming soon...");
+
+        try {
+            String html = buildBillHtml();
+            JEditorPane editorPane = new JEditorPane("text/html", html);
+            editorPane.setEditable(false);
+            editorPane.setSize(600, Short.MAX_VALUE);
+
+            boolean printed = editorPane.print();
+            if (printed) {
+                statusLabel.setText("Bill sent to printer.");
+                statusLabel.setForeground(SUCCESS_COLOR);
+            } else {
+                statusLabel.setText("Print cancelled.");
+                statusLabel.setForeground(SECONDARY_TEXT);
+            }
+        } catch (PrinterException ex) {
+            showError("Failed to print bill: " + ex.getMessage());
+        }
     }
 
+    // =====================================================
+    // EMAIL — opens the user's default email client
+    // =====================================================
     private void emailBill() {
         if (currentBill == null) {
             showError("No bill to email.");
             return;
         }
-        showInfo("Email functionality coming soon...");
+
+        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.MAIL)) {
+            showError("No email client is configured on this system.");
+            return;
+        }
+
+        String toAddress = (currentPatient != null && currentPatient.getEmail() != null)
+                ? currentPatient.getEmail().trim() : "";
+
+        if (toAddress.isEmpty()) {
+            showError("This patient has no email address on file.");
+            return;
+        }
+
+        String subject = "Invoice " + currentBill.getBillNumber() + " - " + CLINIC_NAME;
+        String body = buildBillPlainText();
+
+        try {
+            String mailto = "mailto:" + toAddress
+                    + "?subject=" + encodeMailtoParam(subject)
+                    + "&body=" + encodeMailtoParam(body);
+            Desktop.getDesktop().mail(new URI(mailto));
+
+            statusLabel.setText("Opening your email client...");
+            statusLabel.setForeground(new Color(0, 120, 215));
+        } catch (Exception ex) {
+            showError("Failed to open email client: " + ex.getMessage());
+        }
+    }
+
+    private String encodeMailtoParam(String value) throws UnsupportedEncodingException {
+        return URLEncoder.encode(value, "UTF-8").replace("+", "%20");
+    }
+
+    private String buildBillHtml() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("<html><body style='font-family:sans-serif;font-size:12px;'>");
+        sb.append("<h2 style='margin-bottom:0;'>").append(CLINIC_NAME).append("</h2>");
+        sb.append("<p style='margin-top:2px;color:#555;'>Invoice</p>");
+        sb.append("<hr>");
+
+        sb.append("<p><b>Bill Number:</b> ").append(escape(currentBill.getBillNumber())).append("<br>");
+        sb.append("<b>Bill Date:</b> ").append(currentBill.getBillDate() != null ? sdf.format(currentBill.getBillDate()) : "--").append("<br>");
+        sb.append("<b>Status:</b> ").append(escape(currentBill.getStatus() != null ? currentBill.getStatus() : "Pending")).append("</p>");
+
+        sb.append("<p><b>Patient:</b> ").append(currentPatient != null ? escape(currentPatient.getPatientName()) : "--").append("<br>");
+        if (currentPatient != null) {
+            sb.append("<b>Phone:</b> ").append(currentPatient.getContactNumber() != null ? escape(currentPatient.getContactNumber()) : "--").append("<br>");
+            sb.append("<b>Email:</b> ").append(currentPatient.getEmail() != null ? escape(currentPatient.getEmail()) : "--").append("<br>");
+        }
+        sb.append("</p>");
+
+        sb.append("<table width='100%' cellpadding='6' cellspacing='0' border='1' style='border-collapse:collapse;border-color:#ddd;'>");
+        sb.append("<tr style='background:#e7e9e3;'>")
+          .append("<th align='left'>Description</th>")
+          .append("<th align='center'>Qty</th>")
+          .append("<th align='right'>Unit Price</th>")
+          .append("<th align='right'>Total</th>")
+          .append("</tr>");
+
+        if (currentItems != null) {
+            for (BillItem item : currentItems) {
+                sb.append("<tr>")
+                  .append("<td>").append(escape(item.getDescription())).append("</td>")
+                  .append("<td align='center'>").append(item.getQuantity()).append("</td>")
+                  .append("<td align='right'>RS").append(df.format(item.getUnitPrice())).append("</td>")
+                  .append("<td align='right'>RS").append(df.format(item.getTotalPrice())).append("</td>")
+                  .append("</tr>");
+            }
+        }
+        sb.append("</table>");
+
+        sb.append("<table width='100%' style='margin-top:10px;'>");
+        sb.append(billRow("Subtotal:", currentBill.getSubtotal()));
+        sb.append(billRow("Tax (" + df.format(currentBill.getTax()) + "%):", (currentBill.getSubtotal() * currentBill.getTax() / 100)));
+        sb.append(billRow("Discount:", currentBill.getDiscount()));
+        sb.append("<tr><td colspan='2'><hr></td></tr>");
+        sb.append(billRow("<b>Total Amount:</b>", currentBill.getTotalAmount()));
+        sb.append(billRow("Amount Paid:", currentBill.getAmountPaid()));
+        
+        double balance = currentBill.getBalance();
+        String balanceLabelText = balance >= 0 ? "Refund Due:" : "Balance Owed:";
+        sb.append(billRow("<b>" + balanceLabelText + "</b>", balance));
+        sb.append("</table>");
+
+        if (currentBill.getNotes() != null && !currentBill.getNotes().trim().isEmpty()) {
+            sb.append("<p><b>Notes:</b><br>").append(escape(currentBill.getNotes())).append("</p>");
+        }
+
+        sb.append("<p style='color:#888;font-size:11px;margin-top:20px;'>Thank you for choosing ")
+          .append(escape(CLINIC_NAME)).append(".</p>");
+
+        sb.append("</body></html>");
+        return sb.toString();
+    }
+
+    private String billRow(String label, double amount) {
+        return "<tr><td width='70%'>" + label + "</td>"
+                + "<td width='30%' align='right'>RS" + df.format(amount) + "</td></tr>";
+    }
+
+    private String buildBillPlainText() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(CLINIC_NAME).append(" - Invoice\n");
+        sb.append("========================================\n");
+        sb.append("Bill Number: ").append(currentBill.getBillNumber()).append("\n");
+        sb.append("Bill Date: ").append(currentBill.getBillDate() != null ? sdf.format(currentBill.getBillDate()) : "--").append("\n");
+        sb.append("Status: ").append(currentBill.getStatus() != null ? currentBill.getStatus() : "Pending").append("\n\n");
+
+        if (currentPatient != null) {
+            sb.append("Patient: ").append(currentPatient.getPatientName()).append("\n\n");
+        }
+
+        sb.append("Items:\n");
+        if (currentItems != null) {
+            for (BillItem item : currentItems) {
+                sb.append(" - ").append(item.getDescription())
+                  .append(" x").append(item.getQuantity())
+                  .append(" @ RS").append(df.format(item.getUnitPrice()))
+                  .append(" = RS").append(df.format(item.getTotalPrice()))
+                  .append("\n");
+            }
+        }
+
+        sb.append("\nSubtotal: RS").append(df.format(currentBill.getSubtotal())).append("\n");
+        sb.append("Tax (" + df.format(currentBill.getTax()) + "%): RS").append(df.format(currentBill.getSubtotal() * currentBill.getTax() / 100)).append("\n");
+        sb.append("Discount: RS").append(df.format(currentBill.getDiscount())).append("\n");
+        sb.append("Total Amount: RS").append(df.format(currentBill.getTotalAmount())).append("\n");
+        sb.append("Amount Paid: RS").append(df.format(currentBill.getAmountPaid())).append("\n");
+        
+        double balance = currentBill.getBalance();
+        String balanceLabelText = balance >= 0 ? "Refund Due:" : "Balance Owed:";
+        sb.append(balanceLabelText).append(" RS").append(df.format(balance)).append("\n\n");
+
+        sb.append("Thank you for choosing ").append(CLINIC_NAME).append(".\n");
+        return sb.toString();
+    }
+
+    private String escape(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private void deleteBill() {

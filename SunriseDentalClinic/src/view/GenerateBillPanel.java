@@ -55,7 +55,7 @@ public class GenerateBillPanel extends JPanel {
     private JTextField quantityField;
     private JTextField billNumberField;
     private JTextField billDateField;
-    private JTextField dueDateField;
+    // REMOVED: dueDateField
     private JTextField subtotalField;
     private JTextField taxField;
     private JTextField discountField;
@@ -337,22 +337,6 @@ public class GenerateBillPanel extends JPanel {
         billDateField.setEditable(false);
         panel.add(billDateField, gbc);
 
-        // Row 2: Due Date
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0.15;
-        JLabel dueDateLabel = new JLabel("Due Date:");
-        dueDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
-        dueDateLabel.setForeground(PRIMARY_DARK);
-        panel.add(dueDateLabel, gbc);
-
-        gbc.gridx = 1;
-        gbc.gridwidth = 3;
-        gbc.weightx = 0.85;
-        dueDateField = createTextField();
-        panel.add(dueDateField, gbc);
-
         return panel;
     }
 
@@ -585,11 +569,11 @@ public class GenerateBillPanel extends JPanel {
         });
         panel.add(amountPaidField, gbc);
 
-        // Row 2: Balance
+        // Row 2: Balance (Refund)
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
-        JLabel balanceLabel = new JLabel("Balance (RS):");
+        JLabel balanceLabel = new JLabel("Balance (Refund) (RS):");
         balanceLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         balanceLabel.setForeground(PRIMARY_DARK);
         panel.add(balanceLabel, gbc);
@@ -600,7 +584,7 @@ public class GenerateBillPanel extends JPanel {
         balanceField = createTextField();
         balanceField.setEditable(false);
         balanceField.setHorizontalAlignment(JTextField.RIGHT);
-        balanceField.setForeground(ERROR_COLOR);
+        balanceField.setForeground(SUCCESS_COLOR);
         balanceField.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
         panel.add(balanceField, gbc);
 
@@ -895,7 +879,6 @@ public class GenerateBillPanel extends JPanel {
     private void setDefaultDates() {
         LocalDate today = LocalDate.now();
         billDateField.setText(today.toString());
-        dueDateField.setText(today.plusDays(30).toString());
     }
 
     // ========================
@@ -1015,21 +998,49 @@ public class GenerateBillPanel extends JPanel {
                 // Use default values
             }
             
-            double balance = total - paid;
-            if (balance < 0) balance = 0;
+            // NEW LOGIC: Balance = Paid - Total
+            // Positive = Refund due to customer
+            // Zero = Exact payment
+            // Negative = Still owes
+            double balance = paid - total;
+            
+            // Update color based on balance value
+            if (balance < 0) {
+                balanceField.setForeground(ERROR_COLOR);  // Red = still owes
+            } else if (balance > 0) {
+                balanceField.setForeground(SUCCESS_COLOR);  // Green = refund due
+            } else {
+                balanceField.setForeground(PRIMARY_DARK);  // Dark = exact
+            }
+            
             balanceField.setText(df.format(balance));
+            
+            // Auto-update status based on payment
+            updateStatusBasedOnPayment(total, paid);
+            
         } catch (Exception e) {
             // Handle any calculation errors silently
+        }
+    }
+
+    private void updateStatusBasedOnPayment(double total, double paid) {
+        if (paid >= total && paid > 0) {
+            statusCombo.setSelectedItem("Paid");
+            paymentMethodCombo.setEnabled(true);
+        } else if (paid > 0 && paid < total) {
+            statusCombo.setSelectedItem("Partial");
+            paymentMethodCombo.setEnabled(true);
+        } else if (paid == 0) {
+            statusCombo.setSelectedItem("Pending");
+            paymentMethodCombo.setEnabled(false);
         }
     }
 
     private void updatePaymentFields() {
         String status = (String) statusCombo.getSelectedItem();
         if ("Paid".equals(status)) {
-            amountPaidField.setText(totalAmountField.getText());
             paymentMethodCombo.setEnabled(true);
         } else if ("Pending".equals(status)) {
-            amountPaidField.setText("0");
             paymentMethodCombo.setEnabled(false);
         } else {
             paymentMethodCombo.setEnabled(true);
@@ -1053,24 +1064,9 @@ public class GenerateBillPanel extends JPanel {
             return;
         }
 
-        String dueDateStr = dueDateField.getText().trim();
-        if (dueDateStr.isEmpty()) {
-            showError("Please enter a due date.");
-            return;
-        }
-
-        Date dueDate = null;
-        try {
-            LocalDate localDate = LocalDate.parse(dueDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            dueDate = Date.valueOf(localDate);
-        } catch (Exception e) {
-            showError("Invalid due date format. Please use YYYY-MM-DD.");
-            return;
-        }
-
         double subtotal = Double.parseDouble(subtotalField.getText().trim());
-        double tax = 0;
-        double discount = 0;
+        double taxPercentage = Double.parseDouble(taxField.getText().trim());
+        double discountAmount = Double.parseDouble(discountField.getText().trim());
         double total = Double.parseDouble(totalAmountField.getText().trim());
         double paid = Double.parseDouble(amountPaidField.getText().trim());
         double balance = Double.parseDouble(balanceField.getText().trim());
@@ -1080,10 +1076,10 @@ public class GenerateBillPanel extends JPanel {
             0,
             billNumberField.getText(),
             Date.valueOf(LocalDate.now()),
-            dueDate,
+            null,  // No due date
             subtotal,
-            tax,
-            discount,
+            taxPercentage,   // Store the percentage (e.g., 10)
+            discountAmount,  // Store flat amount (e.g., 100)
             total,
             paid,
             balance,

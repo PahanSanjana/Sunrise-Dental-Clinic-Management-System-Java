@@ -352,14 +352,22 @@ public class BillController {
     }
 
     /**
-     * Calculate balance for a bill
+     * Calculate balance for a bill.
+     *
+     * FIXED: previously this clamped any negative result to 0, which
+     * silently hid overpayments (e.g. total 1200, paid 1500 used to
+     * show a balance of 0 instead of the true -300 overpayment).
+     * Now it returns the real signed balance:
+     *   - positive  -> amount still owed
+     *   - zero      -> fully paid, exact
+     *   - negative  -> overpaid by that amount
+     *
      * @param totalAmount The total amount
      * @param amountPaid The amount paid
-     * @return The balance
+     * @return The balance (can be negative if overpaid)
      */
     public double calculateBalance(double totalAmount, double amountPaid) {
-        double balance = totalAmount - amountPaid;
-        return balance < 0 ? 0 : balance;
+        return totalAmount - amountPaid;
     }
 
     /**
