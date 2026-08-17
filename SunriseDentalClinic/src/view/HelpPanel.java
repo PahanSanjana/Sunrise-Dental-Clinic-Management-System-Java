@@ -1,5 +1,8 @@
 package view;
 
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -15,6 +18,19 @@ public class HelpPanel extends JPanel {
     private static final Color LIGHT_SURFACE = new Color(0xE7E9E3);
     private static final Color HOVER_SURFACE = new Color(0xE8F0F1);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
 
     private JPanel contentPanel;
     private JButton[] navButtons;
@@ -32,10 +48,15 @@ public class HelpPanel extends JPanel {
         "Support"
     };
 
+    // Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public HelpPanel() {
         initComponents();
         loadContent();
         showSection(0);
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -62,6 +83,34 @@ public class HelpPanel extends JPanel {
         add(mainPanel, BorderLayout.CENTER);
     }
 
+    // =====================================================
+    // AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    // Auto-refresh logic - e.g., check for updates
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -72,11 +121,11 @@ public class HelpPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Help Center");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JLabel subtitleLabel = new JLabel("Learn how to use Sunrise Dental Clinic Management System");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
@@ -93,8 +142,9 @@ public class HelpPanel extends JPanel {
         navPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         navPanel.setPreferredSize(new Dimension(200, 0));
 
-        JLabel navTitle = new JLabel("Topics");
-        navTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        JLabel navTitle = iconLabel(FontAwesomeSolid.BOOK, 16, PRIMARY_DARK);
+        navTitle.setText(" Topics");
+        navTitle.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 16));
         navTitle.setForeground(PRIMARY_DARK);
         navTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         navPanel.add(navTitle);
@@ -125,7 +175,7 @@ public class HelpPanel extends JPanel {
 
     private JButton createNavButton(String text) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        btn.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         btn.setBackground(SOFT_SURFACE);
         btn.setForeground(PRIMARY_DARK);
         btn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
@@ -153,10 +203,10 @@ public class HelpPanel extends JPanel {
         for (int i = 0; i < navButtons.length; i++) {
             if (i == index) {
                 navButtons[i].setBackground(MINT);
-                navButtons[i].setFont(new Font("Segoe UI", Font.BOLD, 13));
+                navButtons[i].setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
             } else {
                 navButtons[i].setBackground(SOFT_SURFACE);
-                navButtons[i].setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                navButtons[i].setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
             }
         }
     }
@@ -650,11 +700,11 @@ public class HelpPanel extends JPanel {
         
         panel.add(createSubSectionTitle("Contact Information"));
         panel.add(Box.createRigidArea(new Dimension(0, 8)));
-        panel.add(createParagraph("📧 Email: support@sunrisedental.com"));
+        panel.add(createContactRow(FontAwesomeSolid.ENVELOPE, "support@sunrisedental.com"));
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
-        panel.add(createParagraph("📞 Phone: +1 (555) 123-4567"));
+        panel.add(createContactRow(FontAwesomeSolid.PHONE, "+1 (555) 123-4567"));
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
-        panel.add(createParagraph("🕐 Hours: Monday - Friday, 8:00 AM - 6:00 PM"));
+        panel.add(createContactRow(FontAwesomeSolid.CLOCK, "Monday - Friday, 8:00 AM - 6:00 PM"));
 
         panel.add(Box.createRigidArea(new Dimension(0, 15)));
         
@@ -684,7 +734,7 @@ public class HelpPanel extends JPanel {
 
     private JLabel createSectionTitle(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        label.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 20));
         label.setForeground(PRIMARY_DARK);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         return label;
@@ -692,7 +742,7 @@ public class HelpPanel extends JPanel {
 
     private JLabel createSubSectionTitle(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        label.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 16));
         label.setForeground(PRIMARY_DARK);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         return label;
@@ -700,7 +750,7 @@ public class HelpPanel extends JPanel {
 
     private JLabel createParagraph(String text) {
         JLabel label = new JLabel("<html><body style='width: 600px;'>" + text + "</body></html>");
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         label.setForeground(SECONDARY_TEXT);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         return label;
@@ -708,10 +758,26 @@ public class HelpPanel extends JPanel {
 
     private JLabel createListItem(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         label.setForeground(SECONDARY_TEXT);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         return label;
+    }
+
+    private JPanel createContactRow(FontAwesomeSolid glyph, String text) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        panel.setBackground(Color.WHITE);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        JLabel iconLabel = iconLabel(glyph, 16, PRIMARY_DARK);
+        panel.add(iconLabel);
+        
+        JLabel textLabel = new JLabel(text);
+        textLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
+        textLabel.setForeground(SECONDARY_TEXT);
+        panel.add(textLabel);
+        
+        return panel;
     }
 
     private JPanel createBulletList(String[] items) {
@@ -740,14 +806,14 @@ public class HelpPanel extends JPanel {
         panel.setMaximumSize(new Dimension(700, 100));
 
         JLabel qLabel = new JLabel("Q: " + question);
-        qLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        qLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
         qLabel.setForeground(PRIMARY_DARK);
         qLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(qLabel);
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
 
         JLabel aLabel = new JLabel("A: " + answer);
-        aLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        aLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         aLabel.setForeground(SECONDARY_TEXT);
         aLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(aLabel);
