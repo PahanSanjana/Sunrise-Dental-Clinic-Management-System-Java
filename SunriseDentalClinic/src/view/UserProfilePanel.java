@@ -4,6 +4,8 @@ import controller.UserProfileController;
 import model.User;
 import model.User.UserRole;
 import model.LoginSession;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -11,6 +13,8 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class UserProfilePanel extends JPanel {
     
@@ -22,6 +26,23 @@ public class UserProfilePanel extends JPanel {
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
+
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
 
     // Components
     private JLabel usernameLabel;
@@ -37,16 +58,21 @@ public class UserProfilePanel extends JPanel {
     // Buttons
     private RoundedButton editProfileButton;
     private RoundedButton changePasswordButton;
-    private RoundedButton refreshButton;
+    private JButton refreshButton;
     
     private JLabel statusMessageLabel;
     private UserProfileController controller;
     private User currentUser;
 
+    // ✅ Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public UserProfilePanel() {
         initComponents();
         this.controller = new UserProfileController(this);
         loadUserProfile();
+        startAutoRefresh(); // ✅ Start auto-refresh
     }
 
     private void initComponents() {
@@ -64,6 +90,37 @@ public class UserProfilePanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+    
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    loadUserProfile();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // HEADER PANEL - With Manual Refresh Icon Only
+    // =====================================================
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -74,23 +131,23 @@ public class UserProfilePanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("My Profile");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JLabel subtitleLabel = new JLabel("View and manage your account information");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(SECONDARY_TEXT);
         
         titlePanel.add(titleLabel);
         titlePanel.add(subtitleLabel);
 
-        // Refresh button in header
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        // ✅ Manual Refresh Button - ICON ONLY
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
         
-        refreshButton = createStyledButton("↻ Refresh", SOFT_SURFACE, PRIMARY_DARK);
-        refreshButton.setBorderColor(LIGHT_SURFACE);
-        refreshButton.setPreferredSize(new Dimension(110, 35));
+        refreshButton = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshButton.setPreferredSize(new Dimension(40, 40));
+        refreshButton.setToolTipText("Refresh Now");
         refreshButton.addActionListener(e -> loadUserProfile());
         rightPanel.add(refreshButton);
 
@@ -98,6 +155,35 @@ public class UserProfilePanel extends JPanel {
         header.add(rightPanel, BorderLayout.EAST);
 
         return header;
+    }
+
+    // =====================================================
+    // ✅ CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
     }
 
     private JPanel createMainContentPanel() {
@@ -132,7 +218,7 @@ public class UserProfilePanel extends JPanel {
             "Account Information",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
 
@@ -151,7 +237,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel userLabel = new JLabel("Username:");
-        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        userLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         userLabel.setForeground(PRIMARY_DARK);
         infoPanel.add(userLabel, gbc);
 
@@ -159,7 +245,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
         usernameLabel = new JLabel("--");
-        usernameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        usernameLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(usernameLabel, gbc);
 
         // Row 0: Role
@@ -167,7 +253,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel roleLabelTitle = new JLabel("Role:");
-        roleLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        roleLabelTitle.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         roleLabelTitle.setForeground(PRIMARY_DARK);
         infoPanel.add(roleLabelTitle, gbc);
 
@@ -175,7 +261,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
         roleLabel = new JLabel("--");
-        roleLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        roleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         roleLabel.setForeground(PRIMARY_DARK);
         infoPanel.add(roleLabel, gbc);
 
@@ -185,7 +271,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel emailLabelTitle = new JLabel("Email:");
-        emailLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        emailLabelTitle.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         emailLabelTitle.setForeground(PRIMARY_DARK);
         infoPanel.add(emailLabelTitle, gbc);
 
@@ -193,7 +279,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
         emailLabel = new JLabel("--");
-        emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        emailLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(emailLabel, gbc);
 
         // Row 1: Status
@@ -201,7 +287,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel statusLabelTitle = new JLabel("Status:");
-        statusLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        statusLabelTitle.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         statusLabelTitle.setForeground(PRIMARY_DARK);
         infoPanel.add(statusLabelTitle, gbc);
 
@@ -209,7 +295,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
         statusLabel = new JLabel("--");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(statusLabel, gbc);
 
         // Row 2: Created Date
@@ -218,7 +304,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel createdLabelTitle = new JLabel("Created:");
-        createdLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        createdLabelTitle.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         createdLabelTitle.setForeground(PRIMARY_DARK);
         infoPanel.add(createdLabelTitle, gbc);
 
@@ -226,7 +312,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.85;
         createdDateLabel = new JLabel("--");
-        createdDateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        createdDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(createdDateLabel, gbc);
 
         // Row 3: Last Login
@@ -235,7 +321,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel lastLoginTitle = new JLabel("Last Login:");
-        lastLoginTitle.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lastLoginTitle.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         lastLoginTitle.setForeground(PRIMARY_DARK);
         infoPanel.add(lastLoginTitle, gbc);
 
@@ -243,7 +329,7 @@ public class UserProfilePanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.85;
         lastLoginLabel = new JLabel("--");
-        lastLoginLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lastLoginLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(lastLoginLabel, gbc);
 
         panel.add(infoPanel);
@@ -259,7 +345,7 @@ public class UserProfilePanel extends JPanel {
             "Profile Details",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
 
@@ -270,7 +356,7 @@ public class UserProfilePanel extends JPanel {
 
         // Initially show loading message
         JLabel loadingLabel = new JLabel("Loading profile details...");
-        loadingLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+        loadingLabel.setFont(new Font(UI_FONT_FAMILY, Font.ITALIC, 13));
         loadingLabel.setForeground(SECONDARY_TEXT);
         profileDetailsPanel.add(loadingLabel);
 
@@ -286,17 +372,23 @@ public class UserProfilePanel extends JPanel {
             "Account Actions",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
 
-        editProfileButton = createStyledButton("✏️ Edit Profile", PRIMARY_DARK, Color.WHITE);
+        editProfileButton = createStyledButton("Edit Profile", PRIMARY_DARK, Color.WHITE);
         editProfileButton.setPreferredSize(new Dimension(160, 40));
         editProfileButton.addActionListener(e -> openEditProfile());
+        editProfileButton.setIcon(icon(FontAwesomeSolid.EDIT, 16, Color.WHITE));
+        editProfileButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        editProfileButton.setIconTextGap(8);
 
-        changePasswordButton = createStyledButton("🔒 Change Password", MINT, PRIMARY_DARK);
+        changePasswordButton = createStyledButton("Change Password", MINT, PRIMARY_DARK);
         changePasswordButton.setPreferredSize(new Dimension(180, 40));
         changePasswordButton.addActionListener(e -> openChangePassword());
+        changePasswordButton.setIcon(icon(FontAwesomeSolid.LOCK, 16, PRIMARY_DARK));
+        changePasswordButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        changePasswordButton.setIconTextGap(8);
 
         panel.add(editProfileButton);
         panel.add(changePasswordButton);
@@ -310,7 +402,7 @@ public class UserProfilePanel extends JPanel {
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
         statusMessageLabel = new JLabel(" ");
-        statusMessageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusMessageLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusMessageLabel.setForeground(SECONDARY_TEXT);
 
         footer.add(statusMessageLabel, BorderLayout.WEST);
@@ -319,7 +411,7 @@ public class UserProfilePanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         return button;
     }
 
@@ -394,10 +486,9 @@ public class UserProfilePanel extends JPanel {
     // =====================================================
 
     /**
-     * ✅ FIXED: Load user profile - refreshes from database
+     * Load user profile - refreshes from database
      */
     public void loadUserProfile() {
-        // ✅ Get current user ID from session
         int userId = LoginSession.getInstance().getCurrentUserId();
         
         if (userId <= 0) {
@@ -405,7 +496,6 @@ public class UserProfilePanel extends JPanel {
             return;
         }
 
-        // ✅ Load fresh user data from database
         this.currentUser = controller.getUserById(userId);
         
         if (currentUser == null) {
@@ -413,18 +503,15 @@ public class UserProfilePanel extends JPanel {
             return;
         }
 
-        // ✅ Update the session with fresh user data
         LoginSession.getInstance().setCurrentUser(currentUser);
 
-        // Update account info
         usernameLabel.setText(currentUser.getUsername());
         emailLabel.setText(currentUser.getEmail() != null ? currentUser.getEmail() : "N/A");
         roleLabel.setText(currentUser.getRole().name());
-        statusLabel.setText(currentUser.isActive() ? "🟢 Active" : "🔴 Inactive");
+        statusLabel.setText(currentUser.isActive() ? "Active" : "Inactive");
         statusLabel.setForeground(currentUser.isActive() ? SUCCESS_COLOR : ERROR_COLOR);
         createdDateLabel.setText(currentUser.getCreatedAt() != null ? currentUser.getCreatedAt() : "N/A");
         
-        // Load role-specific profile
         loadRoleProfile(currentUser);
 
         showSuccess("Profile loaded successfully!");
@@ -449,7 +536,7 @@ public class UserProfilePanel extends JPanel {
                 break;
             default:
                 JLabel label = new JLabel("No profile details available for this role.");
-                label.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                label.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
                 label.setForeground(SECONDARY_TEXT);
                 profileDetailsPanel.add(label);
                 break;
@@ -513,7 +600,7 @@ public class UserProfilePanel extends JPanel {
                 addProfileField("Email", (String) data.get("email"));
                 addProfileField("Years of Experience", String.valueOf(data.get("yearsOfExperience")));
                 addProfileField("Consultation Fee", "$" + data.get("consultationFee"));
-                addProfileField("Available", (Boolean) data.get("isAvailable") ? "✅ Yes" : "❌ No");
+                addProfileField("Available", (Boolean) data.get("isAvailable") ? "Yes" : "No");
             } else {
                 addProfileField("Status", "No dentist profile found. Please contact admin.");
             }
@@ -527,12 +614,12 @@ public class UserProfilePanel extends JPanel {
         fieldPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 
         JLabel labelComp = new JLabel(label + ":");
-        labelComp.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        labelComp.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         labelComp.setForeground(PRIMARY_DARK);
         labelComp.setPreferredSize(new Dimension(160, 25));
 
         JLabel valueComp = new JLabel(value != null && !value.isEmpty() ? value : "N/A");
-        valueComp.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        valueComp.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         valueComp.setForeground(Color.BLACK);
 
         fieldPanel.add(labelComp, BorderLayout.WEST);
@@ -554,7 +641,6 @@ public class UserProfilePanel extends JPanel {
         );
         dialog.setVisible(true);
         
-        // ✅ Reload profile after editing
         loadUserProfile();
     }
 
@@ -571,7 +657,6 @@ public class UserProfilePanel extends JPanel {
         );
         dialog.setVisible(true);
         
-        // ✅ Reload profile after password change
         loadUserProfile();
     }
 
