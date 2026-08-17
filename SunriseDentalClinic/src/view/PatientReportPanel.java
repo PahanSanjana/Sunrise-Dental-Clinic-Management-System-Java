@@ -5,6 +5,9 @@ import model.Patient;
 import model.Appointment;
 import model.Treatment;
 import model.Bill;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -15,6 +18,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class PatientReportPanel extends JPanel {
@@ -27,12 +32,29 @@ public class PatientReportPanel extends JPanel {
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
+    
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
 
     // Components
     private JComboBox<Patient> patientCombo;
     private RoundedButton generateButton;
-    private RoundedButton refreshButton;
     private JLabel statusLabel;
+    private JLabel lastUpdatedLabel;
     private JLabel patientInfoLabel;
     
     // Summary Cards - Store references directly
@@ -54,10 +76,15 @@ public class PatientReportPanel extends JPanel {
     private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     private Patient selectedPatient;
 
+    // Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public PatientReportPanel() {
         this.controller = new ReportController(this);
         initComponents();
         loadPatients();
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -105,6 +132,63 @@ public class PatientReportPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing() && selectedPatient != null && selectedPatient.getPatientId() > 0) {
+                    generateReport();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
     /**
      * ✅ Title Panel - Separate from other content
      */
@@ -115,12 +199,12 @@ public class PatientReportPanel extends JPanel {
         titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Patient Report");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("View comprehensive patient history and statistics");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -143,11 +227,11 @@ public class PatientReportPanel extends JPanel {
         ));
 
         JLabel patientLabel = new JLabel("Select Patient:");
-        patientLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        patientLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         patientLabel.setForeground(PRIMARY_DARK);
 
         patientCombo = new JComboBox<>();
-        patientCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        patientCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         patientCombo.setPreferredSize(new Dimension(250, 35));
         patientCombo.addActionListener(e -> {
             selectedPatient = (Patient) patientCombo.getSelectedItem();
@@ -159,16 +243,20 @@ public class PatientReportPanel extends JPanel {
         generateButton = createStyledButton("Generate Report", PRIMARY_DARK, Color.WHITE);
         generateButton.setPreferredSize(new Dimension(150, 35));
         generateButton.addActionListener(e -> generateReport());
-
-        refreshButton = createStyledButton("Refresh", SOFT_SURFACE, PRIMARY_DARK);
-        refreshButton.setBorderColor(LIGHT_SURFACE);
-        refreshButton.setPreferredSize(new Dimension(100, 35));
-        refreshButton.addActionListener(e -> loadPatients());
+        generateButton.setIcon(icon(FontAwesomeSolid.USER_MD, 14, Color.WHITE));
+        generateButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        generateButton.setIconTextGap(8);
 
         filterPanel.add(patientLabel);
         filterPanel.add(patientCombo);
         filterPanel.add(generateButton);
-        filterPanel.add(refreshButton);
+        
+        // Manual Refresh Button - ICON ONLY
+        JButton refreshBtn = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshBtn.setPreferredSize(new Dimension(40, 40));
+        refreshBtn.setToolTipText("Refresh Now");
+        refreshBtn.addActionListener(e -> loadPatients());
+        filterPanel.add(refreshBtn);
 
         return filterPanel;
     }
@@ -182,25 +270,25 @@ public class PatientReportPanel extends JPanel {
         ));
 
         // Total Appointments
-        JPanel apptPanel = createSummaryCard("📋", "Total Appointments", "0", MINT);
+        JPanel apptPanel = createSummaryCard(FontAwesomeSolid.CALENDAR_ALT, "Total Appointments", "0", MINT);
         panel.add(apptPanel);
 
         // Total Treatments
-        JPanel treatmentPanel = createSummaryCard("💊", "Total Treatments", "0", new Color(200, 220, 240));
+        JPanel treatmentPanel = createSummaryCard(FontAwesomeSolid.PILLS, "Total Treatments", "0", new Color(200, 220, 240));
         panel.add(treatmentPanel);
 
         // Total Bills
-        JPanel billPanel = createSummaryCard("💰", "Total Bills", "0", new Color(240, 220, 200));
+        JPanel billPanel = createSummaryCard(FontAwesomeSolid.FILE_INVOICE, "Total Bills", "0", new Color(240, 220, 200));
         panel.add(billPanel);
 
         // Total Spent
-        JPanel spentPanel = createSummaryCard("💵", "Total Spent", "RS0.00", new Color(200, 240, 220));
+        JPanel spentPanel = createSummaryCard(FontAwesomeSolid.MONEY_BILL_WAVE, "Total Spent", "RS0.00", new Color(200, 240, 220));
         panel.add(spentPanel);
 
         return panel;
     }
 
-    private JPanel createSummaryCard(String icon, String title, String defaultValue, Color color) {
+    private JPanel createSummaryCard(FontAwesomeSolid glyph, String title, String defaultValue, Color color) {
         JPanel card = new JPanel();
         card.setLayout(new BorderLayout());
         card.setBackground(Color.WHITE);
@@ -212,8 +300,7 @@ public class PatientReportPanel extends JPanel {
         leftPanel.setPreferredSize(new Dimension(60, 80));
         leftPanel.setLayout(new GridBagLayout());
         
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 28));
+        JLabel iconLabel = iconLabel(glyph, 28, Color.WHITE);
         leftPanel.add(iconLabel);
 
         JPanel rightPanel = new JPanel();
@@ -222,12 +309,12 @@ public class PatientReportPanel extends JPanel {
         rightPanel.setBorder(new EmptyBorder(5, 10, 5, 10));
         
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 11));
         titleLabel.setForeground(SECONDARY_TEXT);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel valueLabel = new JLabel(defaultValue);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        valueLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 18));
         valueLabel.setForeground(PRIMARY_DARK);
         valueLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -259,13 +346,13 @@ public class PatientReportPanel extends JPanel {
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             new EmptyBorder(15, 20, 15, 20)
         ));
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setLayout(new BorderLayout());
 
         patientInfoLabel = new JLabel("Please select a patient to view report");
-        patientInfoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        patientInfoLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         patientInfoLabel.setForeground(SECONDARY_TEXT);
-        patientInfoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(patientInfoLabel);
+        patientInfoLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        panel.add(patientInfoLabel, BorderLayout.CENTER);
 
         return panel;
     }
@@ -278,7 +365,7 @@ public class PatientReportPanel extends JPanel {
             "Appointment History",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
 
@@ -291,14 +378,14 @@ public class PatientReportPanel extends JPanel {
         };
 
         appointmentTable = new JTable(appointmentTableModel);
-        appointmentTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        appointmentTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         appointmentTable.setRowHeight(30);
         appointmentTable.setSelectionBackground(new Color(235, 245, 240));
         appointmentTable.setShowGrid(true);
         appointmentTable.setGridColor(LIGHT_SURFACE);
 
         JTableHeader header = appointmentTable.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        header.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
 
@@ -318,7 +405,7 @@ public class PatientReportPanel extends JPanel {
             "Treatment History",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
 
@@ -331,14 +418,14 @@ public class PatientReportPanel extends JPanel {
         };
 
         treatmentTable = new JTable(treatmentTableModel);
-        treatmentTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        treatmentTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         treatmentTable.setRowHeight(30);
         treatmentTable.setSelectionBackground(new Color(235, 245, 240));
         treatmentTable.setShowGrid(true);
         treatmentTable.setGridColor(LIGHT_SURFACE);
 
         JTableHeader header = treatmentTable.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        header.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
 
@@ -358,7 +445,7 @@ public class PatientReportPanel extends JPanel {
             "Billing History",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
 
@@ -371,14 +458,14 @@ public class PatientReportPanel extends JPanel {
         };
 
         billTable = new JTable(billTableModel);
-        billTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        billTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         billTable.setRowHeight(30);
         billTable.setSelectionBackground(new Color(235, 245, 240));
         billTable.setShowGrid(true);
         billTable.setGridColor(LIGHT_SURFACE);
 
         JTableHeader header = billTable.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        header.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
 
@@ -396,17 +483,23 @@ public class PatientReportPanel extends JPanel {
         footer.setBorder(new EmptyBorder(10, 0, 0, 0));
 
         statusLabel = new JLabel("Ready");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(new Color(107, 123, 121));
 
+        lastUpdatedLabel = new JLabel("Last updated: --");
+        lastUpdatedLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
+        lastUpdatedLabel.setForeground(new Color(107, 123, 121));
+        lastUpdatedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+
         footer.add(statusLabel, BorderLayout.WEST);
+        footer.add(lastUpdatedLabel, BorderLayout.EAST);
 
         return footer;
     }
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -485,6 +578,7 @@ public class PatientReportPanel extends JPanel {
         // Add placeholder item
         Patient placeholder = new Patient();
         placeholder.setPatientName("-- Select Patient --");
+        placeholder.setPatientId(0);
         patientCombo.addItem(placeholder);
         
         if (patients != null) {
@@ -526,6 +620,9 @@ public class PatientReportPanel extends JPanel {
                     displayReport(patientData, appointments, treatments, bills);
                     statusLabel.setText("Report generated successfully!");
                     statusLabel.setForeground(SUCCESS_COLOR);
+                    
+                    lastUpdatedLabel.setText("Last updated: " + 
+                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
                 } catch (Exception e) {
                     showError("Error generating report: " + e.getMessage());
                     e.printStackTrace();
@@ -542,14 +639,19 @@ public class PatientReportPanel extends JPanel {
             return;
         }
 
-        // Update patient info
-        String info = "<html><b>Patient:</b> " + patient.getPatientName() + 
-                     " &nbsp;|&nbsp; <b>Gender:</b> " + (patient.getGender() != null ? patient.getGender() : "N/A") +
-                     " &nbsp;|&nbsp; <b>Contact:</b> " + patient.getContactNumber() +
-                     " &nbsp;|&nbsp; <b>Email:</b> " + (patient.getEmail() != null ? patient.getEmail() : "N/A") +
-                     " &nbsp;|&nbsp; <b>DOB:</b> " + (patient.getDateOfBirth() != null ? patient.getDateOfBirth().toString() : "N/A") +
-                     "</html>";
-        patientInfoLabel.setText(info);
+        // Update patient info with proper HTML formatting
+        StringBuilder info = new StringBuilder();
+        info.append("<html><body style='width: 100%;'>");
+        info.append("<table cellpadding='4' cellspacing='0' style='border-collapse: collapse;'>");
+        info.append("<tr><td><b>Patient:</b></td><td>").append(patient.getPatientName()).append("</td>");
+        info.append("<td style='padding-left: 30px;'><b>Gender:</b></td><td>").append(patient.getGender() != null ? patient.getGender() : "N/A").append("</td>");
+        info.append("<td style='padding-left: 30px;'><b>Contact:</b></td><td>").append(patient.getContactNumber() != null ? patient.getContactNumber() : "N/A").append("</td></tr>");
+        info.append("<tr><td><b>Email:</b></td><td>").append(patient.getEmail() != null ? patient.getEmail() : "N/A").append("</td>");
+        info.append("<td style='padding-left: 30px;'><b>DOB:</b></td><td>").append(patient.getDateOfBirth() != null ? patient.getDateOfBirth().toString() : "N/A").append("</td>");
+        info.append("<td style='padding-left: 30px;'><b>Address:</b></td><td>").append(patient.getAddress() != null ? patient.getAddress() : "N/A").append("</td></tr>");
+        info.append("</table></body></html>");
+
+        patientInfoLabel.setText(info.toString());
 
         // Update summary
         int apptCount = appointments != null ? appointments.size() : 0;
@@ -625,18 +727,21 @@ public class PatientReportPanel extends JPanel {
     // ========================
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 14, ERROR_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 14, SUCCESS_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(SUCCESS_COLOR);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.INFO_CIRCLE, 14, new Color(107, 123, 121)));
+        statusLabel.setText(message);
         statusLabel.setForeground(new Color(107, 123, 121));
     }
 }

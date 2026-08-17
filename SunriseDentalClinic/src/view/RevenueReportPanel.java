@@ -4,6 +4,9 @@ import controller.ReportController;
 import model.Bill;
 import model.Patient;
 import model.Dentist;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -15,6 +18,7 @@ import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +35,10 @@ public class RevenueReportPanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
     
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+    
     // Revenue Colors
     private static final Color COLOR_TOTAL = new Color(46, 204, 113);
     private static final Color COLOR_PAID = new Color(52, 152, 219);
@@ -38,13 +46,26 @@ public class RevenueReportPanel extends JPanel {
     private static final Color COLOR_OVERDUE = new Color(231, 76, 60);
     private static final Color COLOR_PARTIAL = new Color(155, 89, 182);
 
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
+
     // Components
     private JComboBox<String> periodCombo;
     private JComboBox<String> paymentMethodCombo;
     private RoundedButton generateButton;
-    private RoundedButton refreshButton;
     private JLabel statusLabel;
     private JLabel summaryLabel;
+    private JLabel lastUpdatedLabel;
     
     // Summary Cards - Store references directly
     private JLabel totalRevenueLabel;
@@ -70,10 +91,15 @@ public class RevenueReportPanel extends JPanel {
     private double pendingRevenue;
     private double overdueRevenue;
 
+    // Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public RevenueReportPanel() {
         this.controller = new ReportController(this);
         initComponents();
         loadData();
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -113,6 +139,63 @@ public class RevenueReportPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    generateReport();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
     /**
      * ✅ Title Panel - Separate from other content
      */
@@ -123,12 +206,12 @@ public class RevenueReportPanel extends JPanel {
         titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Revenue Report");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("View revenue statistics and financial overview");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -153,7 +236,7 @@ public class RevenueReportPanel extends JPanel {
         // Period filter
         String[] periods = {"Today", "This Week", "This Month", "Last Month", "This Quarter", "This Year", "Custom Range"};
         periodCombo = new JComboBox<>(periods);
-        periodCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        periodCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         periodCombo.setPreferredSize(new Dimension(130, 35));
         periodCombo.addActionListener(e -> {
             if ("Custom Range".equals(periodCombo.getSelectedItem())) {
@@ -164,24 +247,28 @@ public class RevenueReportPanel extends JPanel {
         // Payment Method filter
         String[] methods = {"All Methods", "Cash", "Credit Card", "Debit Card", "Insurance", "Bank Transfer", "Other"};
         paymentMethodCombo = new JComboBox<>(methods);
-        paymentMethodCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        paymentMethodCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         paymentMethodCombo.setPreferredSize(new Dimension(140, 35));
 
         generateButton = createStyledButton("Generate Report", PRIMARY_DARK, Color.WHITE);
         generateButton.setPreferredSize(new Dimension(150, 35));
         generateButton.addActionListener(e -> generateReport());
-
-        refreshButton = createStyledButton("Refresh", SOFT_SURFACE, PRIMARY_DARK);
-        refreshButton.setBorderColor(LIGHT_SURFACE);
-        refreshButton.setPreferredSize(new Dimension(100, 35));
-        refreshButton.addActionListener(e -> loadData());
+        generateButton.setIcon(icon(FontAwesomeSolid.FILE_INVOICE_DOLLAR, 14, Color.WHITE));
+        generateButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        generateButton.setIconTextGap(8);
 
         filterPanel.add(new JLabel("Period:"));
         filterPanel.add(periodCombo);
         filterPanel.add(new JLabel("Payment Method:"));
         filterPanel.add(paymentMethodCombo);
         filterPanel.add(generateButton);
-        filterPanel.add(refreshButton);
+        
+        // Manual Refresh Button - ICON ONLY
+        JButton refreshBtn = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshBtn.setPreferredSize(new Dimension(40, 40));
+        refreshBtn.setToolTipText("Refresh Now");
+        refreshBtn.addActionListener(e -> generateReport());
+        filterPanel.add(refreshBtn);
 
         return filterPanel;
     }
@@ -195,34 +282,34 @@ public class RevenueReportPanel extends JPanel {
         ));
 
         // Total Revenue
-        JPanel totalPanel = createRevenueCard("💰", "Total Revenue", "RS0.00", COLOR_TOTAL);
+        JPanel totalPanel = createRevenueCard(FontAwesomeSolid.MONEY_BILL_WAVE, "Total Revenue", "RS0.00", COLOR_TOTAL);
         panel.add(totalPanel);
         totalRevenueLabel = findValueLabel(totalPanel);
 
         // Paid Revenue
-        JPanel paidPanel = createRevenueCard("✅", "Paid", "RS0.00", COLOR_PAID);
+        JPanel paidPanel = createRevenueCard(FontAwesomeSolid.CHECK_CIRCLE, "Paid", "RS0.00", COLOR_PAID);
         panel.add(paidPanel);
         paidRevenueLabel = findValueLabel(paidPanel);
 
         // Pending Revenue
-        JPanel pendingPanel = createRevenueCard("⏳", "Pending", "RS0.00", COLOR_PENDING);
+        JPanel pendingPanel = createRevenueCard(FontAwesomeSolid.CLOCK, "Pending", "RS0.00", COLOR_PENDING);
         panel.add(pendingPanel);
         pendingRevenueLabel = findValueLabel(pendingPanel);
 
         // Overdue Revenue
-        JPanel overduePanel = createRevenueCard("⚠️", "Overdue", "RS0.00", COLOR_OVERDUE);
+        JPanel overduePanel = createRevenueCard(FontAwesomeSolid.EXCLAMATION_TRIANGLE, "Overdue", "RS0.00", COLOR_OVERDUE);
         panel.add(overduePanel);
         overdueRevenueLabel = findValueLabel(overduePanel);
 
         // Total Bills
-        JPanel billsPanel = createRevenueCard("📋", "Total Bills", "0", new Color(149, 165, 166));
+        JPanel billsPanel = createRevenueCard(FontAwesomeSolid.FILE_INVOICE, "Total Bills", "0", new Color(149, 165, 166));
         panel.add(billsPanel);
         totalBillsLabel = findValueLabel(billsPanel);
 
         return panel;
     }
 
-    private JPanel createRevenueCard(String icon, String title, String defaultValue, Color color) {
+    private JPanel createRevenueCard(FontAwesomeSolid glyph, String title, String defaultValue, Color color) {
         JPanel card = new JPanel();
         card.setLayout(new BorderLayout());
         card.setBackground(Color.WHITE);
@@ -234,8 +321,7 @@ public class RevenueReportPanel extends JPanel {
         leftPanel.setPreferredSize(new Dimension(50, 70));
         leftPanel.setLayout(new GridBagLayout());
         
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 22));
+        JLabel iconLabel = iconLabel(glyph, 22, Color.WHITE);
         leftPanel.add(iconLabel);
 
         JPanel rightPanel = new JPanel();
@@ -244,12 +330,12 @@ public class RevenueReportPanel extends JPanel {
         rightPanel.setBorder(new EmptyBorder(5, 8, 5, 8));
         
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 10));
         titleLabel.setForeground(SECONDARY_TEXT);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel valueLabel = new JLabel(defaultValue);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        valueLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 16));
         valueLabel.setForeground(PRIMARY_DARK);
         valueLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -276,16 +362,23 @@ public class RevenueReportPanel extends JPanel {
             "Revenue Distribution",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         chartPanel.setPreferredSize(new Dimension(600, 150));
         chartPanel.setLayout(new GridBagLayout());
         
-        JLabel chartPlaceholder = new JLabel("📊 Revenue chart visualization coming soon");
-        chartPlaceholder.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        chartPlaceholder.setForeground(SECONDARY_TEXT);
-        chartPanel.add(chartPlaceholder);
+        JLabel chartPlaceholder = iconLabel(FontAwesomeSolid.CHART_BAR, 24, SECONDARY_TEXT);
+        JLabel chartText = new JLabel(" Revenue chart visualization coming soon");
+        chartText.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 16));
+        chartText.setForeground(SECONDARY_TEXT);
+        
+        JPanel placeholderPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        placeholderPanel.setOpaque(false);
+        placeholderPanel.add(chartPlaceholder);
+        placeholderPanel.add(chartText);
+        
+        chartPanel.add(placeholderPanel);
         
         return chartPanel;
     }
@@ -298,7 +391,7 @@ public class RevenueReportPanel extends JPanel {
             "Revenue Details",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
 
@@ -311,14 +404,14 @@ public class RevenueReportPanel extends JPanel {
         };
 
         revenueTable = new JTable(tableModel);
-        revenueTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        revenueTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         revenueTable.setRowHeight(32);
         revenueTable.setSelectionBackground(new Color(235, 245, 240));
         revenueTable.setShowGrid(true);
         revenueTable.setGridColor(LIGHT_SURFACE);
 
         JTableHeader header = revenueTable.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        header.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
 
@@ -344,23 +437,34 @@ public class RevenueReportPanel extends JPanel {
         footer.setBorder(new EmptyBorder(10, 0, 0, 0));
 
         statusLabel = new JLabel("Ready");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(new Color(107, 123, 121));
 
+        lastUpdatedLabel = new JLabel("Last updated: --");
+        lastUpdatedLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
+        lastUpdatedLabel.setForeground(new Color(107, 123, 121));
+        lastUpdatedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+
         summaryLabel = new JLabel("Total: 0 bills");
-        summaryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        summaryLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         summaryLabel.setForeground(new Color(107, 123, 121));
         summaryLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
+        // Use a panel to hold both summary and last updated on the right
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        rightPanel.setOpaque(false);
+        rightPanel.add(summaryLabel);
+        rightPanel.add(lastUpdatedLabel);
+
         footer.add(statusLabel, BorderLayout.WEST);
-        footer.add(summaryLabel, BorderLayout.EAST);
+        footer.add(rightPanel, BorderLayout.EAST);
 
         return footer;
     }
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -558,6 +662,9 @@ public class RevenueReportPanel extends JPanel {
                     displayReport(bills);
                     statusLabel.setText("Revenue report generated successfully!");
                     statusLabel.setForeground(SUCCESS_COLOR);
+                    
+                    lastUpdatedLabel.setText("Last updated: " + 
+                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
                 } catch (Exception e) {
                     showError("Error generating revenue report: " + e.getMessage());
                     e.printStackTrace();
@@ -614,18 +721,21 @@ public class RevenueReportPanel extends JPanel {
     // ========================
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 14, ERROR_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 14, SUCCESS_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(SUCCESS_COLOR);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.INFO_CIRCLE, 14, new Color(107, 123, 121)));
+        statusLabel.setText(message);
         statusLabel.setForeground(new Color(107, 123, 121));
     }
 }

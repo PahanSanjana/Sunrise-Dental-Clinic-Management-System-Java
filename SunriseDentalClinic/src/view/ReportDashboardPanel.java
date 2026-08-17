@@ -5,6 +5,9 @@ import model.Bill;
 import model.Appointment;
 import model.Patient;
 import model.Dentist;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -31,6 +34,10 @@ public class ReportDashboardPanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
     
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+    
     // Card Colors
     private static final Color COLOR_PATIENTS = new Color(52, 152, 219);
     private static final Color COLOR_APPOINTMENTS = new Color(46, 204, 113);
@@ -38,6 +45,19 @@ public class ReportDashboardPanel extends JPanel {
     private static final Color COLOR_DENTISTS = new Color(155, 89, 182);
     private static final Color COLOR_TREATMENTS = new Color(231, 76, 60);
     private static final Color COLOR_STAFF = new Color(149, 165, 166);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
 
     // Components
     private JLabel statusLabel;
@@ -59,10 +79,15 @@ public class ReportDashboardPanel extends JPanel {
     private ReportController controller;
     private DecimalFormat df = new DecimalFormat("#.00");
 
+    // Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public ReportDashboardPanel() {
         this.controller = new ReportController(this);
         initComponents();
         loadDashboardData();
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -98,6 +123,63 @@ public class ReportDashboardPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    loadDashboardData();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -109,11 +191,11 @@ public class ReportDashboardPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Report Dashboard");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JLabel subtitleLabel = new JLabel("Overview of clinic performance and key metrics");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
@@ -121,12 +203,13 @@ public class ReportDashboardPanel extends JPanel {
 
         header.add(titlePanel, BorderLayout.WEST);
         
-        // Refresh button
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        // Manual Refresh Button - ICON ONLY
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
         
-        JButton refreshBtn = createStyledButton("⟳ Refresh", PRIMARY_DARK, Color.WHITE);
-        refreshBtn.setPreferredSize(new Dimension(120, 35));
+        JButton refreshBtn = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshBtn.setPreferredSize(new Dimension(40, 40));
+        refreshBtn.setToolTipText("Refresh Now");
         refreshBtn.addActionListener(e -> loadDashboardData());
         rightPanel.add(refreshBtn);
         
@@ -144,39 +227,39 @@ public class ReportDashboardPanel extends JPanel {
         ));
 
         // Total Patients
-        JPanel patientCard = createStatCard("👤", "Total Patients", "0", COLOR_PATIENTS);
+        JPanel patientCard = createStatCard(FontAwesomeSolid.USER_PLUS, "Total Patients", "0", COLOR_PATIENTS);
         panel.add(patientCard);
         totalPatientsLabel = findValueLabel(patientCard);
 
         // Total Appointments
-        JPanel appointmentCard = createStatCard("📋", "Total Appointments", "0", COLOR_APPOINTMENTS);
+        JPanel appointmentCard = createStatCard(FontAwesomeSolid.CALENDAR_ALT, "Total Appointments", "0", COLOR_APPOINTMENTS);
         panel.add(appointmentCard);
         totalAppointmentsLabel = findValueLabel(appointmentCard);
 
         // Total Revenue
-        JPanel revenueCard = createStatCard("💰", "Total Revenue", "RS0.00", COLOR_REVENUE);
+        JPanel revenueCard = createStatCard(FontAwesomeSolid.MONEY_BILL_WAVE, "Total Revenue", "RS0.00", COLOR_REVENUE);
         panel.add(revenueCard);
         totalRevenueLabel = findValueLabel(revenueCard);
 
         // Total Dentists
-        JPanel dentistCard = createStatCard("🦷", "Total Dentists", "0", COLOR_DENTISTS);
+        JPanel dentistCard = createStatCard(FontAwesomeSolid.USER_MD, "Total Dentists", "0", COLOR_DENTISTS);
         panel.add(dentistCard);
         totalDentistsLabel = findValueLabel(dentistCard);
 
         // Total Treatments
-        JPanel treatmentCard = createStatCard("💊", "Total Treatments", "0", COLOR_TREATMENTS);
+        JPanel treatmentCard = createStatCard(FontAwesomeSolid.PILLS, "Total Treatments", "0", COLOR_TREATMENTS);
         panel.add(treatmentCard);
         totalTreatmentsLabel = findValueLabel(treatmentCard);
 
         // Total Staff
-        JPanel staffCard = createStatCard("👨‍💼", "Total Staff", "0", COLOR_STAFF);
+        JPanel staffCard = createStatCard(FontAwesomeSolid.USER_TIE, "Total Staff", "0", COLOR_STAFF);
         panel.add(staffCard);
         totalStaffLabel = findValueLabel(staffCard);
 
         return panel;
     }
 
-    private JPanel createStatCard(String icon, String title, String defaultValue, Color color) {
+    private JPanel createStatCard(FontAwesomeSolid icon, String title, String defaultValue, Color color) {
         JPanel card = new JPanel();
         card.setLayout(new BorderLayout());
         card.setBackground(Color.WHITE);
@@ -191,8 +274,7 @@ public class ReportDashboardPanel extends JPanel {
         leftPanel.setPreferredSize(new Dimension(50, 80));
         leftPanel.setLayout(new GridBagLayout());
         
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
+        JLabel iconLabel = iconLabel(icon, 24, Color.WHITE);
         leftPanel.add(iconLabel);
 
         JPanel rightPanel = new JPanel();
@@ -201,12 +283,12 @@ public class ReportDashboardPanel extends JPanel {
         rightPanel.setBorder(new EmptyBorder(5, 10, 5, 10));
         
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 11));
         titleLabel.setForeground(SECONDARY_TEXT);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel valueLabel = new JLabel(defaultValue);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        valueLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 18));
         valueLabel.setForeground(PRIMARY_DARK);
         valueLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -235,21 +317,25 @@ public class ReportDashboardPanel extends JPanel {
         ));
 
         JLabel titleLabel = new JLabel("Quick Reports");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 16));
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(titleLabel);
         panel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         // Action buttons
-        String[][] actions = {
-            {"👤", "Patient Report", "View detailed patient history"},
-            {"📅", "Schedule Report", "View appointment statistics"},
-            {"💰", "Revenue Report", "View financial overview"}
+        Object[][] actions = {
+            {FontAwesomeSolid.USER, "Patient Report", "View detailed patient history"},
+            {FontAwesomeSolid.CALENDAR_ALT, "Schedule Report", "View appointment statistics"},
+            {FontAwesomeSolid.MONEY_BILL_WAVE, "Revenue Report", "View financial overview"}
         };
 
-        for (String[] action : actions) {
-            JPanel actionPanel = createActionButton(action[0], action[1], action[2]);
+        for (Object[] action : actions) {
+            JPanel actionPanel = createActionButton(
+                (FontAwesomeSolid) action[0], 
+                (String) action[1], 
+                (String) action[2]
+            );
             panel.add(actionPanel);
             panel.add(Box.createRigidArea(new Dimension(0, 8)));
         }
@@ -259,7 +345,7 @@ public class ReportDashboardPanel extends JPanel {
         return panel;
     }
 
-    private JPanel createActionButton(String icon, String title, String description) {
+    private JPanel createActionButton(FontAwesomeSolid icon, String title, String description) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
@@ -290,8 +376,7 @@ public class ReportDashboardPanel extends JPanel {
             }
         });
 
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
+        JLabel iconLabel = iconLabel(icon, 24, SECONDARY_TEXT);
         panel.add(iconLabel, BorderLayout.WEST);
 
         JPanel textPanel = new JPanel();
@@ -300,12 +385,12 @@ public class ReportDashboardPanel extends JPanel {
         textPanel.setBorder(new EmptyBorder(0, 10, 0, 0));
         
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel descLabel = new JLabel(description);
-        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        descLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 11));
         descLabel.setForeground(SECONDARY_TEXT);
         descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -315,9 +400,7 @@ public class ReportDashboardPanel extends JPanel {
         
         panel.add(textPanel, BorderLayout.CENTER);
         
-        JLabel arrowLabel = new JLabel("→");
-        arrowLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        arrowLabel.setForeground(SECONDARY_TEXT);
+        JLabel arrowLabel = iconLabel(FontAwesomeSolid.ANGLE_RIGHT, 18, SECONDARY_TEXT);
         panel.add(arrowLabel, BorderLayout.EAST);
 
         return panel;
@@ -332,13 +415,13 @@ public class ReportDashboardPanel extends JPanel {
         ));
 
         JLabel titleLabel = new JLabel("Recent Activity");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 16));
         titleLabel.setForeground(PRIMARY_DARK);
         panel.add(titleLabel, BorderLayout.NORTH);
 
         activityModel = new DefaultListModel<>();
         recentActivityList = new JList<>(activityModel);
-        recentActivityList.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        recentActivityList.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         recentActivityList.setBackground(Color.WHITE);
         recentActivityList.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         recentActivityList.setCellRenderer(new ActivityListRenderer());
@@ -358,11 +441,11 @@ public class ReportDashboardPanel extends JPanel {
         footer.setBorder(new EmptyBorder(10, 0, 0, 0));
 
         statusLabel = new JLabel("Ready");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(new Color(107, 123, 121));
 
         lastUpdatedLabel = new JLabel("Last updated: --");
-        lastUpdatedLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lastUpdatedLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         lastUpdatedLabel.setForeground(new Color(107, 123, 121));
         lastUpdatedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
@@ -370,29 +453,6 @@ public class ReportDashboardPanel extends JPanel {
         footer.add(lastUpdatedLabel, BorderLayout.EAST);
 
         return footer;
-    }
-
-    private JButton createStyledButton(String text, Color bg, Color fg) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        button.setBackground(bg);
-        button.setForeground(fg);
-        button.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(40, 55, 53));
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(PRIMARY_DARK);
-            }
-        });
-        
-        return button;
     }
 
     // Custom list cell renderer for activity
@@ -457,7 +517,6 @@ public class ReportDashboardPanel extends JPanel {
                     statusLabel.setText("Dashboard updated successfully!");
                     statusLabel.setForeground(SUCCESS_COLOR);
                     
-                    // FIXED: Use LocalDateTime instead of LocalDate
                     lastUpdatedLabel.setText("Last updated: " + 
                         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
                 } catch (Exception e) {
@@ -547,18 +606,21 @@ public class ReportDashboardPanel extends JPanel {
     // ========================
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 14, ERROR_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 14, SUCCESS_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(SUCCESS_COLOR);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.INFO_CIRCLE, 14, new Color(107, 123, 121)));
+        statusLabel.setText(message);
         statusLabel.setForeground(new Color(107, 123, 121));
     }
 
