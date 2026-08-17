@@ -68,6 +68,6 @@ public class Treatment {
 
     @Override
     public String toString() {
-        return treatmentName + " ($" + cost + ")";
+        return treatmentName + " (Rs" + cost + ")";
     }
 }

@@ -4,6 +4,9 @@ import controller.PatientController;
 import model.Patient;
 import model.User;
 import model.User.UserRole;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -26,6 +29,19 @@ public class AddPatientPanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
 
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
     // Form Fields - Patient Details
     private JTextField patientNameField;
     private JComboBox<String> genderCombo;
@@ -38,7 +54,7 @@ public class AddPatientPanel extends JPanel {
     private JTextArea medicalHistoryArea;
     private JTextArea allergiesArea;
     
-    // Login Credentials Section (NEW)
+    // Login Credentials Section
     private JCheckBox createLoginCheckBox;
     private JPanel loginPanel;
     private JTextField usernameField;
@@ -49,14 +65,20 @@ public class AddPatientPanel extends JPanel {
     private RoundedButton saveButton;
     private RoundedButton clearButton;
     private RoundedButton cancelButton;
+    private JButton refreshButton;
     
     private JLabel statusLabel;
     private PatientController controller;
+
+    // ✅ Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
 
     public AddPatientPanel() {
         initComponents();
         this.controller = new PatientController(this);
         loginPanel.setVisible(false); // Initially hidden
+        startAutoRefresh(); // ✅ Start auto-refresh
     }
 
     private void initComponents() {
@@ -78,6 +100,64 @@ public class AddPatientPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+    
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    // Just refresh the status or any dynamic data
+                    // For add panel, we just keep it clean
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // ✅ CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -88,17 +168,29 @@ public class AddPatientPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Add New Patient");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JLabel subtitleLabel = new JLabel("Register a new patient with optional login account");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
         titlePanel.add(subtitleLabel);
 
+        // ✅ Manual Refresh Button - ICON ONLY
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        
+        refreshButton = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshButton.setPreferredSize(new Dimension(40, 40));
+        refreshButton.setToolTipText("Refresh Form");
+        refreshButton.addActionListener(e -> clearForm());
+        rightPanel.add(refreshButton);
+
         header.add(titlePanel, BorderLayout.WEST);
+        header.add(rightPanel, BorderLayout.EAST);
+
         return header;
     }
 
@@ -127,7 +219,7 @@ public class AddPatientPanel extends JPanel {
         formPanel.add(createSectionPanel("Medical Information", createMedicalInfoPanel()));
         formPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        // Login Credentials Section (NEW)
+        // Login Credentials Section
         formPanel.add(createLoginSection());
         
         return formPanel;
@@ -141,7 +233,7 @@ public class AddPatientPanel extends JPanel {
             "Login Account (Optional)",
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         
@@ -153,7 +245,7 @@ public class AddPatientPanel extends JPanel {
         JPanel checkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         checkPanel.setOpaque(false);
         createLoginCheckBox = new JCheckBox("Create login account for this patient");
-        createLoginCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        createLoginCheckBox.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         createLoginCheckBox.setForeground(PRIMARY_DARK);
         createLoginCheckBox.addActionListener(e -> loginPanel.setVisible(createLoginCheckBox.isSelected()));
         checkPanel.add(createLoginCheckBox);
@@ -180,7 +272,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel usernameLabel = new JLabel("Username:");
-        usernameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        usernameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         usernameLabel.setForeground(PRIMARY_DARK);
         loginPanel.add(usernameLabel, gbc);
         
@@ -188,7 +280,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         usernameField = new JTextField();
-        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        usernameField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         usernameField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -201,7 +293,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel passwordLabel = new JLabel("Password:");
-        passwordLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        passwordLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         passwordLabel.setForeground(PRIMARY_DARK);
         loginPanel.add(passwordLabel, gbc);
         
@@ -209,7 +301,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         passwordField = new JPasswordField();
-        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        passwordField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         passwordField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -221,7 +313,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel confirmLabel = new JLabel("Confirm Password:");
-        confirmLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        confirmLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         confirmLabel.setForeground(PRIMARY_DARK);
         loginPanel.add(confirmLabel, gbc);
         
@@ -229,7 +321,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         confirmPasswordField = new JPasswordField();
-        confirmPasswordField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        confirmPasswordField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         confirmPasswordField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -250,7 +342,7 @@ public class AddPatientPanel extends JPanel {
             title,
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         panel.add(content, BorderLayout.CENTER);
@@ -273,7 +365,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel nameLabel = new JLabel("Patient Name:");
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        nameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         nameLabel.setForeground(PRIMARY_DARK);
         panel.add(nameLabel, gbc);
 
@@ -289,7 +381,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel genderLabel = new JLabel("Gender:");
-        genderLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        genderLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         genderLabel.setForeground(PRIMARY_DARK);
         panel.add(genderLabel, gbc);
 
@@ -297,7 +389,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         genderCombo = new JComboBox<>(new String[]{"Male", "Female", "Other"});
-        genderCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        genderCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         panel.add(genderCombo, gbc);
 
         // Date of Birth
@@ -305,7 +397,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel dobLabel = new JLabel("Date of Birth (YYYY-MM-DD):");
-        dobLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dobLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         dobLabel.setForeground(PRIMARY_DARK);
         panel.add(dobLabel, gbc);
 
@@ -334,7 +426,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel contactLabel = new JLabel("Contact Number:");
-        contactLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        contactLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         contactLabel.setForeground(PRIMARY_DARK);
         panel.add(contactLabel, gbc);
 
@@ -349,7 +441,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel emailLabel = new JLabel("Email:");
-        emailLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        emailLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         emailLabel.setForeground(PRIMARY_DARK);
         panel.add(emailLabel, gbc);
 
@@ -365,7 +457,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel addressLabel = new JLabel("Address:");
-        addressLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        addressLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         addressLabel.setForeground(PRIMARY_DARK);
         panel.add(addressLabel, gbc);
 
@@ -397,7 +489,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel contactNameLabel = new JLabel("Contact Name:");
-        contactNameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        contactNameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         contactNameLabel.setForeground(PRIMARY_DARK);
         panel.add(contactNameLabel, gbc);
 
@@ -412,7 +504,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel phoneLabel = new JLabel("Contact Phone:");
-        phoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        phoneLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         phoneLabel.setForeground(PRIMARY_DARK);
         panel.add(phoneLabel, gbc);
 
@@ -441,7 +533,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel historyLabel = new JLabel("Medical History:");
-        historyLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        historyLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         historyLabel.setForeground(PRIMARY_DARK);
         panel.add(historyLabel, gbc);
 
@@ -460,7 +552,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel allergiesLabel = new JLabel("Allergies:");
-        allergiesLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        allergiesLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         allergiesLabel.setForeground(PRIMARY_DARK);
         panel.add(allergiesLabel, gbc);
 
@@ -482,7 +574,7 @@ public class AddPatientPanel extends JPanel {
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(SECONDARY_TEXT);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -490,14 +582,23 @@ public class AddPatientPanel extends JPanel {
 
         saveButton = createStyledButton("Save Patient", PRIMARY_DARK, Color.WHITE);
         saveButton.setPreferredSize(new Dimension(160, 40));
+        saveButton.setIcon(icon(FontAwesomeSolid.SAVE, 14, Color.WHITE));
+        saveButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        saveButton.setIconTextGap(8);
 
         clearButton = createStyledButton("Clear", SOFT_SURFACE, PRIMARY_DARK);
         clearButton.setBorderColor(LIGHT_SURFACE);
         clearButton.setPreferredSize(new Dimension(100, 40));
+        clearButton.setIcon(icon(FontAwesomeSolid.ERASER, 14, PRIMARY_DARK));
+        clearButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        clearButton.setIconTextGap(8);
 
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(LIGHT_SURFACE);
         cancelButton.setPreferredSize(new Dimension(100, 40));
+        cancelButton.setIcon(icon(FontAwesomeSolid.TIMES, 14, PRIMARY_DARK));
+        cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        cancelButton.setIconTextGap(8);
 
         buttonPanel.add(clearButton);
         buttonPanel.add(cancelButton);
@@ -511,7 +612,7 @@ public class AddPatientPanel extends JPanel {
 
     private JTextField createTextField() {
         JTextField field = new JTextField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        field.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -522,7 +623,7 @@ public class AddPatientPanel extends JPanel {
 
     private JTextArea createTextArea() {
         JTextArea area = new JTextArea();
-        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.setBorder(BorderFactory.createCompoundBorder(
@@ -535,7 +636,7 @@ public class AddPatientPanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -623,7 +724,7 @@ public class AddPatientPanel extends JPanel {
     public String getMedicalHistory() { return medicalHistoryArea.getText().trim(); }
     public String getAllergies() { return allergiesArea.getText().trim(); }
     
-    // Login getters (NEW)
+    // Login getters
     public boolean isCreateLogin() { return createLoginCheckBox.isSelected(); }
     public String getUsername() { return usernameField != null ? usernameField.getText().trim() : ""; }
     public String getPassword() { return passwordField != null ? new String(passwordField.getPassword()) : ""; }
@@ -650,19 +751,19 @@ public class AddPatientPanel extends JPanel {
     }
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setText("Error: " + message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setText("Success: " + message);
         statusLabel.setForeground(SUCCESS_COLOR);
         JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setText("Info: " + message);
         statusLabel.setForeground(new Color(0, 120, 215));
     }
 

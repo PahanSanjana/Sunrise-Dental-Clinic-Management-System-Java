@@ -2,6 +2,9 @@ package view;
 
 import controller.PatientController;
 import model.Patient;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -23,6 +26,19 @@ public class PatientDetailsPanel extends JPanel {
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
+
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
 
     // Form Fields - View/Edit Mode
     private JTextField patientNameField;
@@ -46,17 +62,23 @@ public class PatientDetailsPanel extends JPanel {
     private RoundedButton cancelButton;
     private RoundedButton backButton;
     private RoundedButton deleteButton;
+    private JButton refreshButton;
     
     private JPanel buttonPanel;
     private boolean isEditMode = false;
     private Patient currentPatient;
     private PatientController controller;
 
+    // ✅ Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public PatientDetailsPanel() {
         this.controller = new PatientController(this);
         initComponents();
         setViewMode(false);
         displayEmptyState();
+        startAutoRefresh();
     }
 
     public PatientDetailsPanel(Patient patient) {
@@ -65,6 +87,74 @@ public class PatientDetailsPanel extends JPanel {
         initComponents();
         setViewMode(false);
         displayPatient(patient);
+        startAutoRefresh();
+    }
+
+    // =====================================================
+    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+    
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing() && currentPatient != null) {
+                    loadPatientData();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // ✅ CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
+    private void loadPatientData() {
+        if (currentPatient != null) {
+            Patient updatedPatient = controller.getPatientById(currentPatient.getPatientId());
+            if (updatedPatient != null) {
+                currentPatient = updatedPatient;
+                displayPatient(currentPatient);
+            }
+        }
     }
 
     private void initComponents() {
@@ -93,22 +183,22 @@ public class PatientDetailsPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Patient Details");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         infoPanel.setOpaque(false);
         
         patientIdLabel = new JLabel("Patient ID: --");
-        patientIdLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        patientIdLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         patientIdLabel.setForeground(SECONDARY_TEXT);
         
         createdDateLabel = new JLabel("Created: --");
-        createdDateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        createdDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         createdDateLabel.setForeground(SECONDARY_TEXT);
         
         updatedDateLabel = new JLabel("Last Updated: --");
-        updatedDateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        updatedDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         updatedDateLabel.setForeground(SECONDARY_TEXT);
         
         infoPanel.add(patientIdLabel);
@@ -120,6 +210,19 @@ public class PatientDetailsPanel extends JPanel {
         titlePanel.add(infoPanel);
 
         header.add(titlePanel, BorderLayout.WEST);
+        
+        // ✅ Manual Refresh Button - ICON ONLY
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        
+        refreshButton = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshButton.setPreferredSize(new Dimension(40, 40));
+        refreshButton.setToolTipText("Refresh Now");
+        refreshButton.addActionListener(e -> loadPatientData());
+        rightPanel.add(refreshButton);
+
+        header.add(rightPanel, BorderLayout.EAST);
+
         return header;
     }
 
@@ -158,7 +261,7 @@ public class PatientDetailsPanel extends JPanel {
             title,
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         panel.add(content, BorderLayout.CENTER);
@@ -181,7 +284,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel nameLabel = new JLabel("Patient Name:");
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        nameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         nameLabel.setForeground(PRIMARY_DARK);
         panel.add(nameLabel, gbc);
 
@@ -198,7 +301,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel genderLabel = new JLabel("Gender:");
-        genderLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        genderLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         genderLabel.setForeground(PRIMARY_DARK);
         panel.add(genderLabel, gbc);
 
@@ -206,7 +309,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         genderCombo = new JComboBox<>(new String[]{"Male", "Female", "Other"});
-        genderCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        genderCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         genderCombo.setEnabled(false);
         panel.add(genderCombo, gbc);
 
@@ -216,7 +319,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel dobLabel = new JLabel("Date of Birth:");
-        dobLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dobLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         dobLabel.setForeground(PRIMARY_DARK);
         panel.add(dobLabel, gbc);
 
@@ -246,7 +349,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel contactLabel = new JLabel("Contact Number:");
-        contactLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        contactLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         contactLabel.setForeground(PRIMARY_DARK);
         panel.add(contactLabel, gbc);
 
@@ -263,7 +366,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel emailLabel = new JLabel("Email:");
-        emailLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        emailLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         emailLabel.setForeground(PRIMARY_DARK);
         panel.add(emailLabel, gbc);
 
@@ -280,7 +383,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel addressLabel = new JLabel("Address:");
-        addressLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        addressLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         addressLabel.setForeground(PRIMARY_DARK);
         panel.add(addressLabel, gbc);
 
@@ -313,7 +416,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel contactNameLabel = new JLabel("Contact Name:");
-        contactNameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        contactNameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         contactNameLabel.setForeground(PRIMARY_DARK);
         panel.add(contactNameLabel, gbc);
 
@@ -330,7 +433,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel phoneLabel = new JLabel("Contact Phone:");
-        phoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        phoneLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         phoneLabel.setForeground(PRIMARY_DARK);
         panel.add(phoneLabel, gbc);
 
@@ -360,7 +463,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel historyLabel = new JLabel("Medical History:");
-        historyLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        historyLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         historyLabel.setForeground(PRIMARY_DARK);
         panel.add(historyLabel, gbc);
 
@@ -380,7 +483,7 @@ public class PatientDetailsPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel allergiesLabel = new JLabel("Allergies:");
-        allergiesLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        allergiesLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         allergiesLabel.setForeground(PRIMARY_DARK);
         panel.add(allergiesLabel, gbc);
 
@@ -403,28 +506,37 @@ public class PatientDetailsPanel extends JPanel {
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(SECONDARY_TEXT);
 
         buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
 
         // Back button
-        backButton = createStyledButton("← Back", SOFT_SURFACE, PRIMARY_DARK);
+        backButton = createStyledButton("Back", SOFT_SURFACE, PRIMARY_DARK);
         backButton.setBorderColor(LIGHT_SURFACE);
         backButton.setPreferredSize(new Dimension(100, 35));
         backButton.addActionListener(e -> navigateBack());
+        backButton.setIcon(icon(FontAwesomeSolid.ARROW_LEFT, 12, PRIMARY_DARK));
+        backButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        backButton.setIconTextGap(6);
 
         // Edit button
         editButton = createStyledButton("Edit", PRIMARY_DARK, Color.WHITE);
         editButton.setPreferredSize(new Dimension(100, 35));
         editButton.addActionListener(e -> toggleEditMode());
+        editButton.setIcon(icon(FontAwesomeSolid.EDIT, 12, Color.WHITE));
+        editButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        editButton.setIconTextGap(6);
 
         // Save button (hidden initially)
         saveButton = createStyledButton("Save", PRIMARY_DARK, Color.WHITE);
         saveButton.setPreferredSize(new Dimension(100, 35));
         saveButton.setVisible(false);
         saveButton.addActionListener(e -> savePatient());
+        saveButton.setIcon(icon(FontAwesomeSolid.SAVE, 12, Color.WHITE));
+        saveButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        saveButton.setIconTextGap(6);
 
         // Cancel button (hidden initially)
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
@@ -432,11 +544,17 @@ public class PatientDetailsPanel extends JPanel {
         cancelButton.setPreferredSize(new Dimension(100, 35));
         cancelButton.setVisible(false);
         cancelButton.addActionListener(e -> cancelEdit());
+        cancelButton.setIcon(icon(FontAwesomeSolid.TIMES, 12, PRIMARY_DARK));
+        cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        cancelButton.setIconTextGap(6);
 
         // Delete button
         deleteButton = createStyledButton("Delete", ERROR_COLOR, Color.WHITE);
         deleteButton.setPreferredSize(new Dimension(100, 35));
         deleteButton.addActionListener(e -> deletePatient());
+        deleteButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, Color.WHITE));
+        deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        deleteButton.setIconTextGap(6);
 
         buttonPanel.add(backButton);
         buttonPanel.add(editButton);
@@ -452,7 +570,7 @@ public class PatientDetailsPanel extends JPanel {
 
     private JTextField createTextField() {
         JTextField field = new JTextField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        field.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -463,7 +581,7 @@ public class PatientDetailsPanel extends JPanel {
 
     private JTextArea createTextArea() {
         JTextArea area = new JTextArea();
-        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.setBorder(BorderFactory.createCompoundBorder(
@@ -476,7 +594,7 @@ public class PatientDetailsPanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -608,7 +726,6 @@ public class PatientDetailsPanel extends JPanel {
     private void setViewMode(boolean editMode) {
         this.isEditMode = editMode;
         
-        // Enable/disable fields
         patientNameField.setEnabled(editMode);
         genderCombo.setEnabled(editMode);
         contactNumberField.setEnabled(editMode);
@@ -620,7 +737,6 @@ public class PatientDetailsPanel extends JPanel {
         allergiesArea.setEnabled(editMode);
         dobField.setEnabled(editMode);
 
-        // Show/hide buttons
         editButton.setVisible(!editMode);
         deleteButton.setVisible(!editMode);
         saveButton.setVisible(editMode);
@@ -652,7 +768,6 @@ public class PatientDetailsPanel extends JPanel {
             return;
         }
 
-        // Validate fields
         String patientName = patientNameField.getText().trim();
         if (patientName.isEmpty()) {
             showError("Patient Name is required.");
@@ -680,7 +795,6 @@ public class PatientDetailsPanel extends JPanel {
             return;
         }
 
-        // Update patient object
         currentPatient.setPatientName(patientName);
         currentPatient.setGender((String) genderCombo.getSelectedItem());
         currentPatient.setContactNumber(contactNumber);
@@ -691,7 +805,6 @@ public class PatientDetailsPanel extends JPanel {
         currentPatient.setMedicalHistory(medicalHistoryArea.getText().trim());
         currentPatient.setAllergies(allergiesArea.getText().trim());
 
-        // Save to database
         statusLabel.setText("Saving patient...");
         statusLabel.setForeground(new Color(0, 120, 215));
         
@@ -701,7 +814,6 @@ public class PatientDetailsPanel extends JPanel {
             statusLabel.setText("Patient updated successfully!");
             statusLabel.setForeground(SUCCESS_COLOR);
             setViewMode(false);
-            // Refresh display
             displayPatient(currentPatient);
             showSuccess("Patient information updated successfully!");
         } else {
@@ -752,19 +864,19 @@ public class PatientDetailsPanel extends JPanel {
     // ========================
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setText("Error: " + message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setText("Success: " + message);
         statusLabel.setForeground(SUCCESS_COLOR);
         JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setText("Info: " + message);
         statusLabel.setForeground(new Color(107, 123, 121));
     }
 
