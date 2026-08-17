@@ -1,6 +1,9 @@
 package view;
 
 import controller.TreatmentController;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -19,6 +22,19 @@ public class AddTreatmentPanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
 
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
+
     // Form Fields
     private JTextField treatmentNameField;
     private JTextArea descriptionArea;
@@ -35,9 +51,14 @@ public class AddTreatmentPanel extends JPanel {
     private JLabel statusLabel;
     private TreatmentController controller;
 
+    // Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public AddTreatmentPanel() {
         initComponents();
         this.controller = new TreatmentController(this);
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -59,6 +80,34 @@ public class AddTreatmentPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    // Auto-refresh logic - e.g., check for session expiry
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -69,11 +118,11 @@ public class AddTreatmentPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Add New Treatment");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JLabel subtitleLabel = new JLabel("Register a new treatment in the system");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
@@ -114,7 +163,7 @@ public class AddTreatmentPanel extends JPanel {
             title,
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         panel.add(content, BorderLayout.CENTER);
@@ -137,7 +186,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel nameLabel = new JLabel("Treatment Name:");
-        nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        nameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         nameLabel.setForeground(PRIMARY_DARK);
         panel.add(nameLabel, gbc);
 
@@ -154,7 +203,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel categoryLabel = new JLabel("Category:");
-        categoryLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        categoryLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         categoryLabel.setForeground(PRIMARY_DARK);
         panel.add(categoryLabel, gbc);
 
@@ -164,7 +213,7 @@ public class AddTreatmentPanel extends JPanel {
         String[] categories = {"Preventive", "Restorative", "Endodontic", "Orthodontic", 
                                "Cosmetic", "Surgical", "Periodontic", "Other"};
         categoryCombo = new JComboBox<>(categories);
-        categoryCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        categoryCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         categoryCombo.setPreferredSize(new Dimension(300, 35));
         panel.add(categoryCombo, gbc);
 
@@ -174,7 +223,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel descLabel = new JLabel("Description:");
-        descLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        descLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         descLabel.setForeground(PRIMARY_DARK);
         panel.add(descLabel, gbc);
 
@@ -206,7 +255,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel costLabel = new JLabel("Cost (RS):");
-        costLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        costLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         costLabel.setForeground(PRIMARY_DARK);
         panel.add(costLabel, gbc);
 
@@ -214,7 +263,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         costField = createTextField();
-        costField.setToolTipText("Cost of the treatment in USD");
+        costField.setToolTipText("Cost of the treatment in RS");
         panel.add(costField, gbc);
 
         // Duration
@@ -222,7 +271,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel durationLabel = new JLabel("Duration (mins):");
-        durationLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        durationLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         durationLabel.setForeground(PRIMARY_DARK);
         panel.add(durationLabel, gbc);
 
@@ -252,7 +301,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel statusLabel = new JLabel("Status:");
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         statusLabel.setForeground(PRIMARY_DARK);
         panel.add(statusLabel, gbc);
 
@@ -260,7 +309,7 @@ public class AddTreatmentPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         activeCheckBox = new JCheckBox("Active");
-        activeCheckBox.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        activeCheckBox.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         activeCheckBox.setSelected(true);
         activeCheckBox.setToolTipText("Check if the treatment is currently active");
         panel.add(activeCheckBox, gbc);
@@ -274,7 +323,7 @@ public class AddTreatmentPanel extends JPanel {
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(SECONDARY_TEXT);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -282,14 +331,23 @@ public class AddTreatmentPanel extends JPanel {
 
         saveButton = createStyledButton("Save Treatment", PRIMARY_DARK, Color.WHITE);
         saveButton.setPreferredSize(new Dimension(160, 40));
+        saveButton.setIcon(icon(FontAwesomeSolid.SAVE, 14, Color.WHITE));
+        saveButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        saveButton.setIconTextGap(8);
 
         clearButton = createStyledButton("Clear", SOFT_SURFACE, PRIMARY_DARK);
         clearButton.setBorderColor(LIGHT_SURFACE);
         clearButton.setPreferredSize(new Dimension(100, 40));
+        clearButton.setIcon(icon(FontAwesomeSolid.ERASER, 14, PRIMARY_DARK));
+        clearButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        clearButton.setIconTextGap(8);
 
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(LIGHT_SURFACE);
         cancelButton.setPreferredSize(new Dimension(100, 40));
+        cancelButton.setIcon(icon(FontAwesomeSolid.TIMES, 14, PRIMARY_DARK));
+        cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        cancelButton.setIconTextGap(8);
 
         buttonPanel.add(clearButton);
         buttonPanel.add(cancelButton);
@@ -303,7 +361,7 @@ public class AddTreatmentPanel extends JPanel {
 
     private JTextField createTextField() {
         JTextField field = new JTextField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        field.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -314,7 +372,7 @@ public class AddTreatmentPanel extends JPanel {
 
     private JTextArea createTextArea() {
         JTextArea area = new JTextArea();
-        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.setBorder(BorderFactory.createCompoundBorder(
@@ -327,7 +385,7 @@ public class AddTreatmentPanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -422,19 +480,22 @@ public class AddTreatmentPanel extends JPanel {
     }
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 14, ERROR_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 14, SUCCESS_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(SUCCESS_COLOR);
         JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.INFO_CIRCLE, 14, new Color(0, 120, 215)));
+        statusLabel.setText(message);
         statusLabel.setForeground(new Color(0, 120, 215));
     }
 

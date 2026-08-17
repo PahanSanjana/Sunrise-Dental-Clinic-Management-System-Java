@@ -2,6 +2,9 @@ package view;
 
 import controller.TreatmentController;
 import model.Treatment;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -10,6 +13,8 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class TreatmentListPanel extends JPanel {
@@ -24,6 +29,23 @@ public class TreatmentListPanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color ACTIVE_COLOR = new Color(60, 160, 80);
     private static final Color INACTIVE_COLOR = new Color(200, 80, 80);
+    
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
 
     // Components
     private JTable treatmentTable;
@@ -31,22 +53,27 @@ public class TreatmentListPanel extends JPanel {
     private JTextField searchField;
     private RoundedButton searchButton;
     private RoundedButton addButton;
-    private RoundedButton refreshButton;
     private RoundedButton viewButton;
     private RoundedButton editButton;
     private RoundedButton deleteButton;
     private RoundedButton toggleStatusButton;
     private JLabel statusLabel;
     private JLabel countLabel;
+    private JLabel lastUpdatedLabel;
     private JComboBox<String> categoryCombo;
     private JComboBox<String> filterCombo;
     
     private TreatmentController controller;
 
+    // Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public TreatmentListPanel() {
         this.controller = new TreatmentController(this);
         initComponents();
         loadTreatments();
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -77,6 +104,63 @@ public class TreatmentListPanel extends JPanel {
         add(mainPanel, BorderLayout.CENTER);
     }
 
+    // =====================================================
+    // AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    loadTreatments();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
     /**
      * ✅ Title Panel - Separate from other content
      */
@@ -87,12 +171,12 @@ public class TreatmentListPanel extends JPanel {
         titlePanel.setBorder(new EmptyBorder(0, 0, 15, 0));
         
         JLabel titleLabel = new JLabel("Treatment Management");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("Manage all treatments in the system");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -114,18 +198,18 @@ public class TreatmentListPanel extends JPanel {
         String[] categories = {"All Categories", "Preventive", "Restorative", "Endodontic", 
                                "Orthodontic", "Cosmetic", "Surgical", "Periodontic", "Other"};
         categoryCombo = new JComboBox<>(categories);
-        categoryCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        categoryCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         categoryCombo.setPreferredSize(new Dimension(150, 35));
         categoryCombo.addActionListener(e -> loadTreatments());
 
         // Status filter
         filterCombo = new JComboBox<>(new String[]{"All", "Active", "Inactive"});
-        filterCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        filterCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         filterCombo.setPreferredSize(new Dimension(100, 35));
         filterCombo.addActionListener(e -> loadTreatments());
 
         searchField = new JTextField(20);
-        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        searchField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         searchField.setPreferredSize(new Dimension(250, 35));
         searchField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
@@ -136,6 +220,9 @@ public class TreatmentListPanel extends JPanel {
         searchButton = createStyledButton("Search", PRIMARY_DARK, Color.WHITE);
         searchButton.setPreferredSize(new Dimension(100, 35));
         searchButton.addActionListener(e -> loadTreatments());
+        searchButton.setIcon(icon(FontAwesomeSolid.SEARCH, 14, Color.WHITE));
+        searchButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        searchButton.setIconTextGap(8);
 
         addButton = createStyledButton("Add Treatment", PRIMARY_DARK, Color.WHITE);
         addButton.setPreferredSize(new Dimension(140, 35));
@@ -148,11 +235,9 @@ public class TreatmentListPanel extends JPanel {
                 ((MainFrame) parent).showCard("TREATMENT_ADD");
             }
         });
-
-        refreshButton = createStyledButton("Refresh", SOFT_SURFACE, PRIMARY_DARK);
-        refreshButton.setBorderColor(LIGHT_SURFACE);
-        refreshButton.setPreferredSize(new Dimension(100, 35));
-        refreshButton.addActionListener(e -> loadTreatments());
+        addButton.setIcon(icon(FontAwesomeSolid.PLUS, 14, Color.WHITE));
+        addButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        addButton.setIconTextGap(8);
 
         searchPanel.add(new JLabel("Category:"));
         searchPanel.add(categoryCombo);
@@ -161,7 +246,13 @@ public class TreatmentListPanel extends JPanel {
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
         searchPanel.add(addButton);
-        searchPanel.add(refreshButton);
+        
+        // Manual Refresh Button - ICON ONLY
+        JButton refreshBtn = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshBtn.setPreferredSize(new Dimension(40, 40));
+        refreshBtn.setToolTipText("Refresh Now");
+        refreshBtn.addActionListener(e -> loadTreatments());
+        searchPanel.add(refreshBtn);
 
         return searchPanel;
     }
@@ -170,7 +261,6 @@ public class TreatmentListPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
 
-        // ✅ Removed "Actions" column - No buttons inside table
         String[] columns = {"ID", "Treatment Name", "Category", "Cost", "Duration", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -180,7 +270,7 @@ public class TreatmentListPanel extends JPanel {
         };
 
         treatmentTable = new JTable(tableModel);
-        treatmentTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        treatmentTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         treatmentTable.setRowHeight(40);
         treatmentTable.setSelectionBackground(new Color(235, 245, 240));
         treatmentTable.setSelectionForeground(PRIMARY_DARK);
@@ -199,7 +289,7 @@ public class TreatmentListPanel extends JPanel {
 
         // Custom header
         JTableHeader header = treatmentTable.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        header.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_DARK));
@@ -235,12 +325,16 @@ public class TreatmentListPanel extends JPanel {
         footer.setBorder(new EmptyBorder(10, 0, 0, 0));
 
         statusLabel = new JLabel("Ready");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(new Color(107, 123, 121));
 
         countLabel = new JLabel("Total: 0 treatments");
-        countLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        countLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         countLabel.setForeground(new Color(107, 123, 121));
+
+        lastUpdatedLabel = new JLabel("Last updated: --");
+        lastUpdatedLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
+        lastUpdatedLabel.setForeground(new Color(107, 123, 121));
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
@@ -256,6 +350,9 @@ public class TreatmentListPanel extends JPanel {
                 showError("Please select a treatment to view.");
             }
         });
+        viewButton.setIcon(icon(FontAwesomeSolid.EYE, 12, PRIMARY_DARK));
+        viewButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        viewButton.setIconTextGap(6);
 
         editButton = createStyledButton("Edit", SOFT_SURFACE, PRIMARY_DARK);
         editButton.setBorderColor(LIGHT_SURFACE);
@@ -268,10 +365,13 @@ public class TreatmentListPanel extends JPanel {
                 showError("Please select a treatment to edit.");
             }
         });
+        editButton.setIcon(icon(FontAwesomeSolid.EDIT, 12, PRIMARY_DARK));
+        editButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        editButton.setIconTextGap(6);
 
         toggleStatusButton = createStyledButton("Toggle Status", SOFT_SURFACE, PRIMARY_DARK);
         toggleStatusButton.setBorderColor(LIGHT_SURFACE);
-        toggleStatusButton.setPreferredSize(new Dimension(120, 30));
+        toggleStatusButton.setPreferredSize(new Dimension(130, 30));
         toggleStatusButton.addActionListener(e -> {
             int row = treatmentTable.getSelectedRow();
             if (row != -1) {
@@ -280,6 +380,9 @@ public class TreatmentListPanel extends JPanel {
                 showError("Please select a treatment to toggle status.");
             }
         });
+        toggleStatusButton.setIcon(icon(FontAwesomeSolid.SYNC, 12, PRIMARY_DARK));
+        toggleStatusButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        toggleStatusButton.setIconTextGap(6);
 
         deleteButton = createStyledButton("Delete", SOFT_SURFACE, ERROR_COLOR);
         deleteButton.setBorderColor(LIGHT_SURFACE);
@@ -292,13 +395,21 @@ public class TreatmentListPanel extends JPanel {
                 showError("Please select a treatment to delete.");
             }
         });
+        deleteButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, ERROR_COLOR));
+        deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        deleteButton.setIconTextGap(6);
 
         rightPanel.add(viewButton);
         rightPanel.add(editButton);
         rightPanel.add(toggleStatusButton);
         rightPanel.add(deleteButton);
 
-        footer.add(statusLabel, BorderLayout.WEST);
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftPanel.setOpaque(false);
+        leftPanel.add(statusLabel);
+        leftPanel.add(lastUpdatedLabel);
+
+        footer.add(leftPanel, BorderLayout.WEST);
         footer.add(countLabel, BorderLayout.CENTER);
         footer.add(rightPanel, BorderLayout.EAST);
 
@@ -307,7 +418,7 @@ public class TreatmentListPanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -449,6 +560,9 @@ public class TreatmentListPanel extends JPanel {
                 try {
                     List<Treatment> treatments = get();
                     displayTreatments(treatments);
+                    
+                    lastUpdatedLabel.setText("Last updated: " + 
+                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
                 } catch (Exception e) {
                     showError("Error loading treatments: " + e.getMessage());
                     e.printStackTrace();
@@ -589,19 +703,22 @@ public class TreatmentListPanel extends JPanel {
     }
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 14, ERROR_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 14, SUCCESS_COLOR));
+        statusLabel.setText(message);
         statusLabel.setForeground(SUCCESS_COLOR);
         JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setIcon(icon(FontAwesomeSolid.INFO_CIRCLE, 14, new Color(107, 123, 121)));
+        statusLabel.setText(message);
         statusLabel.setForeground(new Color(107, 123, 121));
     }
 }
