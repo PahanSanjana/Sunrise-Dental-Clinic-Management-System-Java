@@ -30,6 +30,7 @@ public class MainFrame extends JFrame {
         // Initialize components
         initContentPanel();
         
+        // ✅ Create sidebar and top bar
         sidebarPanel = new SidebarPanel(this);
         topBarPanel = new TopBarPanel();
         

@@ -4,6 +4,9 @@ import controller.AppointmentController;
 import model.Patient;
 import model.Dentist;
 import model.Appointment;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -29,6 +32,19 @@ public class BookAppointmentPanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
 
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
     // Form Fields
     private JComboBox<Patient> patientCombo;
     private JComboBox<Dentist> dentistCombo;
@@ -50,14 +66,20 @@ public class BookAppointmentPanel extends JPanel {
     private RoundedButton clearButton;
     private RoundedButton cancelButton;
     private RoundedButton checkAvailabilityButton;
+    private JButton refreshButton;
     
     private JLabel statusLabel;
     private AppointmentController controller;
+
+    // ✅ Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
 
     public BookAppointmentPanel() {
         initComponents();
         this.controller = new AppointmentController(this);
         loadData();
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -75,6 +97,63 @@ public class BookAppointmentPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+    
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    loadData();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // ✅ CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -86,17 +165,30 @@ public class BookAppointmentPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Book Appointment");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JLabel subtitleLabel = new JLabel("Schedule a new appointment for a patient");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
         titlePanel.add(subtitleLabel);
 
         header.add(titlePanel, BorderLayout.WEST);
+        
+        // ✅ Manual Refresh Button - ICON ONLY
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        
+        refreshButton = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshButton.setPreferredSize(new Dimension(40, 40));
+        refreshButton.setToolTipText("Refresh Data");
+        refreshButton.addActionListener(e -> loadData());
+        rightPanel.add(refreshButton);
+
+        header.add(rightPanel, BorderLayout.EAST);
+
         return header;
     }
 
@@ -131,7 +223,7 @@ public class BookAppointmentPanel extends JPanel {
             title,
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         panel.add(content, BorderLayout.CENTER);
@@ -154,7 +246,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel patientLabel = new JLabel("Select Patient:");
-        patientLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        patientLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         patientLabel.setForeground(PRIMARY_DARK);
         panel.add(patientLabel, gbc);
 
@@ -162,7 +254,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 2;
         gbc.weightx = 0.8;
         patientCombo = new JComboBox<>();
-        patientCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        patientCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         patientCombo.setPreferredSize(new Dimension(300, 35));
         patientCombo.addActionListener(e -> loadPatientDetails());
         panel.add(patientCombo, gbc);
@@ -173,7 +265,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel phoneLabel = new JLabel("Phone:");
-        phoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        phoneLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         phoneLabel.setForeground(PRIMARY_DARK);
         panel.add(phoneLabel, gbc);
 
@@ -181,7 +273,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         patientPhoneLabel = new JLabel("--");
-        patientPhoneLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        patientPhoneLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         patientPhoneLabel.setForeground(SECONDARY_TEXT);
         panel.add(patientPhoneLabel, gbc);
 
@@ -189,7 +281,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel emailLabel = new JLabel("Email:");
-        emailLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        emailLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         emailLabel.setForeground(PRIMARY_DARK);
         panel.add(emailLabel, gbc);
 
@@ -197,7 +289,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         patientEmailLabel = new JLabel("--");
-        patientEmailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        patientEmailLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         patientEmailLabel.setForeground(SECONDARY_TEXT);
         panel.add(patientEmailLabel, gbc);
 
@@ -220,7 +312,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel dentistLabel = new JLabel("Select Dentist:");
-        dentistLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dentistLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         dentistLabel.setForeground(PRIMARY_DARK);
         panel.add(dentistLabel, gbc);
 
@@ -228,7 +320,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 2;
         gbc.weightx = 0.8;
         dentistCombo = new JComboBox<>();
-        dentistCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        dentistCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         dentistCombo.setPreferredSize(new Dimension(300, 35));
         dentistCombo.addActionListener(e -> loadDentistDetails());
         panel.add(dentistCombo, gbc);
@@ -239,7 +331,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel specLabel = new JLabel("Specialization:");
-        specLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        specLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         specLabel.setForeground(PRIMARY_DARK);
         panel.add(specLabel, gbc);
 
@@ -247,7 +339,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         dentistSpecializationLabel = new JLabel("--");
-        dentistSpecializationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        dentistSpecializationLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         dentistSpecializationLabel.setForeground(SECONDARY_TEXT);
         panel.add(dentistSpecializationLabel, gbc);
 
@@ -255,7 +347,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel feeLabel = new JLabel("Consultation Fee:");
-        feeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        feeLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         feeLabel.setForeground(PRIMARY_DARK);
         panel.add(feeLabel, gbc);
 
@@ -263,7 +355,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         consultationFeeLabel = new JLabel("--");
-        consultationFeeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        consultationFeeLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         consultationFeeLabel.setForeground(SECONDARY_TEXT);
         panel.add(consultationFeeLabel, gbc);
 
@@ -273,7 +365,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel dateLabel = new JLabel("Date (YYYY-MM-DD):");
-        dateLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dateLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         dateLabel.setForeground(PRIMARY_DARK);
         panel.add(dateLabel, gbc);
 
@@ -281,7 +373,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         dateField = new JTextField(LocalDate.now().toString());
-        dateField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        dateField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         dateField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -293,8 +385,11 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 2;
         gbc.weightx = 0.5;
         checkAvailabilityButton = createStyledButton("Check Availability", PRIMARY_DARK, Color.WHITE);
-        checkAvailabilityButton.setPreferredSize(new Dimension(150, 35));
+        checkAvailabilityButton.setPreferredSize(new Dimension(160, 35));
         checkAvailabilityButton.addActionListener(e -> checkAvailability());
+        checkAvailabilityButton.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 14, Color.WHITE));
+        checkAvailabilityButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        checkAvailabilityButton.setIconTextGap(8);
         panel.add(checkAvailabilityButton, gbc);
 
         // Time
@@ -303,7 +398,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel timeLabel = new JLabel("Time:");
-        timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        timeLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         timeLabel.setForeground(PRIMARY_DARK);
         panel.add(timeLabel, gbc);
 
@@ -311,7 +406,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         timeCombo = new JComboBox<>(generateTimeSlots());
-        timeCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timeCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         timeCombo.setPreferredSize(new Dimension(150, 35));
         panel.add(timeCombo, gbc);
 
@@ -320,7 +415,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel durationLabel = new JLabel("Duration:");
-        durationLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        durationLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         durationLabel.setForeground(PRIMARY_DARK);
         panel.add(durationLabel, gbc);
 
@@ -328,7 +423,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         durationCombo = new JComboBox<>(new String[]{"15 min", "30 min", "45 min", "60 min", "90 min", "120 min"});
-        durationCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        durationCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         durationCombo.setPreferredSize(new Dimension(100, 35));
         panel.add(durationCombo, gbc);
 
@@ -338,7 +433,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel statusLabel = new JLabel("Status:");
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         statusLabel.setForeground(PRIMARY_DARK);
         panel.add(statusLabel, gbc);
 
@@ -346,7 +441,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         statusCombo = new JComboBox<>(new String[]{"Scheduled", "Confirmed", "Pending"});
-        statusCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        statusCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         statusCombo.setPreferredSize(new Dimension(200, 35));
         panel.add(statusCombo, gbc);
 
@@ -369,7 +464,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel reasonLabel = new JLabel("Reason for Visit:");
-        reasonLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        reasonLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         reasonLabel.setForeground(PRIMARY_DARK);
         panel.add(reasonLabel, gbc);
 
@@ -388,7 +483,7 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         JLabel notesLabel = new JLabel("Additional Notes:");
-        notesLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        notesLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         notesLabel.setForeground(PRIMARY_DARK);
         panel.add(notesLabel, gbc);
 
@@ -410,25 +505,34 @@ public class BookAppointmentPanel extends JPanel {
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(SECONDARY_TEXT);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
 
         bookButton = createStyledButton("Book Appointment", PRIMARY_DARK, Color.WHITE);
-        bookButton.setPreferredSize(new Dimension(160, 40));
+        bookButton.setPreferredSize(new Dimension(180, 40));
         bookButton.addActionListener(e -> bookAppointment());
+        bookButton.setIcon(icon(FontAwesomeSolid.CALENDAR_PLUS, 14, Color.WHITE));
+        bookButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        bookButton.setIconTextGap(8);
 
         clearButton = createStyledButton("Clear", SOFT_SURFACE, PRIMARY_DARK);
         clearButton.setBorderColor(LIGHT_SURFACE);
         clearButton.setPreferredSize(new Dimension(100, 40));
         clearButton.addActionListener(e -> clearForm());
+        clearButton.setIcon(icon(FontAwesomeSolid.ERASER, 14, PRIMARY_DARK));
+        clearButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        clearButton.setIconTextGap(8);
 
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(LIGHT_SURFACE);
         cancelButton.setPreferredSize(new Dimension(100, 40));
         cancelButton.addActionListener(e -> navigateBack());
+        cancelButton.setIcon(icon(FontAwesomeSolid.TIMES, 14, PRIMARY_DARK));
+        cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        cancelButton.setIconTextGap(8);
 
         buttonPanel.add(clearButton);
         buttonPanel.add(cancelButton);
@@ -445,20 +549,16 @@ public class BookAppointmentPanel extends JPanel {
     // ========================
 
     private String[] generateTimeSlots() {
-        // Maximum slots: 8:00 to 20:00 with 30-min intervals = 25 slots
         String[] tempSlots = new String[25];
         int index = 0;
         for (int hour = 8; hour <= 20; hour++) {
             for (int minute = 0; minute < 60; minute += 30) {
-                // Skip 20:30 and beyond
                 if (hour == 20 && minute > 0) break;
-                // Safety check to prevent array overflow
                 if (index >= tempSlots.length) break;
                 String time = String.format("%02d:%02d", hour, minute);
                 tempSlots[index++] = time;
             }
         }
-        // Create array with exact size
         String[] result = new String[index];
         System.arraycopy(tempSlots, 0, result, 0, index);
         return result;
@@ -466,7 +566,7 @@ public class BookAppointmentPanel extends JPanel {
 
     private JTextArea createTextArea() {
         JTextArea area = new JTextArea();
-        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.setBorder(BorderFactory.createCompoundBorder(
@@ -479,7 +579,7 @@ public class BookAppointmentPanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -622,7 +722,6 @@ public class BookAppointmentPanel extends JPanel {
             return;
         }
 
-        // Check availability
         boolean available = controller.checkAvailability(dentist.getDentistId(), date, time);
         
         if (available) {
@@ -637,7 +736,6 @@ public class BookAppointmentPanel extends JPanel {
     // ========================
 
     private void bookAppointment() {
-        // Validate selections
         Patient patient = (Patient) patientCombo.getSelectedItem();
         Dentist dentist = (Dentist) dentistCombo.getSelectedItem();
         String date = dateField.getText().trim();
@@ -647,7 +745,6 @@ public class BookAppointmentPanel extends JPanel {
         String notes = notesArea.getText().trim();
         String status = (String) statusCombo.getSelectedItem();
 
-        // Validate all fields
         if (patient == null) {
             showError("Please select a patient.");
             return;
@@ -663,7 +760,6 @@ public class BookAppointmentPanel extends JPanel {
             return;
         }
 
-        // Validate date format
         Date appointmentDate = null;
         try {
             LocalDate localDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -683,7 +779,6 @@ public class BookAppointmentPanel extends JPanel {
             return;
         }
 
-        // Parse time
         Time appointmentTime = null;
         try {
             LocalTime localTime = LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm"));
@@ -693,16 +788,13 @@ public class BookAppointmentPanel extends JPanel {
             return;
         }
 
-        // Parse duration
-        int durationMinutes = 30; // default
+        int durationMinutes = 30;
         if (duration != null) {
             durationMinutes = Integer.parseInt(duration.replace(" min", ""));
         }
 
-        // Calculate end time
         LocalTime endTime = LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm")).plusMinutes(durationMinutes);
 
-        // Create appointment object
         Appointment appointment = new Appointment(
             patient.getPatientId(),
             dentist.getDentistId(),
@@ -714,11 +806,9 @@ public class BookAppointmentPanel extends JPanel {
             notes
         );
 
-        // Show loading message
         showInfo("Booking appointment... Please wait.");
         setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
-        // Use SwingWorker to book in background
         SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
             @Override
             protected Boolean doInBackground() throws Exception {
@@ -734,7 +824,6 @@ public class BookAppointmentPanel extends JPanel {
                         showSuccess("Appointment booked successfully!");
                         clearForm();
                         
-                        // Navigate back after delay
                         Timer timer = new Timer(1500, e -> navigateBack());
                         timer.setRepeats(false);
                         timer.start();
@@ -755,7 +844,7 @@ public class BookAppointmentPanel extends JPanel {
         if (dentistCombo.getItemCount() > 0) dentistCombo.setSelectedIndex(0);
         dateField.setText(LocalDate.now().toString());
         if (timeCombo.getItemCount() > 0) timeCombo.setSelectedIndex(0);
-        if (durationCombo.getItemCount() > 0) durationCombo.setSelectedIndex(1); // 30 min
+        if (durationCombo.getItemCount() > 0) durationCombo.setSelectedIndex(1);
         reasonArea.setText("");
         notesArea.setText("");
         if (statusCombo.getItemCount() > 0) statusCombo.setSelectedIndex(0);
@@ -780,19 +869,19 @@ public class BookAppointmentPanel extends JPanel {
     // ========================
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setText("Error: " + message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setText("Success: " + message);
         statusLabel.setForeground(SUCCESS_COLOR);
         JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setText("Info: " + message);
         statusLabel.setForeground(new Color(0, 120, 215));
     }
 

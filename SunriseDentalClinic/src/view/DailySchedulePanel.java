@@ -4,6 +4,9 @@ import controller.AppointmentController;
 import model.Appointment;
 import model.Patient;
 import model.Dentist;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -36,6 +39,19 @@ public class DailySchedulePanel extends JPanel {
     private static final Color COLOR_CANCELLED = new Color(231, 76, 60);
     private static final Color COLOR_NO_SHOW = new Color(149, 165, 166);
 
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
     // Components
     private JTable scheduleTable;
     private DefaultTableModel tableModel;
@@ -52,11 +68,16 @@ public class DailySchedulePanel extends JPanel {
     private LocalDate currentDate;
     private AppointmentController controller;
 
+    // ✅ Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+
     public DailySchedulePanel() {
         this.controller = new AppointmentController(this);
         this.currentDate = LocalDate.now();
         initComponents();
         loadSchedule();
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -74,6 +95,99 @@ public class DailySchedulePanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+    
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    loadSchedule();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // ✅ CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
+    // =====================================================
+    // ✅ CREATE NAV BUTTON WITH ICON
+    // =====================================================
+    private JButton createNavButton(FontAwesomeSolid glyph, String text, Color bg, Color fg) {
+        JButton button = new JButton(text);
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
+        button.setBackground(bg);
+        button.setForeground(fg);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            BorderFactory.createEmptyBorder(6, 16, 6, 16)
+        ));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Set icon if glyph is provided
+        if (glyph != null) {
+            button.setIcon(icon(glyph, 14, fg));
+            button.setHorizontalTextPosition(SwingConstants.RIGHT);
+            button.setIconTextGap(6);
+        }
+        
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(HOVER_SURFACE);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(bg);
+            }
+        });
+        
+        return button;
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -85,11 +199,11 @@ public class DailySchedulePanel extends JPanel {
         leftPanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Daily Schedule");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         dateLabel = new JLabel("");
-        dateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        dateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         dateLabel.setForeground(SECONDARY_TEXT);
         
         leftPanel.add(titleLabel);
@@ -100,17 +214,23 @@ public class DailySchedulePanel extends JPanel {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
 
-        // Date Navigation
-        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        // Date Navigation - ✅ WITH ICONS
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
         navPanel.setOpaque(false);
         
-        prevDayButton = createNavButton("◀");
+        // Previous Day - with left arrow icon
+        prevDayButton = createNavButton(FontAwesomeSolid.ANGLE_LEFT, "", Color.WHITE, PRIMARY_DARK);
+        prevDayButton.setPreferredSize(new Dimension(40, 35));
         prevDayButton.addActionListener(e -> navigateDay(-1));
         
-        todayButton = createNavButton("Today");
+        // Today - with calendar icon
+        todayButton = createNavButton(FontAwesomeSolid.CALENDAR_ALT, " Today", Color.WHITE, PRIMARY_DARK);
+        todayButton.setPreferredSize(new Dimension(100, 35));
         todayButton.addActionListener(e -> goToToday());
         
-        nextDayButton = createNavButton("▶");
+        // Next Day - with right arrow icon
+        nextDayButton = createNavButton(FontAwesomeSolid.ANGLE_RIGHT, "", Color.WHITE, PRIMARY_DARK);
+        nextDayButton.setPreferredSize(new Dimension(40, 35));
         nextDayButton.addActionListener(e -> navigateDay(1));
         
         navPanel.add(prevDayButton);
@@ -131,8 +251,10 @@ public class DailySchedulePanel extends JPanel {
         rightPanel.add(statusFilterCombo);
         rightPanel.add(Box.createRigidArea(new Dimension(10, 0)));
 
-        // Refresh Button
-        refreshButton = createRefreshButton();
+        // ✅ Refresh Button - ICON ONLY
+        refreshButton = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshButton.setPreferredSize(new Dimension(40, 40));
+        refreshButton.setToolTipText("Refresh Schedule");
         refreshButton.addActionListener(e -> loadSchedule());
         rightPanel.add(refreshButton);
 
@@ -157,7 +279,7 @@ public class DailySchedulePanel extends JPanel {
         };
 
         scheduleTable = new JTable(tableModel);
-        scheduleTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        scheduleTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         scheduleTable.setRowHeight(42);
         scheduleTable.setSelectionBackground(new Color(235, 245, 240));
         scheduleTable.setSelectionForeground(PRIMARY_DARK);
@@ -175,7 +297,7 @@ public class DailySchedulePanel extends JPanel {
 
         // Custom header
         JTableHeader header = scheduleTable.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        header.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_DARK));
@@ -211,11 +333,11 @@ public class DailySchedulePanel extends JPanel {
         footer.setBorder(new EmptyBorder(10, 0, 0, 0));
 
         statusLabel = new JLabel("Ready");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(new Color(107, 123, 121));
 
         countLabel = new JLabel("Total: 0 appointments");
-        countLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        countLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         countLabel.setForeground(new Color(107, 123, 121));
 
         footer.add(statusLabel, BorderLayout.WEST);
@@ -228,35 +350,9 @@ public class DailySchedulePanel extends JPanel {
     // Helper Methods
     // ========================
 
-    private JButton createNavButton(String text) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        button.setBackground(Color.WHITE);
-        button.setForeground(PRIMARY_DARK);
-        button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            BorderFactory.createEmptyBorder(6, 16, 6, 16)
-        ));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(HOVER_SURFACE);
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(Color.WHITE);
-            }
-        });
-        
-        return button;
-    }
-
     private JComboBox<String> createFilterCombo(String defaultText) {
         JComboBox<String> combo = new JComboBox<>();
-        combo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        combo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         combo.setBackground(Color.WHITE);
         combo.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
@@ -265,30 +361,6 @@ public class DailySchedulePanel extends JPanel {
         combo.setPreferredSize(new Dimension(140, 35));
         combo.addItem(defaultText);
         return combo;
-    }
-
-    private JButton createRefreshButton() {
-        JButton button = new JButton("⟳ Refresh");
-        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        button.setBackground(PRIMARY_DARK);
-        button.setForeground(Color.WHITE);
-        button.setBorder(BorderFactory.createEmptyBorder(6, 16, 6, 16));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(100, 35));
-        
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(40, 55, 53));
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(PRIMARY_DARK);
-            }
-        });
-        
-        return button;
     }
 
     // Status Cell Renderer
@@ -479,9 +551,6 @@ public class DailySchedulePanel extends JPanel {
     }
 
     private int getAppointmentIdFromRow(int row) {
-        // We need to store appointment IDs in the table model
-        // For now, we'll use a workaround - get the appointment from the list
-        // This requires storing appointments in a field
         return 0; // Placeholder
     }
 
@@ -506,18 +575,18 @@ public class DailySchedulePanel extends JPanel {
     }
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setText("Error: " + message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setText("Success: " + message);
         statusLabel.setForeground(SUCCESS_COLOR);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setText("Info: " + message);
         statusLabel.setForeground(new Color(107, 123, 121));
     }
 
