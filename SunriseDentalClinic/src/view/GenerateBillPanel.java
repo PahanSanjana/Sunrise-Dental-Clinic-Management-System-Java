@@ -6,6 +6,9 @@ import model.Appointment;
 import model.Treatment;
 import model.Bill;
 import model.BillItem;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -31,6 +34,19 @@ public class GenerateBillPanel extends JPanel {
     private static final Color ERROR_COLOR = new Color(220, 80, 80);
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
+
+    // Refresh button colors
+    private static final Color COLOR_REFRESH = new Color(52, 152, 219);
+    private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
+
+    private static final String UI_FONT_FAMILY = "Segoe UI";
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
 
     // Form Fields
     private JComboBox<Patient> patientCombo;
@@ -61,11 +77,16 @@ public class GenerateBillPanel extends JPanel {
     private RoundedButton generateButton;
     private RoundedButton clearButton;
     private RoundedButton cancelButton;
+    private JButton refreshButton;
     
     private JLabel statusLabel;
     private BillController controller;
     private DecimalFormat df = new DecimalFormat("#.00");
     private boolean isUpdating = false;
+
+    // ✅ Auto-refresh timer (hidden)
+    private Timer refreshTimer;
+    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
 
     public GenerateBillPanel() {
         this.controller = new BillController(this);
@@ -74,6 +95,7 @@ public class GenerateBillPanel extends JPanel {
         loadData();
         generateBillNumber();
         setDefaultDates();
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -95,6 +117,63 @@ public class GenerateBillPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
+    // =====================================================
+    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
+    // =====================================================
+    
+    private void startAutoRefresh() {
+        if (refreshTimer == null) {
+            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
+                if (isShowing()) {
+                    loadData();
+                }
+            });
+            refreshTimer.start();
+        }
+    }
+
+    private void stopAutoRefresh() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+            refreshTimer = null;
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        stopAutoRefresh();
+    }
+
+    // =====================================================
+    // ✅ CREATE ICON BUTTON (No text, only icon)
+    // =====================================================
+    private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
+        JButton button = new JButton(icon(glyph, 18, Color.WHITE));
+        button.setBackground(bg);
+        button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color originalBg = bg;
+        Color hoverBg = bg.equals(COLOR_REFRESH) ? COLOR_REFRESH_HOVER : new Color(40, 55, 53);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+
+        return button;
+    }
+
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -105,17 +184,30 @@ public class GenerateBillPanel extends JPanel {
         titlePanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("Generate Bill");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
         JLabel subtitleLabel = new JLabel("Create a new bill for a patient");
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
         titlePanel.add(titleLabel);
         titlePanel.add(subtitleLabel);
 
         header.add(titlePanel, BorderLayout.WEST);
+        
+        // ✅ Manual Refresh Button - ICON ONLY
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        
+        refreshButton = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
+        refreshButton.setPreferredSize(new Dimension(40, 40));
+        refreshButton.setToolTipText("Refresh Data");
+        refreshButton.addActionListener(e -> loadData());
+        rightPanel.add(refreshButton);
+
+        header.add(rightPanel, BorderLayout.EAST);
+
         return header;
     }
 
@@ -154,7 +246,7 @@ public class GenerateBillPanel extends JPanel {
             title,
             TitledBorder.LEFT,
             TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14),
+            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
             PRIMARY_DARK
         ));
         panel.add(content, BorderLayout.CENTER);
@@ -177,7 +269,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel patientLabel = new JLabel("Patient:");
-        patientLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        patientLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         patientLabel.setForeground(PRIMARY_DARK);
         panel.add(patientLabel, gbc);
 
@@ -185,7 +277,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
         patientCombo = new JComboBox<>();
-        patientCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        patientCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         patientCombo.setPreferredSize(new Dimension(200, 35));
         patientCombo.addActionListener(e -> {
             if (!isUpdating) loadAppointments();
@@ -197,7 +289,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel appointmentLabel = new JLabel("Appointment:");
-        appointmentLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        appointmentLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         appointmentLabel.setForeground(PRIMARY_DARK);
         panel.add(appointmentLabel, gbc);
 
@@ -205,7 +297,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
         appointmentCombo = new JComboBox<>();
-        appointmentCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        appointmentCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         appointmentCombo.setPreferredSize(new Dimension(200, 35));
         appointmentCombo.addActionListener(e -> {
             if (!isUpdating) loadTreatmentsFromAppointment();
@@ -218,7 +310,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel billNumberLabel = new JLabel("Bill Number:");
-        billNumberLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        billNumberLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         billNumberLabel.setForeground(PRIMARY_DARK);
         panel.add(billNumberLabel, gbc);
 
@@ -234,7 +326,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel billDateLabel = new JLabel("Bill Date:");
-        billDateLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        billDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         billDateLabel.setForeground(PRIMARY_DARK);
         panel.add(billDateLabel, gbc);
 
@@ -251,7 +343,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel dueDateLabel = new JLabel("Due Date:");
-        dueDateLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        dueDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         dueDateLabel.setForeground(PRIMARY_DARK);
         panel.add(dueDateLabel, gbc);
 
@@ -283,7 +375,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel treatmentLabel = new JLabel("Treatment:");
-        treatmentLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        treatmentLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         treatmentLabel.setForeground(PRIMARY_DARK);
         topPanel.add(treatmentLabel, gbc);
 
@@ -291,7 +383,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.45;
         treatmentCombo = new JComboBox<>();
-        treatmentCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        treatmentCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         treatmentCombo.setPreferredSize(new Dimension(250, 35));
         treatmentCombo.addActionListener(e -> updateTreatmentDetails());
         topPanel.add(treatmentCombo, gbc);
@@ -300,7 +392,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel quantityLabel = new JLabel("Qty:");
-        quantityLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        quantityLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         quantityLabel.setForeground(PRIMARY_DARK);
         topPanel.add(quantityLabel, gbc);
 
@@ -308,7 +400,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.1;
         quantityField = new JTextField("1");
-        quantityField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        quantityField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         quantityField.setHorizontalAlignment(JTextField.CENTER);
         quantityField.setPreferredSize(new Dimension(50, 35));
         quantityField.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
@@ -320,6 +412,9 @@ public class GenerateBillPanel extends JPanel {
         addItemButton = createStyledButton("Add Item", PRIMARY_DARK, Color.WHITE);
         addItemButton.setPreferredSize(new Dimension(100, 35));
         addItemButton.addActionListener(e -> addBillItem());
+        addItemButton.setIcon(icon(FontAwesomeSolid.PLUS, 14, Color.WHITE));
+        addItemButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        addItemButton.setIconTextGap(6);
         topPanel.add(addItemButton, gbc);
 
         // Table
@@ -332,7 +427,7 @@ public class GenerateBillPanel extends JPanel {
         };
 
         billItemsTable = new JTable(tableModel);
-        billItemsTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        billItemsTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         billItemsTable.setRowHeight(35);
         billItemsTable.setSelectionBackground(new Color(235, 245, 240));
         billItemsTable.setShowGrid(true);
@@ -340,7 +435,7 @@ public class GenerateBillPanel extends JPanel {
 
         // Custom header
         JTableHeader header = billItemsTable.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        header.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         header.setBackground(MINT);
         header.setForeground(PRIMARY_DARK);
 
@@ -363,6 +458,9 @@ public class GenerateBillPanel extends JPanel {
         removeItemButton.setBorderColor(LIGHT_SURFACE);
         removeItemButton.setPreferredSize(new Dimension(140, 30));
         removeItemButton.addActionListener(e -> removeBillItem());
+        removeItemButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, PRIMARY_DARK));
+        removeItemButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        removeItemButton.setIconTextGap(6);
         bottomPanel.add(removeItemButton);
 
         panel.add(topPanel, BorderLayout.NORTH);
@@ -388,7 +486,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel subtotalLabel = new JLabel("Subtotal (RS):");
-        subtotalLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        subtotalLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         subtotalLabel.setForeground(PRIMARY_DARK);
         panel.add(subtotalLabel, gbc);
 
@@ -405,7 +503,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel taxLabel = new JLabel("Tax (%):");
-        taxLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        taxLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         taxLabel.setForeground(PRIMARY_DARK);
         panel.add(taxLabel, gbc);
 
@@ -428,7 +526,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel discountLabel = new JLabel("Discount (RS):");
-        discountLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        discountLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         discountLabel.setForeground(PRIMARY_DARK);
         panel.add(discountLabel, gbc);
 
@@ -450,7 +548,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel totalLabel = new JLabel("Total Amount (RS):");
-        totalLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        totalLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         totalLabel.setForeground(PRIMARY_DARK);
         panel.add(totalLabel, gbc);
 
@@ -461,7 +559,7 @@ public class GenerateBillPanel extends JPanel {
         totalAmountField.setEditable(false);
         totalAmountField.setHorizontalAlignment(JTextField.RIGHT);
         totalAmountField.setForeground(SUCCESS_COLOR);
-        totalAmountField.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        totalAmountField.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
         panel.add(totalAmountField, gbc);
 
         // Row 2: Amount Paid
@@ -470,7 +568,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel paidLabel = new JLabel("Amount Paid (RS):");
-        paidLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        paidLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         paidLabel.setForeground(PRIMARY_DARK);
         panel.add(paidLabel, gbc);
 
@@ -492,7 +590,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel balanceLabel = new JLabel("Balance (RS):");
-        balanceLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        balanceLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         balanceLabel.setForeground(PRIMARY_DARK);
         panel.add(balanceLabel, gbc);
 
@@ -503,7 +601,7 @@ public class GenerateBillPanel extends JPanel {
         balanceField.setEditable(false);
         balanceField.setHorizontalAlignment(JTextField.RIGHT);
         balanceField.setForeground(ERROR_COLOR);
-        balanceField.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        balanceField.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
         panel.add(balanceField, gbc);
 
         // Row 3: Status
@@ -512,7 +610,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel statusLabel = new JLabel("Status:");
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         statusLabel.setForeground(PRIMARY_DARK);
         panel.add(statusLabel, gbc);
 
@@ -520,7 +618,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
         statusCombo = new JComboBox<>(new String[]{"Pending", "Paid", "Partial", "Overdue"});
-        statusCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        statusCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         statusCombo.setPreferredSize(new Dimension(150, 35));
         statusCombo.addActionListener(e -> updatePaymentFields());
         panel.add(statusCombo, gbc);
@@ -530,7 +628,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel methodLabel = new JLabel("Payment Method:");
-        methodLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        methodLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         methodLabel.setForeground(PRIMARY_DARK);
         panel.add(methodLabel, gbc);
 
@@ -538,7 +636,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
         paymentMethodCombo = new JComboBox<>(new String[]{"Cash", "Credit Card", "Debit Card", "Insurance", "Bank Transfer", "Other"});
-        paymentMethodCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        paymentMethodCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         paymentMethodCombo.setPreferredSize(new Dimension(150, 35));
         panel.add(paymentMethodCombo, gbc);
 
@@ -560,7 +658,7 @@ public class GenerateBillPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
         JLabel notesLabel = new JLabel("Notes:");
-        notesLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        notesLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         notesLabel.setForeground(PRIMARY_DARK);
         panel.add(notesLabel, gbc);
 
@@ -581,7 +679,7 @@ public class GenerateBillPanel extends JPanel {
         footer.setBorder(new EmptyBorder(15, 0, 0, 0));
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
         statusLabel.setForeground(SECONDARY_TEXT);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -590,16 +688,25 @@ public class GenerateBillPanel extends JPanel {
         generateButton = createStyledButton("Generate Bill", PRIMARY_DARK, Color.WHITE);
         generateButton.setPreferredSize(new Dimension(160, 40));
         generateButton.addActionListener(e -> generateBill());
+        generateButton.setIcon(icon(FontAwesomeSolid.FILE_INVOICE_DOLLAR, 14, Color.WHITE));
+        generateButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        generateButton.setIconTextGap(8);
 
         clearButton = createStyledButton("Clear", SOFT_SURFACE, PRIMARY_DARK);
         clearButton.setBorderColor(LIGHT_SURFACE);
         clearButton.setPreferredSize(new Dimension(100, 40));
         clearButton.addActionListener(e -> clearForm());
+        clearButton.setIcon(icon(FontAwesomeSolid.ERASER, 14, PRIMARY_DARK));
+        clearButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        clearButton.setIconTextGap(8);
 
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(LIGHT_SURFACE);
         cancelButton.setPreferredSize(new Dimension(100, 40));
         cancelButton.addActionListener(e -> navigateBack());
+        cancelButton.setIcon(icon(FontAwesomeSolid.TIMES, 14, PRIMARY_DARK));
+        cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        cancelButton.setIconTextGap(8);
 
         buttonPanel.add(clearButton);
         buttonPanel.add(cancelButton);
@@ -617,7 +724,7 @@ public class GenerateBillPanel extends JPanel {
 
     private JTextField createTextField() {
         JTextField field = new JTextField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        field.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
@@ -628,7 +735,7 @@ public class GenerateBillPanel extends JPanel {
 
     private JTextArea createTextArea() {
         JTextArea area = new JTextArea();
-        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.setBorder(BorderFactory.createCompoundBorder(
@@ -641,7 +748,7 @@ public class GenerateBillPanel extends JPanel {
 
     private RoundedButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton button = new RoundedButton(text, bg, fg);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         return button;
     }
 
@@ -732,7 +839,6 @@ public class GenerateBillPanel extends JPanel {
                 patientCombo.addItem(patient);
             }
         }
-        // Do NOT set selected index if no items
         if (patientCombo.getItemCount() > 0) {
             patientCombo.setSelectedIndex(0);
         }
@@ -749,7 +855,6 @@ public class GenerateBillPanel extends JPanel {
                 }
             }
         }
-        // Do NOT set selected index if no items
         if (appointmentCombo.getItemCount() > 0) {
             appointmentCombo.setSelectedIndex(0);
         }
@@ -763,15 +868,12 @@ public class GenerateBillPanel extends JPanel {
                 treatmentCombo.addItem(treatment);
             }
         }
-        // Do NOT set selected index if no items
         if (treatmentCombo.getItemCount() > 0) {
             treatmentCombo.setSelectedIndex(0);
         }
     }
 
     private void loadTreatmentsFromAppointment() {
-        // This would load treatments associated with the selected appointment
-        // For now, we just make sure there's a selection
         if (treatmentCombo.getItemCount() > 0) {
             treatmentCombo.setSelectedIndex(0);
         }
@@ -858,8 +960,8 @@ public class GenerateBillPanel extends JPanel {
                 item.getTreatmentId(),
                 item.getDescription(),
                 item.getQuantity(),
-                df.format(item.getUnitPrice()),
-                df.format(item.getTotalPrice())
+                "RS " + df.format(item.getUnitPrice()),
+                "RS " + df.format(item.getTotalPrice())
             };
             tableModel.addRow(row);
         }
@@ -940,7 +1042,6 @@ public class GenerateBillPanel extends JPanel {
     // ========================
 
     private void generateBill() {
-        // Validate required fields
         Patient patient = (Patient) patientCombo.getSelectedItem();
         if (patient == null) {
             showError("Please select a patient.");
@@ -967,7 +1068,6 @@ public class GenerateBillPanel extends JPanel {
             return;
         }
 
-        // Calculate amounts
         double subtotal = Double.parseDouble(subtotalField.getText().trim());
         double tax = 0;
         double discount = 0;
@@ -975,10 +1075,9 @@ public class GenerateBillPanel extends JPanel {
         double paid = Double.parseDouble(amountPaidField.getText().trim());
         double balance = Double.parseDouble(balanceField.getText().trim());
 
-        // Create bill
         Bill bill = new Bill(
             patient.getPatientId(),
-            0, // appointmentId - not used for now
+            0,
             billNumberField.getText(),
             Date.valueOf(LocalDate.now()),
             dueDate,
@@ -993,11 +1092,9 @@ public class GenerateBillPanel extends JPanel {
             notesArea.getText().trim()
         );
 
-        // Show loading message
         showInfo("Generating bill... Please wait.");
         setCursor(new Cursor(Cursor.WAIT_CURSOR));
 
-        // Use SwingWorker to save in background
         SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
             @Override
             protected Boolean doInBackground() throws Exception {
@@ -1013,7 +1110,6 @@ public class GenerateBillPanel extends JPanel {
                         showSuccess("Bill generated successfully! Bill Number: " + bill.getBillNumber());
                         clearForm();
                         
-                        // Navigate back after delay
                         Timer timer = new Timer(1500, e -> navigateBack());
                         timer.setRepeats(false);
                         timer.start();
@@ -1064,19 +1160,19 @@ public class GenerateBillPanel extends JPanel {
     // ========================
 
     public void showError(String message) {
-        statusLabel.setText("❌ " + message);
+        statusLabel.setText("Error: " + message);
         statusLabel.setForeground(ERROR_COLOR);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public void showSuccess(String message) {
-        statusLabel.setText("✅ " + message);
+        statusLabel.setText("Success: " + message);
         statusLabel.setForeground(SUCCESS_COLOR);
         JOptionPane.showMessageDialog(this, message, "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showInfo(String message) {
-        statusLabel.setText("ℹ️ " + message);
+        statusLabel.setText("Info: " + message);
         statusLabel.setForeground(new Color(0, 120, 215));
     }
 }
