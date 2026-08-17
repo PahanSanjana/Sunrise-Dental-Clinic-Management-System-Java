@@ -2,6 +2,9 @@ package view;
 
 import model.User;
 import model.User.UserRole;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.swing.FontIcon;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -37,6 +40,17 @@ public class SidebarPanel extends JPanel {
     private static final int CHILD_ROW_HEIGHT = 38;
     private static final int ROW_SIDE_MARGIN = 14;
     private static final int ICON_SIZE = 18;
+
+    // =====================================================
+    // ICON HELPERS (Ikonli FontIcon)
+    // =====================================================
+    private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
+        return FontIcon.of(glyph, size, color);
+    }
+
+    private static JLabel iconLabel(FontAwesomeSolid glyph, int size, Color color) {
+        return new JLabel(icon(glyph, size, color));
+    }
 
     private final MainFrame mainFrame;
     private RoundedRow activeRow;
@@ -95,31 +109,30 @@ public class SidebarPanel extends JPanel {
         List<NavGroup> groups = new ArrayList<>();
         
         // Dashboard - All roles
-        groups.add(new NavGroup(IconType.DASHBOARD, "Dashboard", "DASHBOARD"));
+        groups.add(new NavGroup(FontAwesomeSolid.TACHOMETER_ALT, "Dashboard", "DASHBOARD"));
 
         // My Profile - All roles
-        NavGroup profile = new NavGroup(IconType.PROFILE, "My Profile", "USER_PROFILE");
+        NavGroup profile = new NavGroup(FontAwesomeSolid.USER, "My Profile", "USER_PROFILE");
         groups.add(profile);
 
         // User Management - Admin only
         if (currentRole == UserRole.ADMIN) {
-            NavGroup users = new NavGroup(IconType.USERS, "User Management", "USER_MANAGEMENT");
+            NavGroup users = new NavGroup(FontAwesomeSolid.USERS, "User Management", "USER_MANAGEMENT");
             groups.add(users);
         }
 
         // Patients - All roles can see
-        NavGroup patients = new NavGroup(IconType.PATIENTS, "Patients", null);
+        NavGroup patients = new NavGroup(FontAwesomeSolid.HOSPITAL, "Patients", null);
         patients.children.add(new NavChild("Patient List", "PATIENT_LIST"));
         
         // Only ADMIN and RECEPTION can add patients
         if (currentRole == UserRole.ADMIN || currentRole == UserRole.RECEPTION) {
             patients.children.add(new NavChild("Add Patient", "PATIENT_ADD"));
         }
-        // ❌ REMOVED: Patient Details (linked from Patient List)
         groups.add(patients);
 
         // Appointments - Different access for different roles
-        NavGroup appointments = new NavGroup(IconType.APPOINTMENTS, "Appointments", null);
+        NavGroup appointments = new NavGroup(FontAwesomeSolid.CALENDAR_ALT, "Appointments", null);
         
         if (currentRole == UserRole.PATIENT) {
             // Patients only see booking
@@ -130,11 +143,10 @@ public class SidebarPanel extends JPanel {
             appointments.children.add(new NavChild("Book Appointment", "APPOINTMENT_BOOK"));
             appointments.children.add(new NavChild("Daily Schedule", "APPOINTMENT_SCHEDULE"));
         }
-        // ❌ REMOVED: Appointment Details (linked from Appointment List)
         groups.add(appointments);
 
         // Billing
-        NavGroup billing = new NavGroup(IconType.BILLING, "Billing", null);
+        NavGroup billing = new NavGroup(FontAwesomeSolid.FILE_INVOICE_DOLLAR, "Billing", null);
         if (currentRole == UserRole.PATIENT) {
             // Patients only see their bills
             billing.children.add(new NavChild("My Bills", "BILL_LIST"));
@@ -142,11 +154,10 @@ public class SidebarPanel extends JPanel {
             billing.children.add(new NavChild("Bill List", "BILL_LIST"));
             billing.children.add(new NavChild("Generate Bill", "BILL_GENERATE"));
         }
-        // ❌ REMOVED: Bill Details (linked from Bill List)
         groups.add(billing);
 
         // Reports
-        NavGroup reports = new NavGroup(IconType.REPORTS, "Reports", null);
+        NavGroup reports = new NavGroup(FontAwesomeSolid.CHART_BAR, "Reports", null);
         if (currentRole == UserRole.PATIENT) {
             // Patients only see patient report
             reports.children.add(new NavChild("Patient Report", "REPORT_PATIENT"));
@@ -160,23 +171,22 @@ public class SidebarPanel extends JPanel {
 
         // Staff - Only ADMIN can access
         if (currentRole == UserRole.ADMIN) {
-            NavGroup staff = new NavGroup(IconType.STAFF, "Staff", null);
+            NavGroup staff = new NavGroup(FontAwesomeSolid.USER_TIE, "Staff", null);
             staff.children.add(new NavChild("Staff List", "STAFF_LIST"));
             staff.children.add(new NavChild("Add Staff", "STAFF_ADD"));
-            // ❌ REMOVED: Staff Details (linked from Staff List)
             groups.add(staff);
         }
 
         // Dentists - Only ADMIN can access
         if (currentRole == UserRole.ADMIN) {
-            NavGroup dentists = new NavGroup(IconType.DENTISTS, "Dentists", null);
+            NavGroup dentists = new NavGroup(FontAwesomeSolid.USER_MD, "Dentists", null);
             dentists.children.add(new NavChild("Dentist List", "DENTIST_LIST"));
             dentists.children.add(new NavChild("Add Dentist", "DENTIST_ADD"));
             groups.add(dentists);
         }
 
         // Treatments
-        NavGroup treatments = new NavGroup(IconType.TREATMENTS, "Treatments", null);
+        NavGroup treatments = new NavGroup(FontAwesomeSolid.PILLS, "Treatments", null);
         if (currentRole == UserRole.PATIENT) {
             // Patients only see treatment list
             treatments.children.add(new NavChild("Treatment List", "TREATMENT_LIST"));
@@ -186,10 +196,8 @@ public class SidebarPanel extends JPanel {
         }
         groups.add(treatments);
 
-        // ❌ REMOVED: Audit Logs (completely removed from system)
-
         // Help - All roles
-        NavGroup help = new NavGroup(IconType.HELP, "Help", "HELP");
+        NavGroup help = new NavGroup(FontAwesomeSolid.QUESTION_CIRCLE, "Help", "HELP");
         groups.add(help);
 
         return groups;
@@ -244,8 +252,11 @@ public class SidebarPanel extends JPanel {
         chevron.setFont(new Font(FONT_FAMILY, Font.BOLD, 10));
         chevron.setForeground(SECONDARY_TEXT);
 
+        // Create icon label for the group
+        JLabel iconLabel = iconLabel(group.icon, ICON_SIZE, PRIMARY_DARK);
+
         RoundedRow groupRow = new RoundedRow(GROUP_ROW_HEIGHT);
-        groupRow.build(group.icon, group.label, FONT_GROUP, chevron);
+        groupRow.build(iconLabel, group.label, FONT_GROUP, chevron);
 
         if (isLeaf) {
             groupRow.addMouseListener(new RowClickHandler(groupRow, () -> selectLeaf(groupRow, group.cardName)));
@@ -388,7 +399,7 @@ public class SidebarPanel extends JPanel {
         private boolean hovered = false;
         private boolean active = false;
         private boolean isChildRow = false;
-        private IconCanvas iconCanvas;
+        private JLabel iconLabel;
         private JLabel textLabel;
 
         RoundedRow(int rowHeight) {
@@ -404,8 +415,8 @@ public class SidebarPanel extends JPanel {
             setBorder(new EmptyBorder(0, 14, 0, 12));
         }
 
-        void build(IconType icon, String label, Font labelFont, JLabel trailing) {
-            iconCanvas = new IconCanvas(icon);
+        void build(JLabel icon, String label, Font labelFont, JLabel trailing) {
+            this.iconLabel = icon;
 
             textLabel = new JLabel(label);
             textLabel.setFont(labelFont);
@@ -414,7 +425,7 @@ public class SidebarPanel extends JPanel {
 
             JPanel left = new JPanel(new BorderLayout(12, 0));
             left.setOpaque(false);
-            left.add(iconCanvas, BorderLayout.WEST);
+            left.add(icon, BorderLayout.WEST);
             left.add(textLabel, BorderLayout.CENTER);
 
             add(left, BorderLayout.CENTER);
@@ -441,8 +452,8 @@ public class SidebarPanel extends JPanel {
             this.active = active;
             Color textColor = active ? PRIMARY_DARK : (isChildRow ? SECONDARY_TEXT : PRIMARY_DARK);
             textLabel.setForeground(textColor);
-            if (iconCanvas != null) {
-                iconCanvas.setColor(PRIMARY_DARK);
+            if (iconLabel != null) {
+                iconLabel.setForeground(PRIMARY_DARK);
             }
             repaint();
         }
@@ -468,129 +479,15 @@ public class SidebarPanel extends JPanel {
     }
 
     // =================================================================
-    // Inner class for IconCanvas (Hand-drawn icons)
-    // =================================================================
-    private static class IconCanvas extends JPanel {
-        private final IconType type;
-        private Color color = PRIMARY_DARK;
-
-        IconCanvas(IconType type) {
-            this.type = type;
-            setOpaque(false);
-            setPreferredSize(new Dimension(ICON_SIZE, ICON_SIZE));
-            setMinimumSize(new Dimension(ICON_SIZE, ICON_SIZE));
-            setMaximumSize(new Dimension(ICON_SIZE, ICON_SIZE));
-        }
-
-        void setColor(Color color) {
-            this.color = color;
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2.setColor(color);
-
-            int offsetX = (getWidth() - ICON_SIZE) / 2;
-            int offsetY = (getHeight() - ICON_SIZE) / 2;
-            g2.translate(offsetX, offsetY);
-
-            int s = ICON_SIZE;
-            switch (type) {
-                case DASHBOARD:
-                    g2.drawRoundRect(1, 1, 6, 6, 2, 2);
-                    g2.drawRoundRect(11, 1, 6, 6, 2, 2);
-                    g2.drawRoundRect(1, 11, 6, 6, 2, 2);
-                    g2.drawRoundRect(11, 11, 6, 6, 2, 2);
-                    break;
-
-                case PROFILE:
-                    // Person silhouette
-                    g2.drawOval(5, 2, 8, 8);
-                    g2.drawArc(1, 12, 16, 10, 0, 180);
-                    // Small gear/cog symbol
-                    g2.drawOval(12, 10, 5, 5);
-                    g2.drawLine(13, 11, 16, 14);
-                    g2.drawLine(12, 12, 17, 12);
-                    break;
-
-                case PATIENTS:
-                    g2.drawOval(6, 1, 6, 6);
-                    g2.drawArc(2, 9, 14, 12, 0, 180);
-                    break;
-
-                case APPOINTMENTS:
-                    g2.drawRoundRect(2, 4, 14, 12, 3, 3);
-                    g2.drawLine(6, 1, 6, 5);
-                    g2.drawLine(12, 1, 12, 5);
-                    g2.drawLine(2, 9, 16, 9);
-                    break;
-
-                case BILLING:
-                    g2.drawRoundRect(3, 1, 12, 16, 2, 2);
-                    g2.drawLine(6, 6, 14, 6);
-                    g2.drawLine(6, 10, 14, 10);
-                    g2.drawLine(6, 14, 11, 14);
-                    break;
-
-                case REPORTS:
-                    g2.drawLine(2, 16, 16, 16);
-                    g2.drawLine(5, 13, 5, 16);
-                    g2.drawLine(9, 9, 9, 16);
-                    g2.drawLine(13, 4, 13, 16);
-                    break;
-
-                case STAFF:
-                    g2.drawOval(2, 2, 6, 6);
-                    g2.drawArc(0, 10, 11, 9, 0, 180);
-                    g2.drawOval(10, 3, 6, 6);
-                    g2.drawArc(8, 11, 11, 9, 0, 180);
-                    break;
-
-                case DENTISTS:
-                    g2.drawArc(3, 1, 12, 10, 0, 180);
-                    g2.drawLine(3, 6, 3, 9);
-                    g2.drawLine(15, 6, 15, 9);
-                    g2.drawLine(3, 9, 7, 16);
-                    g2.drawLine(15, 9, 11, 16);
-                    break;
-
-                case TREATMENTS:
-                    g2.drawLine(9, 2, 9, 16);
-                    g2.drawLine(2, 9, 16, 9);
-                    break;
-
-                case HELP:
-                    g2.drawOval(2, 2, 14, 14);
-                    g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
-                    g2.drawString("?", 6, 13);
-                    break;
-
-                case USERS:
-                    g2.drawOval(2, 2, 5, 5);
-                    g2.drawArc(0, 9, 9, 7, 0, 180);
-                    g2.drawOval(11, 2, 5, 5);
-                    g2.drawArc(9, 9, 9, 7, 0, 180);
-                    break;
-            }
-            g2.dispose();
-        }
-    }
-
-    // =================================================================
     // Inner classes for navigation data
     // =================================================================
     private static class NavGroup {
-        IconType icon;
+        FontAwesomeSolid icon;
         String label;
         String cardName;
         List<NavChild> children = new ArrayList<>();
 
-        NavGroup(IconType icon, String label, String cardName) {
+        NavGroup(FontAwesomeSolid icon, String label, String cardName) {
             this.icon = icon;
             this.label = label;
             this.cardName = cardName;
@@ -605,23 +502,5 @@ public class SidebarPanel extends JPanel {
             this.label = label;
             this.cardName = cardName;
         }
-    }
-
-    // =================================================================
-    // IconType enum
-    // =================================================================
-    private enum IconType {
-        DASHBOARD,
-        PROFILE,
-        USERS,
-        PATIENTS,
-        APPOINTMENTS,
-        BILLING,
-        REPORTS,
-        STAFF,
-        DENTISTS,
-        TREATMENTS,
-        HELP
-       
     }
 }
