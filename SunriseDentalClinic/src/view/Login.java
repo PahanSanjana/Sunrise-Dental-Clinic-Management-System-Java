@@ -9,6 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class Login extends javax.swing.JFrame {
@@ -38,6 +39,15 @@ public class Login extends javax.swing.JFrame {
     private static final int FRAME_HEIGHT = 820;
 
     public Login() {
+        
+              try {
+            // Load image from resources folder
+            Image icon = ImageIO.read(getClass().getResource("/resources/Remove Bg light.png"));
+            setIconImage(icon);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+              
         initComponents();
         setLocationRelativeTo(null);
     }

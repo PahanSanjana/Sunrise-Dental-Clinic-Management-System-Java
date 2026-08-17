@@ -4,6 +4,8 @@ import model.User;
 import model.User.UserRole;
 import model.LoginSession;
 import java.awt.*;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -20,6 +22,15 @@ public class MainFrame extends JFrame {
     private static final int FRAME_HEIGHT = 820;
 
     public MainFrame() {
+        
+         try {
+            // Load image from resources folder
+            Image icon = ImageIO.read(getClass().getResource("/resources/Remove Bg light.png"));
+            setIconImage(icon);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
         setTitle("Sunrise Dental Clinic - Management System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(FRAME_WIDTH, FRAME_HEIGHT);

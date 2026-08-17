@@ -9,6 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class Signup extends javax.swing.JFrame {
@@ -50,6 +51,15 @@ public class Signup extends javax.swing.JFrame {
     private static final int FRAME_HEIGHT = 820;
 
     public Signup() {
+        
+        try {
+            // Load image from resources folder
+            Image icon = ImageIO.read(getClass().getResource("/resources/Remove Bg light.png"));
+            setIconImage(icon);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
         initComponents();
         setLocationRelativeTo(null);
     }
@@ -140,11 +150,11 @@ public class Signup extends javax.swing.JFrame {
             new EmptyBorder(15, 20, 15, 20)
         ));
         fieldsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        fieldsPanel.setMaximumSize(new Dimension(500, Integer.MAX_VALUE));
+        fieldsPanel.setMaximumSize(new Dimension(520, Integer.MAX_VALUE));
 
-        int fieldHeight = 34;
+        int fieldHeight = 32;
         int labelGap = 2;
-        int fieldGap = 8;
+        int fieldGap = 6;
 
         // =============================================
         // LOGIN CREDENTIALS SECTION
@@ -152,11 +162,11 @@ public class Signup extends javax.swing.JFrame {
         
         // Section Label
         JLabel loginSectionLabel = new JLabel("LOGIN CREDENTIALS");
-        loginSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        loginSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         loginSectionLabel.setForeground(PRIMARY_LIGHT);
         loginSectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(loginSectionLabel);
-        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
         // Username
         JLabel userLabel = new JLabel("Username *");
@@ -167,7 +177,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         usernameField = createStyledTextField();
-        usernameField.setMaximumSize(new Dimension(460, fieldHeight));
+        usernameField.setMaximumSize(new Dimension(480, fieldHeight));
         usernameField.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(usernameField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
@@ -181,7 +191,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         passwordField = createStyledPasswordField();
-        passwordField.setMaximumSize(new Dimension(460, fieldHeight));
+        passwordField.setMaximumSize(new Dimension(480, fieldHeight));
         passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(passwordField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
@@ -195,7 +205,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         confirmPasswordField = createStyledPasswordField();
-        confirmPasswordField.setMaximumSize(new Dimension(460, fieldHeight));
+        confirmPasswordField.setMaximumSize(new Dimension(480, fieldHeight));
         confirmPasswordField.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(confirmPasswordField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
@@ -206,11 +216,11 @@ public class Signup extends javax.swing.JFrame {
         
         // Section Label
         JLabel personalSectionLabel = new JLabel("PERSONAL INFORMATION");
-        personalSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        personalSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         personalSectionLabel.setForeground(PRIMARY_LIGHT);
         personalSectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(personalSectionLabel);
-        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
         // Full Name
         JLabel nameLabel = new JLabel("Full Name *");
@@ -221,7 +231,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         fullNameField = createStyledTextField();
-        fullNameField.setMaximumSize(new Dimension(460, fieldHeight));
+        fullNameField.setMaximumSize(new Dimension(480, fieldHeight));
         fullNameField.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(fullNameField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
@@ -230,7 +240,7 @@ public class Signup extends javax.swing.JFrame {
         JPanel rowPanel = new JPanel(new GridLayout(1, 2, 15, 0));
         rowPanel.setOpaque(false);
         rowPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        rowPanel.setMaximumSize(new Dimension(460, fieldHeight + 20));
+        rowPanel.setMaximumSize(new Dimension(480, fieldHeight + 18));
         
         JPanel genderPanel = new JPanel(new BorderLayout());
         genderPanel.setOpaque(false);
@@ -242,6 +252,7 @@ public class Signup extends javax.swing.JFrame {
         genderCombo = new JComboBox<>(new String[]{"Male", "Female", "Other"});
         genderCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         genderCombo.setPreferredSize(new Dimension(180, fieldHeight));
+        genderCombo.setMaximumSize(new Dimension(220, fieldHeight));
         genderPanel.add(genderCombo, BorderLayout.CENTER);
         
         JPanel dobPanel = new JPanel(new BorderLayout());
@@ -253,6 +264,7 @@ public class Signup extends javax.swing.JFrame {
         
         dobField = createStyledTextField();
         dobField.setPreferredSize(new Dimension(180, fieldHeight));
+        dobField.setMaximumSize(new Dimension(220, fieldHeight));
         dobField.setToolTipText("YYYY-MM-DD");
         dobPanel.add(dobField, BorderLayout.CENTER);
         
@@ -267,11 +279,11 @@ public class Signup extends javax.swing.JFrame {
         
         // Section Label
         JLabel contactSectionLabel = new JLabel("CONTACT INFORMATION");
-        contactSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        contactSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         contactSectionLabel.setForeground(PRIMARY_LIGHT);
         contactSectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(contactSectionLabel);
-        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
         // Email
         JLabel emailLabelTitle = new JLabel("Email");
@@ -282,7 +294,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         emailField = createStyledTextField();
-        emailField.setMaximumSize(new Dimension(460, fieldHeight));
+        emailField.setMaximumSize(new Dimension(480, fieldHeight));
         emailField.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(emailField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
@@ -296,12 +308,12 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         phoneField = createStyledTextField();
-        phoneField.setMaximumSize(new Dimension(460, fieldHeight));
+        phoneField.setMaximumSize(new Dimension(480, fieldHeight));
         phoneField.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(phoneField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Address
+        // Address - FIXED ALIGNMENT
         JLabel addressLabelTitle = new JLabel("Address");
         addressLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         addressLabelTitle.setForeground(PRIMARY_DARK);
@@ -309,12 +321,15 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(addressLabelTitle);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
-        addressArea = createStyledTextArea(2);
-        addressArea.setMaximumSize(new Dimension(460, 50));
+        addressArea = createStyledTextArea(3);
+        addressArea.setMaximumSize(new Dimension(480, 55));
         addressArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
         JScrollPane addressScroll = new JScrollPane(addressArea);
-        addressScroll.setMaximumSize(new Dimension(460, 50));
+        addressScroll.setMaximumSize(new Dimension(480, 55));
+        addressScroll.setPreferredSize(new Dimension(480, 55));
         addressScroll.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
+        addressScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(addressScroll);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
@@ -324,11 +339,11 @@ public class Signup extends javax.swing.JFrame {
         
         // Section Label
         JLabel emergencySectionLabel = new JLabel("EMERGENCY CONTACT");
-        emergencySectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        emergencySectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         emergencySectionLabel.setForeground(PRIMARY_LIGHT);
         emergencySectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(emergencySectionLabel);
-        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
         // Emergency Contact Name
         JLabel emergencyLabel = new JLabel("Contact Name");
@@ -339,7 +354,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         emergencyContactField = createStyledTextField();
-        emergencyContactField.setMaximumSize(new Dimension(460, fieldHeight));
+        emergencyContactField.setMaximumSize(new Dimension(480, fieldHeight));
         emergencyContactField.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(emergencyContactField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
@@ -353,7 +368,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         emergencyPhoneField = createStyledTextField();
-        emergencyPhoneField.setMaximumSize(new Dimension(460, fieldHeight));
+        emergencyPhoneField.setMaximumSize(new Dimension(480, fieldHeight));
         emergencyPhoneField.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(emergencyPhoneField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
@@ -364,13 +379,13 @@ public class Signup extends javax.swing.JFrame {
         
         // Section Label
         JLabel medicalSectionLabel = new JLabel("MEDICAL INFORMATION");
-        medicalSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        medicalSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         medicalSectionLabel.setForeground(PRIMARY_LIGHT);
         medicalSectionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(medicalSectionLabel);
-        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        // Medical History
+        // Medical History - FIXED ALIGNMENT
         JLabel medicalLabel = new JLabel("Medical History");
         medicalLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         medicalLabel.setForeground(PRIMARY_DARK);
@@ -378,16 +393,19 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(medicalLabel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
-        medicalHistoryArea = createStyledTextArea(2);
-        medicalHistoryArea.setMaximumSize(new Dimension(460, 40));
+        medicalHistoryArea = createStyledTextArea(3);
+        medicalHistoryArea.setMaximumSize(new Dimension(480, 55));
         medicalHistoryArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
         JScrollPane medicalScroll = new JScrollPane(medicalHistoryArea);
-        medicalScroll.setMaximumSize(new Dimension(460, 40));
+        medicalScroll.setMaximumSize(new Dimension(480, 55));
+        medicalScroll.setPreferredSize(new Dimension(480, 55));
         medicalScroll.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
+        medicalScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(medicalScroll);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Allergies
+        // Allergies - FIXED ALIGNMENT
         JLabel allergiesLabelTitle = new JLabel("Allergies");
         allergiesLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         allergiesLabelTitle.setForeground(PRIMARY_DARK);
@@ -396,11 +414,14 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, labelGap)));
 
         allergiesArea = createStyledTextArea(2);
-        allergiesArea.setMaximumSize(new Dimension(460, 40));
+        allergiesArea.setMaximumSize(new Dimension(480, 40));
         allergiesArea.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
         JScrollPane allergiesScroll = new JScrollPane(allergiesArea);
-        allergiesScroll.setMaximumSize(new Dimension(460, 40));
+        allergiesScroll.setMaximumSize(new Dimension(480, 40));
+        allergiesScroll.setPreferredSize(new Dimension(480, 40));
         allergiesScroll.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
+        allergiesScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(allergiesScroll);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
@@ -414,7 +435,7 @@ public class Signup extends javax.swing.JFrame {
         messageLabel.setForeground(ERROR_COLOR);
         messageLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fieldsPanel.add(messageLabel);
-        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 6)));
 
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
@@ -422,16 +443,18 @@ public class Signup extends javax.swing.JFrame {
         buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         signupButton = createRoundedButton("Sign Up", PRIMARY_DARK, Color.WHITE);
-        signupButton.setPreferredSize(new Dimension(150, 44));
+        signupButton.setPreferredSize(new Dimension(150, 42));
+        signupButton.setMaximumSize(new Dimension(150, 42));
         
         cancelButton = createRoundedButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(MINT);
-        cancelButton.setPreferredSize(new Dimension(150, 44));
+        cancelButton.setPreferredSize(new Dimension(150, 42));
+        cancelButton.setMaximumSize(new Dimension(150, 42));
 
         buttonPanel.add(signupButton);
         buttonPanel.add(cancelButton);
         fieldsPanel.add(buttonPanel);
-        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 6)));
 
         // Login Link
         JPanel loginLinkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
@@ -453,6 +476,7 @@ public class Signup extends javax.swing.JFrame {
         loginLinkPanel.add(loginLinkButton);
 
         fieldsPanel.add(loginLinkPanel);
+        fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
         // Add fields panel to scroll pane
         JScrollPane scrollPane = new JScrollPane(fieldsPanel);
@@ -460,6 +484,7 @@ public class Signup extends javax.swing.JFrame {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(10, 0));
+        scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -580,7 +605,7 @@ public class Signup extends javax.swing.JFrame {
         field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            BorderFactory.createEmptyBorder(6, 12, 6, 12)
         ));
         field.setBackground(Color.WHITE);
         field.setOpaque(true);
@@ -592,7 +617,7 @@ public class Signup extends javax.swing.JFrame {
         field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         field.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            BorderFactory.createEmptyBorder(6, 12, 6, 12)
         ));
         field.setBackground(Color.WHITE);
         field.setOpaque(true);
@@ -606,7 +631,7 @@ public class Signup extends javax.swing.JFrame {
         area.setWrapStyleWord(true);
         area.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            BorderFactory.createEmptyBorder(6, 12, 6, 12)
         ));
         area.setBackground(Color.WHITE);
         return area;
@@ -634,7 +659,7 @@ public class Signup extends javax.swing.JFrame {
 
             setForeground(fg);
             setFont(new Font("Segoe UI", Font.BOLD, 14));
-            setPreferredSize(new Dimension(150, 44));
+            setPreferredSize(new Dimension(150, 42));
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);
