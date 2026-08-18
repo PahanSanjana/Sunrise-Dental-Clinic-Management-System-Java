@@ -2,6 +2,9 @@ package dao;
 
 import db.DBconnection;
 import model.Patient;
+import model.User;
+import model.User.UserRole;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -105,7 +108,7 @@ public class PatientDAO {
     }
 
     /**
-     * Get all patients
+     * Get all patients - ADMIN, RECEPTION, and DENTIST can see all patients
      * @return List of all patients
      */
     public List<Patient> getAllPatients() {
@@ -127,7 +130,109 @@ public class PatientDAO {
     }
 
     /**
-     * Search patients by name or contact number
+     * Get patients for a specific dentist (patients who have appointments with this dentist)
+     * @param dentistId The dentist ID
+     * @return List of patients
+     */
+    public List<Patient> getPatientsForDentist(int dentistId) {
+        List<Patient> patients = new ArrayList<>();
+        String sql = "SELECT DISTINCT p.* FROM patients p " +
+                     "JOIN appointments a ON p.patient_id = a.patient_id " +
+                     "WHERE a.dentist_id = ? " +
+                     "ORDER BY p.patient_name";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, dentistId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                patients.add(mapResultSetToPatient(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting patients for dentist: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return patients;
+    }
+
+    /**
+     * Get patients based on user role
+     * @param user The current logged-in user
+     * @return List of patients filtered by role
+     */
+    public List<Patient> getPatientsForUser(User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+                // Admin and Reception can see all patients
+                return getAllPatients();
+                
+            case DENTIST:
+                // Dentist can see patients from their appointments
+                if (user.getDentistId() != null) {
+                    return getPatientsForDentist(user.getDentistId());
+                }
+                return new ArrayList<>();
+                
+            case PATIENT:
+                // Patient can only see themselves
+                if (user.getPatientId() != null) {
+                    Patient self = getPatientById(user.getPatientId());
+                    List<Patient> result = new ArrayList<>();
+                    if (self != null) {
+                        result.add(self);
+                    }
+                    return result;
+                }
+                return new ArrayList<>();
+                
+            default:
+                return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Search patients by name or contact number with role-based filtering
+     * @param searchTerm The search term
+     * @param user The current user for role-based filtering
+     * @return List of matching patients
+     */
+    public List<Patient> searchPatients(String searchTerm, User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        List<Patient> allPatients = getPatientsForUser(user);
+        if (allPatients == null || allPatients.isEmpty() || searchTerm == null || searchTerm.isEmpty()) {
+            return allPatients;
+        }
+        
+        String searchLower = searchTerm.toLowerCase().trim();
+        List<Patient> filtered = new ArrayList<>();
+        
+        for (Patient p : allPatients) {
+            if (p.getPatientName() != null && p.getPatientName().toLowerCase().contains(searchLower)) {
+                filtered.add(p);
+            } else if (p.getContactNumber() != null && p.getContactNumber().contains(searchTerm)) {
+                filtered.add(p);
+            } else if (p.getEmail() != null && p.getEmail().toLowerCase().contains(searchLower)) {
+                filtered.add(p);
+            }
+        }
+        
+        return filtered;
+    }
+
+    /**
+     * Search patients by name or contact number (original method - kept for compatibility)
      * @param searchTerm The search term
      * @return List of matching patients
      */
@@ -329,7 +434,7 @@ public class PatientDAO {
         patient.setEmergencyContact(rs.getString("emergency_contact"));
         patient.setEmergencyPhone(rs.getString("emergency_phone"));
         
-        // Handle NULL user_id (was patient_login_id)
+        // Handle NULL user_id
         int userId = rs.getInt("user_id");
         if (rs.wasNull()) {
             patient.setPatientLoginId(-1); // -1 means NULL
@@ -394,5 +499,90 @@ public class PatientDAO {
             e.printStackTrace();
         }
         return patients;
+    }
+
+    /**
+     * Get patient count for a specific dentist
+     * @param dentistId The dentist ID
+     * @return Number of patients for the dentist
+     */
+    public int getPatientCountForDentist(int dentistId) {
+        String sql = "SELECT COUNT(DISTINCT p.patient_id) FROM patients p " +
+                     "JOIN appointments a ON p.patient_id = a.patient_id " +
+                     "WHERE a.dentist_id = ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, dentistId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting patients for dentist: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Get patient by ID with permission check
+     * @param patientId The patient ID
+     * @param user The current user
+     * @return Patient object if authorized, null otherwise
+     */
+    public Patient getPatientByIdForUser(int patientId, User user) {
+        if (user == null) {
+            return null;
+        }
+        
+        Patient patient = getPatientById(patientId);
+        if (patient == null) {
+            return null;
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+                // Admin and Reception can view any patient
+                return patient;
+                
+            case DENTIST:
+                // Dentist can only view patients they have appointments with
+                if (user.getDentistId() != null) {
+                    String sql = "SELECT COUNT(*) FROM appointments " +
+                                 "WHERE patient_id = ? AND dentist_id = ?";
+                    
+                    try (Connection conn = DBconnection.getConnection();
+                         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                        
+                        pstmt.setInt(1, patientId);
+                        pstmt.setInt(2, user.getDentistId());
+                        ResultSet rs = pstmt.executeQuery();
+                        
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            return patient;
+                        }
+                    } catch (SQLException e) {
+                        System.err.println("Error checking patient access for dentist: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+                return null;
+                
+            case PATIENT:
+                // Patient can only view themselves
+                if (user.getPatientId() != null && patientId == user.getPatientId()) {
+                    return patient;
+                }
+                return null;
+                
+            default:
+                return null;
+        }
     }
 }

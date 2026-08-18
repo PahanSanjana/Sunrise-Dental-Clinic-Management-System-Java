@@ -2,6 +2,9 @@ package dao;
 
 import db.DBconnection;
 import model.Dentist;
+import model.User;
+import model.User.UserRole;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -128,7 +131,7 @@ public class DentistDAO {
     }
 
     /**
-     * Get all dentists
+     * Get all dentists - ADMIN and RECEPTION can see all
      * @return List of all dentists
      */
     public List<Dentist> getAllDentists() {
@@ -197,7 +200,123 @@ public class DentistDAO {
     }
 
     /**
-     * Search dentists by name or specialization
+     * Get dentists based on user role
+     * @param user The current logged-in user
+     * @return List of dentists filtered by role
+     */
+    public List<Dentist> getDentistsForUser(User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+                // Admin and Reception can see all dentists
+                return getAllDentists();
+                
+            case DENTIST:
+                // Dentist can only see themselves (if they have a dentist record)
+                if (user.getDentistId() != null) {
+                    Dentist self = getDentistById(user.getDentistId());
+                    List<Dentist> result = new ArrayList<>();
+                    if (self != null) {
+                        result.add(self);
+                    }
+                    return result;
+                }
+                return new ArrayList<>();
+                
+            case PATIENT:
+                // Patient can see all available dentists
+                return getAvailableDentists();
+                
+            default:
+                return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get dentist by ID with permission check
+     * @param dentistId The dentist ID
+     * @param user The current user
+     * @return Dentist object if authorized, null otherwise
+     */
+    public Dentist getDentistByIdForUser(int dentistId, User user) {
+        if (user == null) {
+            return null;
+        }
+        
+        Dentist dentist = getDentistById(dentistId);
+        if (dentist == null) {
+            return null;
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+                // Admin and Reception can view any dentist
+                return dentist;
+                
+            case DENTIST:
+                // Dentist can only view themselves
+                if (user.getDentistId() != null && dentistId == user.getDentistId()) {
+                    return dentist;
+                }
+                return null;
+                
+            case PATIENT:
+                // Patient can view any available dentist
+                if (dentist.isAvailable()) {
+                    return dentist;
+                }
+                return null;
+                
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Search dentists by name or specialization with role-based filtering
+     * @param searchTerm The search term
+     * @param user The current user for role-based filtering
+     * @return List of matching dentists
+     */
+    public List<Dentist> searchDentists(String searchTerm, User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        List<Dentist> allDentists = getDentistsForUser(user);
+        if (allDentists == null || allDentists.isEmpty() || searchTerm == null || searchTerm.isEmpty()) {
+            return allDentists;
+        }
+        
+        String searchLower = searchTerm.toLowerCase().trim();
+        List<Dentist> filtered = new ArrayList<>();
+        
+        for (Dentist d : allDentists) {
+            if (d.getDentistName() != null && d.getDentistName().toLowerCase().contains(searchLower)) {
+                filtered.add(d);
+            } else if (d.getSpecialization() != null && d.getSpecialization().toLowerCase().contains(searchLower)) {
+                filtered.add(d);
+            } else if (d.getPhone() != null && d.getPhone().contains(searchTerm)) {
+                filtered.add(d);
+            } else if (d.getEmail() != null && d.getEmail().toLowerCase().contains(searchLower)) {
+                filtered.add(d);
+            }
+        }
+        
+        return filtered;
+    }
+
+    /**
+     * Search dentists by name or specialization (original method - kept for compatibility)
      * @param searchTerm The search term
      * @return List of matching dentists
      */
