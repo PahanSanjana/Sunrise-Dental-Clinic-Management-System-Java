@@ -15,7 +15,7 @@ public class LoginSession {
         return instance;
     }
 
-    // ✅ NEW: Login method
+    // ✅ Login method
     public void login(User user) {
         this.currentUser = user;
     }
@@ -78,6 +78,66 @@ public class LoginSession {
 
     public String getCurrentUserFullName() {
         return currentUser != null ? currentUser.getUsername() : "Guest";
+    }
+
+    // ✅ Get current user's role as string
+    public String getCurrentUserRoleString() {
+        if (currentUser == null) {
+            return "GUEST";
+        }
+        return currentUser.getRole().name();
+    }
+
+    // ✅ Get patient ID if logged in user is a patient
+    public Integer getCurrentPatientId() {
+        if (currentUser != null && currentUser.isPatient()) {
+            return currentUser.getPatientId();
+        }
+        return null;
+    }
+
+    // ✅ Get dentist ID if logged in user is a dentist
+    public Integer getCurrentDentistId() {
+        if (currentUser != null && currentUser.isDentist()) {
+            return currentUser.getDentistId();
+        }
+        return null;
+    }
+
+    // ✅ Get staff ID if logged in user is a staff member
+    public Integer getCurrentStaffId() {
+        if (currentUser != null && currentUser.isStaff()) {
+            return currentUser.getStaffId();
+        }
+        return null;
+    }
+
+    // ✅ Check if user has access to a specific page
+    public boolean hasPageAccess(String cardName) {
+        if (currentUser == null) {
+            return false;
+        }
+        return RolePermissions.hasAccess(currentUser.getRole(), cardName);
+    }
+
+    // ✅ Get the appropriate dashboard card for the current user
+    public String getDashboardCard() {
+        if (currentUser == null) {
+            return "LOGIN";
+        }
+        
+        switch (currentUser.getRole()) {
+            case ADMIN:
+                return "DASHBOARD"; // AdminDashboard
+            case RECEPTION:
+                return "DASHBOARD"; // ReceptionDashboard
+            case DENTIST:
+                return "DASHBOARD"; // DentistDashboard
+            case PATIENT:
+                return "DASHBOARD"; // PatientDashboard
+            default:
+                return "DASHBOARD";
+        }
     }
 
     public void clearSession() {

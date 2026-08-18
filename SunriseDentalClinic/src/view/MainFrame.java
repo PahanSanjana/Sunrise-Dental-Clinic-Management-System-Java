@@ -3,6 +3,8 @@ package view;
 import model.User;
 import model.User.UserRole;
 import model.LoginSession;
+import model.RolePermissions;
+
 import java.awt.*;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -541,11 +543,21 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * Show a specific card in the content panel
+     * Show a specific card in the content panel with permission check
      * @param cardName The name of the card to show
      */
     public void showCard(String cardName) {
         System.out.println("MainFrame: Attempting to show card: " + cardName);
+        
+        // Check permission before showing card
+        if (!hasCardAccess(cardName)) {
+            JOptionPane.showMessageDialog(this,
+                "You don't have permission to access this page.",
+                "Access Denied",
+                JOptionPane.WARNING_MESSAGE);
+            System.out.println("MainFrame: Access denied for card: " + cardName);
+            return;
+        }
         
         boolean cardExists = false;
         for (Component comp : contentPanel.getComponents()) {
@@ -566,11 +578,31 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * Add a new screen dynamically to the content panel
+     * Check if the current user has access to a specific card
+     * @param cardName The card name to check
+     * @return true if has access, false otherwise
+     */
+    private boolean hasCardAccess(String cardName) {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            // If no user logged in, only allow login and public pages
+            return false;
+        }
+        return RolePermissions.hasPageAccess(currentUser, cardName);
+    }
+
+    /**
+     * Add a new screen dynamically to the content panel with permission check
      * @param cardName The name of the card
      * @param screen The panel to add
      */
     public void addScreen(String cardName, JPanel screen) {
+        // Check if user has access to this screen
+        if (!hasCardAccess(cardName)) {
+            System.out.println("MainFrame: User doesn't have access to add screen: " + cardName);
+            return;
+        }
+        
         for (Component comp : contentPanel.getComponents()) {
             if (comp.getName() != null && comp.getName().equals(cardName)) {
                 contentPanel.remove(comp);
