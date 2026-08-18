@@ -3,6 +3,10 @@ package dao;
 import db.DBconnection;
 import model.Bill;
 import model.BillItem;
+import model.User;
+import model.User.UserRole;
+import model.LoginSession;
+
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -173,7 +177,7 @@ public class BillDAO {
     }
 
     /**
-     * Get all bills
+     * Get all bills - ADMIN and RECEPTION only
      * @return List of all bills
      */
     public List<Bill> getAllBills() {
@@ -214,6 +218,35 @@ public class BillDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error getting bills by patient: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return bills;
+    }
+
+    /**
+     * Get bills by dentist ID (for DENTIST role)
+     * Dentist can see bills related to their appointments
+     * @param dentistId The dentist ID
+     * @return List of bills for the dentist
+     */
+    public List<Bill> getBillsForDentist(int dentistId) {
+        List<Bill> bills = new ArrayList<>();
+        String sql = "SELECT DISTINCT b.* FROM billing b " +
+                     "LEFT JOIN appointments a ON b.appointment_id = a.appointment_id " +
+                     "WHERE a.dentist_id = ? OR b.appointment_id IS NULL " +
+                     "ORDER BY b.bill_date DESC, b.bill_id DESC";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, dentistId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                bills.add(mapResultSetToBill(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting bills for dentist: " + e.getMessage());
             e.printStackTrace();
         }
         return bills;
@@ -372,6 +405,149 @@ public class BillDAO {
     }
 
     // =====================================================
+    // ROLE-BASED DATA ACCESS METHODS
+    // =====================================================
+
+    /**
+     * Get bills based on user role
+     * @param user The current logged-in user
+     * @return List of bills filtered by role
+     */
+    public List<Bill> getBillsForUser(User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+                // Admin and Reception can see all bills
+                return getAllBills();
+                
+            case DENTIST:
+                // Dentist can see bills from their appointments
+                if (user.getDentistId() != null) {
+                    return getBillsForDentist(user.getDentistId());
+                }
+                return new ArrayList<>();
+                
+            case PATIENT:
+                // Patient can only see their own bills
+                if (user.getPatientId() != null) {
+                    return getBillsByPatient(user.getPatientId());
+                }
+                return new ArrayList<>();
+                
+            default:
+                return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get bill by ID with role-based permission check
+     * @param billId The bill ID
+     * @param user The current logged-in user
+     * @return Bill object if authorized, null otherwise
+     */
+    public Bill getBillByIdForUser(int billId, User user) {
+        if (user == null) {
+            return null;
+        }
+        
+        Bill bill = getBillById(billId);
+        if (bill == null) {
+            return null;
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+                // Admin and Reception can view any bill
+                return bill;
+                
+            case DENTIST:
+                // Dentist can only view bills from their appointments
+                if (user.getDentistId() != null) {
+                    // Check if this bill is from an appointment with this dentist
+                    String sql = "SELECT COUNT(*) FROM billing b " +
+                                 "LEFT JOIN appointments a ON b.appointment_id = a.appointment_id " +
+                                 "WHERE b.bill_id = ? AND (a.dentist_id = ? OR b.appointment_id IS NULL)";
+                    
+                    try (Connection conn = DBconnection.getConnection();
+                         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                        
+                        pstmt.setInt(1, billId);
+                        pstmt.setInt(2, user.getDentistId());
+                        ResultSet rs = pstmt.executeQuery();
+                        
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            return bill;
+                        }
+                    } catch (SQLException e) {
+                        System.err.println("Error checking bill access for dentist: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+                return null;
+                
+            case PATIENT:
+                // Patient can only view their own bills
+                if (user.getPatientId() != null && bill.getPatientId() == user.getPatientId()) {
+                    return bill;
+                }
+                return null;
+                
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Get bills with filters (status, date range, payment method)
+     * @param status The status filter
+     * @param startDate The start date
+     * @param endDate The end date
+     * @param paymentMethod The payment method
+     * @param user The current user for role-based filtering
+     * @return List of filtered bills
+     */
+    public List<Bill> getFilteredBills(String status, String startDate, String endDate, 
+                                        String paymentMethod, User user) {
+        List<Bill> bills = getBillsForUser(user);
+        
+        if (bills == null || bills.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // Apply status filter
+        if (status != null && !status.isEmpty() && !status.equals("All Status")) {
+            bills.removeIf(b -> !b.getStatus().equals(status));
+        }
+        
+        // Apply date range filter
+        if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+            try {
+                Date start = Date.valueOf(startDate);
+                Date end = Date.valueOf(endDate);
+                bills.removeIf(b -> b.getBillDate().before(start) || b.getBillDate().after(end));
+            } catch (Exception e) {
+                // Invalid date format, skip filter
+            }
+        }
+        
+        // Apply payment method filter
+        if (paymentMethod != null && !paymentMethod.isEmpty() && !paymentMethod.equals("All Methods")) {
+            bills.removeIf(b -> !paymentMethod.equals(b.getPaymentMethod()));
+        }
+        
+        return bills;
+    }
+
+    // =====================================================
     // UPDATE METHODS
     // =====================================================
 
@@ -473,7 +649,7 @@ public class BillDAO {
     // =====================================================
 
     /**
-     * Delete a bill (hard delete)
+     * Delete a bill (hard delete) - ADMIN only
      * @param billId The bill ID to delete
      * @return true if successful, false otherwise
      */
