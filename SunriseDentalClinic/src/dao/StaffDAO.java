@@ -2,6 +2,9 @@ package dao;
 
 import db.DBconnection;
 import model.Staff;
+import model.User;
+import model.User.UserRole;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,7 +107,7 @@ public class StaffDAO {
     }
 
     /**
-     * Get all staff members
+     * Get all staff members - ADMIN only
      * @return List of all staff
      */
     public List<Staff> getAllStaff() {
@@ -198,7 +201,121 @@ public class StaffDAO {
     }
 
     /**
-     * Search staff by name
+     * Get staff based on user role
+     * @param user The current logged-in user
+     * @return List of staff filtered by role
+     */
+    public List<Staff> getStaffForUser(User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+                // Admin can see all staff
+                return getAllStaff();
+                
+            case RECEPTION:
+            case DENTIST:
+            case PATIENT:
+                // Other roles can only see their own staff record (if they are staff)
+                // Patient doesn't have staff record
+                if (user.getStaffId() != null && user.getStaffId() > 0) {
+                    Staff self = getStaffById(user.getStaffId());
+                    List<Staff> result = new ArrayList<>();
+                    if (self != null) {
+                        result.add(self);
+                    }
+                    return result;
+                }
+                return new ArrayList<>();
+                
+            default:
+                return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get staff by ID with permission check
+     * @param staffId The staff ID
+     * @param user The current user
+     * @return Staff object if authorized, null otherwise
+     */
+    public Staff getStaffByIdForUser(int staffId, User user) {
+        if (user == null) {
+            return null;
+        }
+        
+        Staff staff = getStaffById(staffId);
+        if (staff == null) {
+            return null;
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+                // Admin can view any staff
+                return staff;
+                
+            case RECEPTION:
+            case DENTIST:
+                // Staff can only view themselves
+                if (user.getStaffId() != null && staffId == user.getStaffId()) {
+                    return staff;
+                }
+                return null;
+                
+            case PATIENT:
+                // Patient cannot view staff
+                return null;
+                
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Search staff by name with role-based filtering
+     * @param searchTerm The search term
+     * @param user The current user for role-based filtering
+     * @return List of matching staff
+     */
+    public List<Staff> searchStaff(String searchTerm, User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        List<Staff> allStaff = getStaffForUser(user);
+        if (allStaff == null || allStaff.isEmpty() || searchTerm == null || searchTerm.isEmpty()) {
+            return allStaff;
+        }
+        
+        String searchLower = searchTerm.toLowerCase().trim();
+        List<Staff> filtered = new ArrayList<>();
+        
+        for (Staff s : allStaff) {
+            String fullName = (s.getFirstName() + " " + s.getLastName()).toLowerCase();
+            if (fullName.contains(searchLower)) {
+                filtered.add(s);
+            } else if (s.getPosition() != null && s.getPosition().toLowerCase().contains(searchLower)) {
+                filtered.add(s);
+            } else if (s.getDepartment() != null && s.getDepartment().toLowerCase().contains(searchLower)) {
+                filtered.add(s);
+            } else if (s.getPhone() != null && s.getPhone().contains(searchTerm)) {
+                filtered.add(s);
+            } else if (s.getEmail() != null && s.getEmail().toLowerCase().contains(searchLower)) {
+                filtered.add(s);
+            }
+        }
+        
+        return filtered;
+    }
+
+    /**
+     * Search staff by name (original method - kept for compatibility)
      * @param searchTerm The search term
      * @return List of matching staff
      */
@@ -383,7 +500,7 @@ public class StaffDAO {
     // =====================================================
 
     /**
-     * Delete a staff member
+     * Delete a staff member - ADMIN only
      * @param staffId The staff ID to delete
      * @return true if successful, false otherwise
      */
@@ -517,6 +634,62 @@ public class StaffDAO {
     }
 
     // =====================================================
+    // VALIDATION METHODS
+    // =====================================================
+
+    /**
+     * Check if email already exists for another staff member
+     * @param email The email to check
+     * @param excludeStaffId Staff ID to exclude from check (for updates)
+     * @return true if exists, false otherwise
+     */
+    public boolean emailExists(String email, int excludeStaffId) {
+        String sql = "SELECT COUNT(*) FROM staff WHERE email = ? AND staff_id != ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, email);
+            pstmt.setInt(2, excludeStaffId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking email existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Check if phone already exists for another staff member
+     * @param phone The phone to check
+     * @param excludeStaffId Staff ID to exclude from check (for updates)
+     * @return true if exists, false otherwise
+     */
+    public boolean phoneExists(String phone, int excludeStaffId) {
+        String sql = "SELECT COUNT(*) FROM staff WHERE phone = ? AND staff_id != ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, phone);
+            pstmt.setInt(2, excludeStaffId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking phone existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // =====================================================
     // HELPER METHODS
     // =====================================================
 
@@ -529,7 +702,15 @@ public class StaffDAO {
     private Staff mapResultSetToStaff(ResultSet rs) throws SQLException {
         Staff staff = new Staff();
         staff.setStaffId(rs.getInt("staff_id"));
-        staff.setUserId(rs.getInt("user_id"));
+        
+        // Handle NULL user_id
+        int userId = rs.getInt("user_id");
+        if (rs.wasNull()) {
+            staff.setUserId(-1);
+        } else {
+            staff.setUserId(userId);
+        }
+        
         staff.setFirstName(rs.getString("first_name"));
         staff.setLastName(rs.getString("last_name"));
         staff.setPosition(rs.getString("position"));

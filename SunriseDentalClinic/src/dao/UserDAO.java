@@ -3,6 +3,8 @@ package dao;
 import db.DBconnection;
 import model.User;
 import model.User.UserRole;
+import model.LoginSession;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -531,7 +533,7 @@ public class UserDAO {
     }
 
     /**
-     * Get all users
+     * Get all users - ADMIN only
      * @return List of all users
      */
     public List<User> getAllUsers() {
@@ -597,6 +599,106 @@ public class UserDAO {
             e.printStackTrace();
         }
         return users;
+    }
+
+    /**
+     * Get users based on user role
+     * @param user The current logged-in user
+     * @return List of users filtered by role
+     */
+    public List<User> getUsersForUser(User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+                // Admin can see all users
+                return getAllUsers();
+                
+            case RECEPTION:
+            case DENTIST:
+            case PATIENT:
+                // Other roles can only see their own user record
+                User self = getUserById(user.getUserId());
+                List<User> result = new ArrayList<>();
+                if (self != null) {
+                    result.add(self);
+                }
+                return result;
+                
+            default:
+                return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get user by ID with permission check
+     * @param userId The user ID
+     * @param currentUser The current logged-in user
+     * @return User object if authorized, null otherwise
+     */
+    public User getUserByIdForUser(int userId, User currentUser) {
+        if (currentUser == null) {
+            return null;
+        }
+        
+        User user = getUserById(userId);
+        if (user == null) {
+            return null;
+        }
+        
+        UserRole role = currentUser.getRole();
+        
+        switch (role) {
+            case ADMIN:
+                // Admin can view any user
+                return user;
+                
+            case RECEPTION:
+            case DENTIST:
+            case PATIENT:
+                // Other roles can only view themselves
+                if (userId == currentUser.getUserId()) {
+                    return user;
+                }
+                return null;
+                
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Search users by username or email with role-based filtering
+     * @param searchTerm The search term
+     * @param currentUser The current logged-in user
+     * @return List of matching users
+     */
+    public List<User> searchUsers(String searchTerm, User currentUser) {
+        if (currentUser == null) {
+            return new ArrayList<>();
+        }
+        
+        List<User> allUsers = getUsersForUser(currentUser);
+        if (allUsers == null || allUsers.isEmpty() || searchTerm == null || searchTerm.isEmpty()) {
+            return allUsers;
+        }
+        
+        String searchLower = searchTerm.toLowerCase().trim();
+        List<User> filtered = new ArrayList<>();
+        
+        for (User u : allUsers) {
+            if (u.getUsername() != null && u.getUsername().toLowerCase().contains(searchLower)) {
+                filtered.add(u);
+            } else if (u.getEmail() != null && u.getEmail().toLowerCase().contains(searchLower)) {
+                filtered.add(u);
+            }
+        }
+        
+        return filtered;
     }
 
     // =====================================================
@@ -698,7 +800,7 @@ public class UserDAO {
     // =====================================================
     
     /**
-     * Delete a user permanently (hard delete)
+     * Delete a user permanently (hard delete) - ADMIN only
      * @param userId The user ID to delete
      * @return true if successful, false otherwise
      */
@@ -768,6 +870,32 @@ public class UserDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error checking email existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Check if username already exists for another user
+     * @param username The username to check
+     * @param excludeUserId User ID to exclude from check (for updates)
+     * @return true if exists, false otherwise
+     */
+    public boolean usernameExists(String username, int excludeUserId) {
+        String sql = "SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?) AND user_id != ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, username);
+            pstmt.setInt(2, excludeUserId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking username existence: " + e.getMessage());
             e.printStackTrace();
         }
         return false;

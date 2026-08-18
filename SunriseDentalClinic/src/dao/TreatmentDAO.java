@@ -2,6 +2,9 @@ package dao;
 
 import db.DBconnection;
 import model.Treatment;
+import model.User;
+import model.User.UserRole;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,7 +90,8 @@ public class TreatmentDAO {
     }
 
     /**
-     * Get all treatments
+     * Get all treatments - ADMIN, RECEPTION, DENTIST, PATIENT can all view treatments
+     * @return List of all treatments
      */
     public List<Treatment> getAllTreatments() {
         List<Treatment> treatments = new ArrayList<>();
@@ -152,7 +156,96 @@ public class TreatmentDAO {
     }
 
     /**
-     * Search treatments by name or category
+     * Get treatments based on user role
+     * @param user The current logged-in user
+     * @return List of treatments filtered by role
+     */
+    public List<Treatment> getTreatmentsForUser(User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+            case DENTIST:
+            case PATIENT:
+                // All roles can view all treatments
+                // But ADMIN and RECEPTION can also add/edit
+                return getAllTreatments();
+                
+            default:
+                return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Get treatment by ID with permission check
+     * @param treatmentId The treatment ID
+     * @param user The current user
+     * @return Treatment object if authorized, null otherwise
+     */
+    public Treatment getTreatmentByIdForUser(int treatmentId, User user) {
+        if (user == null) {
+            return null;
+        }
+        
+        Treatment treatment = getTreatmentById(treatmentId);
+        if (treatment == null) {
+            return null;
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+            case DENTIST:
+            case PATIENT:
+                // All roles can view treatment details
+                return treatment;
+                
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Search treatments by name or category with role-based filtering
+     * @param searchTerm The search term
+     * @param user The current user for role-based filtering
+     * @return List of matching treatments
+     */
+    public List<Treatment> searchTreatments(String searchTerm, User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        
+        List<Treatment> allTreatments = getTreatmentsForUser(user);
+        if (allTreatments == null || allTreatments.isEmpty() || searchTerm == null || searchTerm.isEmpty()) {
+            return allTreatments;
+        }
+        
+        String searchLower = searchTerm.toLowerCase().trim();
+        List<Treatment> filtered = new ArrayList<>();
+        
+        for (Treatment t : allTreatments) {
+            if (t.getTreatmentName() != null && t.getTreatmentName().toLowerCase().contains(searchLower)) {
+                filtered.add(t);
+            } else if (t.getCategory() != null && t.getCategory().toLowerCase().contains(searchLower)) {
+                filtered.add(t);
+            } else if (t.getDescription() != null && t.getDescription().toLowerCase().contains(searchLower)) {
+                filtered.add(t);
+            }
+        }
+        
+        return filtered;
+    }
+
+    /**
+     * Search treatments by name or category (original method - kept for compatibility)
      */
     public List<Treatment> searchTreatments(String searchTerm) {
         List<Treatment> treatments = new ArrayList<>();
@@ -206,7 +299,7 @@ public class TreatmentDAO {
     }
 
     /**
-     * Delete a treatment
+     * Delete a treatment - ADMIN only
      */
     public boolean deleteTreatment(int treatmentId) {
         String sql = "DELETE FROM treatments WHERE treatment_id = ?";
@@ -282,6 +375,32 @@ public class TreatmentDAO {
     }
 
     /**
+     * Check if treatment name already exists for another treatment
+     * @param treatmentName The treatment name to check
+     * @param excludeTreatmentId Treatment ID to exclude from check (for updates)
+     * @return true if exists, false otherwise
+     */
+    public boolean treatmentNameExists(String treatmentName, int excludeTreatmentId) {
+        String sql = "SELECT COUNT(*) FROM treatments WHERE treatment_name = ? AND treatment_id != ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, treatmentName);
+            pstmt.setInt(2, excludeTreatmentId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking treatment name existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
      * Get treatment count
      */
     public int getTreatmentCount() {
@@ -296,6 +415,26 @@ public class TreatmentDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error counting treatments: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Get active treatment count
+     */
+    public int getActiveTreatmentCount() {
+        String sql = "SELECT COUNT(*) FROM treatments WHERE is_active = true";
+        
+        try (Connection conn = DBconnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error counting active treatments: " + e.getMessage());
             e.printStackTrace();
         }
         return 0;
@@ -347,6 +486,39 @@ public class TreatmentDAO {
             e.printStackTrace();
         }
         return stats;
+    }
+
+    /**
+     * Get treatments by multiple categories
+     * @param categories List of categories to filter by
+     * @return List of treatments in the specified categories
+     */
+    public List<Treatment> getTreatmentsByCategories(List<String> categories) {
+        List<Treatment> treatments = new ArrayList<>();
+        if (categories == null || categories.isEmpty()) {
+            return treatments;
+        }
+        
+        String placeholders = String.join(",", java.util.Collections.nCopies(categories.size(), "?"));
+        String sql = "SELECT * FROM treatments WHERE category IN (" + placeholders + ") ORDER BY treatment_name";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            for (int i = 0; i < categories.size(); i++) {
+                pstmt.setString(i + 1, categories.get(i));
+            }
+            
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                treatments.add(mapResultSetToTreatment(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting treatments by categories: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return treatments;
     }
 
     /**
