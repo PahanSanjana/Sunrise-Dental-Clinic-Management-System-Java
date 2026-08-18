@@ -2,6 +2,8 @@ package view;
 
 import model.User;
 import model.User.UserRole;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -105,100 +107,178 @@ public class SidebarPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
+    /**
+     * Build navigation data based on current user role
+     * Uses RolePermissions to check page access
+     */
     private List<NavGroup> buildNavData() {
         List<NavGroup> groups = new ArrayList<>();
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        UserRole role = currentUser != null ? currentUser.getRole() : currentRole;
         
         // Dashboard - All roles
-        groups.add(new NavGroup(FontAwesomeSolid.TACHOMETER_ALT, "Dashboard", "DASHBOARD"));
+        if (RolePermissions.hasPageAccess(role, "DASHBOARD")) {
+            groups.add(new NavGroup(FontAwesomeSolid.TACHOMETER_ALT, "Dashboard", "DASHBOARD"));
+        }
 
         // My Profile - All roles
-        NavGroup profile = new NavGroup(FontAwesomeSolid.USER, "My Profile", "USER_PROFILE");
-        groups.add(profile);
+        if (RolePermissions.hasPageAccess(role, "USER_PROFILE")) {
+            NavGroup profile = new NavGroup(FontAwesomeSolid.USER, "My Profile", "USER_PROFILE");
+            groups.add(profile);
+        }
 
         // User Management - Admin only
-        if (currentRole == UserRole.ADMIN) {
+        if (RolePermissions.hasPageAccess(role, "USER_MANAGEMENT")) {
             NavGroup users = new NavGroup(FontAwesomeSolid.USERS, "User Management", "USER_MANAGEMENT");
             groups.add(users);
         }
 
-        // Patients - All roles can see
-        NavGroup patients = new NavGroup(FontAwesomeSolid.HOSPITAL, "Patients", null);
-        patients.children.add(new NavChild("Patient List", "PATIENT_LIST"));
-        
-        // Only ADMIN and RECEPTION can add patients
-        if (currentRole == UserRole.ADMIN || currentRole == UserRole.RECEPTION) {
-            patients.children.add(new NavChild("Add Patient", "PATIENT_ADD"));
+        // Patients - All roles can see (but different permissions)
+        if (RolePermissions.hasPageAccess(role, "PATIENT_LIST")) {
+            NavGroup patients = new NavGroup(FontAwesomeSolid.HOSPITAL, "Patients", null);
+            patients.children.add(new NavChild("Patient List", "PATIENT_LIST"));
+            
+            // Only ADMIN and RECEPTION can add patients
+            if (RolePermissions.hasActionPermission(role, "ADD_PATIENTS")) {
+                patients.children.add(new NavChild("Add Patient", "PATIENT_ADD"));
+            }
+            groups.add(patients);
         }
-        groups.add(patients);
 
         // Appointments - Different access for different roles
-        NavGroup appointments = new NavGroup(FontAwesomeSolid.CALENDAR_ALT, "Appointments", null);
-        
-        if (currentRole == UserRole.PATIENT) {
-            // Patients only see booking
-            appointments.children.add(new NavChild("Book Appointment", "APPOINTMENT_BOOK"));
-        } else {
-            // Other roles see full appointment management
-            appointments.children.add(new NavChild("Appointment List", "APPOINTMENT_LIST"));
-            appointments.children.add(new NavChild("Book Appointment", "APPOINTMENT_BOOK"));
-            appointments.children.add(new NavChild("Daily Schedule", "APPOINTMENT_SCHEDULE"));
+        if (RolePermissions.hasPageAccess(role, "APPOINTMENT_LIST") || 
+            RolePermissions.hasPageAccess(role, "APPOINTMENT_BOOK") ||
+            RolePermissions.hasPageAccess(role, "APPOINTMENT_SCHEDULE")) {
+            
+            NavGroup appointments = new NavGroup(FontAwesomeSolid.CALENDAR_ALT, "Appointments", null);
+            
+            if (RolePermissions.hasPageAccess(role, "APPOINTMENT_LIST")) {
+                appointments.children.add(new NavChild("Appointment List", "APPOINTMENT_LIST"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "APPOINTMENT_BOOK")) {
+                appointments.children.add(new NavChild("Book Appointment", "APPOINTMENT_BOOK"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "APPOINTMENT_SCHEDULE")) {
+                appointments.children.add(new NavChild("Daily Schedule", "APPOINTMENT_SCHEDULE"));
+            }
+            
+            if (!appointments.children.isEmpty()) {
+                groups.add(appointments);
+            }
         }
-        groups.add(appointments);
 
         // Billing
-        NavGroup billing = new NavGroup(FontAwesomeSolid.FILE_INVOICE_DOLLAR, "Billing", null);
-        if (currentRole == UserRole.PATIENT) {
-            // Patients only see their bills
-            billing.children.add(new NavChild("My Bills", "BILL_LIST"));
-        } else {
-            billing.children.add(new NavChild("Bill List", "BILL_LIST"));
-            billing.children.add(new NavChild("Generate Bill", "BILL_GENERATE"));
+        if (RolePermissions.hasPageAccess(role, "BILL_LIST") || 
+            RolePermissions.hasPageAccess(role, "BILL_GENERATE")) {
+            
+            NavGroup billing = new NavGroup(FontAwesomeSolid.FILE_INVOICE_DOLLAR, "Billing", null);
+            
+            if (RolePermissions.hasPageAccess(role, "BILL_LIST")) {
+                billing.children.add(new NavChild(role == UserRole.PATIENT ? "My Bills" : "Bill List", "BILL_LIST"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "BILL_GENERATE")) {
+                billing.children.add(new NavChild("Generate Bill", "BILL_GENERATE"));
+            }
+            
+            if (!billing.children.isEmpty()) {
+                groups.add(billing);
+            }
         }
-        groups.add(billing);
 
         // Reports
-        NavGroup reports = new NavGroup(FontAwesomeSolid.CHART_BAR, "Reports", null);
-        if (currentRole == UserRole.PATIENT) {
-            // Patients only see patient report
-            reports.children.add(new NavChild("Patient Report", "REPORT_PATIENT"));
-        } else {
-            reports.children.add(new NavChild("Report Dashboard", "REPORT_DASHBOARD"));
-            reports.children.add(new NavChild("Revenue Report", "REPORT_REVENUE"));
-            reports.children.add(new NavChild("Schedule Report", "REPORT_SCHEDULE"));
-            reports.children.add(new NavChild("Patient Report", "REPORT_PATIENT"));
+        if (RolePermissions.hasPageAccess(role, "REPORT_DASHBOARD") ||
+            RolePermissions.hasPageAccess(role, "REPORT_REVENUE") ||
+            RolePermissions.hasPageAccess(role, "REPORT_SCHEDULE") ||
+            RolePermissions.hasPageAccess(role, "REPORT_PATIENT")) {
+            
+            NavGroup reports = new NavGroup(FontAwesomeSolid.CHART_BAR, "Reports", null);
+            
+            if (RolePermissions.hasPageAccess(role, "REPORT_DASHBOARD")) {
+                reports.children.add(new NavChild("Report Dashboard", "REPORT_DASHBOARD"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "REPORT_REVENUE")) {
+                reports.children.add(new NavChild("Revenue Report", "REPORT_REVENUE"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "REPORT_SCHEDULE")) {
+                reports.children.add(new NavChild("Schedule Report", "REPORT_SCHEDULE"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "REPORT_PATIENT")) {
+                reports.children.add(new NavChild("Patient Report", "REPORT_PATIENT"));
+            }
+            
+            if (!reports.children.isEmpty()) {
+                groups.add(reports);
+            }
         }
-        groups.add(reports);
 
         // Staff - Only ADMIN can access
-        if (currentRole == UserRole.ADMIN) {
+        if (RolePermissions.hasPageAccess(role, "STAFF_LIST") ||
+            RolePermissions.hasPageAccess(role, "STAFF_ADD")) {
+            
             NavGroup staff = new NavGroup(FontAwesomeSolid.USER_TIE, "Staff", null);
-            staff.children.add(new NavChild("Staff List", "STAFF_LIST"));
-            staff.children.add(new NavChild("Add Staff", "STAFF_ADD"));
-            groups.add(staff);
+            
+            if (RolePermissions.hasPageAccess(role, "STAFF_LIST")) {
+                staff.children.add(new NavChild("Staff List", "STAFF_LIST"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "STAFF_ADD")) {
+                staff.children.add(new NavChild("Add Staff", "STAFF_ADD"));
+            }
+            
+            if (!staff.children.isEmpty()) {
+                groups.add(staff);
+            }
         }
 
-        // Dentists - Only ADMIN can access
-        if (currentRole == UserRole.ADMIN) {
+        // Dentists
+        if (RolePermissions.hasPageAccess(role, "DENTIST_LIST") ||
+            RolePermissions.hasPageAccess(role, "DENTIST_ADD")) {
+            
             NavGroup dentists = new NavGroup(FontAwesomeSolid.USER_MD, "Dentists", null);
-            dentists.children.add(new NavChild("Dentist List", "DENTIST_LIST"));
-            dentists.children.add(new NavChild("Add Dentist", "DENTIST_ADD"));
-            groups.add(dentists);
+            
+            if (RolePermissions.hasPageAccess(role, "DENTIST_LIST")) {
+                dentists.children.add(new NavChild("Dentist List", "DENTIST_LIST"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "DENTIST_ADD")) {
+                dentists.children.add(new NavChild("Add Dentist", "DENTIST_ADD"));
+            }
+            
+            if (!dentists.children.isEmpty()) {
+                groups.add(dentists);
+            }
         }
 
         // Treatments
-        NavGroup treatments = new NavGroup(FontAwesomeSolid.PILLS, "Treatments", null);
-        if (currentRole == UserRole.PATIENT) {
-            // Patients only see treatment list
-            treatments.children.add(new NavChild("Treatment List", "TREATMENT_LIST"));
-        } else {
-            treatments.children.add(new NavChild("Treatment List", "TREATMENT_LIST"));
-            treatments.children.add(new NavChild("Add Treatment", "TREATMENT_ADD"));
+        if (RolePermissions.hasPageAccess(role, "TREATMENT_LIST") ||
+            RolePermissions.hasPageAccess(role, "TREATMENT_ADD")) {
+            
+            NavGroup treatments = new NavGroup(FontAwesomeSolid.PILLS, "Treatments", null);
+            
+            if (RolePermissions.hasPageAccess(role, "TREATMENT_LIST")) {
+                treatments.children.add(new NavChild("Treatment List", "TREATMENT_LIST"));
+            }
+            
+            if (RolePermissions.hasPageAccess(role, "TREATMENT_ADD")) {
+                treatments.children.add(new NavChild("Add Treatment", "TREATMENT_ADD"));
+            }
+            
+            if (!treatments.children.isEmpty()) {
+                groups.add(treatments);
+            }
         }
-        groups.add(treatments);
 
         // Help - All roles
-        NavGroup help = new NavGroup(FontAwesomeSolid.QUESTION_CIRCLE, "Help", "HELP");
-        groups.add(help);
+        if (RolePermissions.hasPageAccess(role, "HELP")) {
+            NavGroup help = new NavGroup(FontAwesomeSolid.QUESTION_CIRCLE, "Help", "HELP");
+            groups.add(help);
+        }
 
         return groups;
     }
