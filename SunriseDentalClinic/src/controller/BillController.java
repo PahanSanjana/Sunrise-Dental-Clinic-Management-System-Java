@@ -9,6 +9,10 @@ import model.BillItem;
 import model.Patient;
 import model.Appointment;
 import model.Treatment;
+import model.User;
+import model.User.UserRole;
+import model.LoginSession;
+import model.RolePermissions;
 import view.GenerateBillPanel;
 import view.BillListPanel;
 import view.BillDetailsPanel;
@@ -73,7 +77,7 @@ public class BillController {
     // =====================================================
 
     /**
-     * Get all patients
+     * Get all patients - ADMIN and RECEPTION only
      * @return List of all patients
      */
     public List<Patient> getAllPatients() {
@@ -183,7 +187,7 @@ public class BillController {
     }
 
     /**
-     * Get all bills
+     * Get all bills - ADMIN and RECEPTION only
      * @return List of all bills
      */
     public List<Bill> getAllBills() {
@@ -267,7 +271,7 @@ public class BillController {
     }
 
     /**
-     * Delete a bill
+     * Delete a bill - ADMIN only
      * @param billId The bill ID to delete
      * @return true if successful, false otherwise
      */
@@ -327,133 +331,71 @@ public class BillController {
     }
 
     // =====================================================
-    // HELPER METHODS
+    // ROLE-BASED DATA ACCESS METHODS
     // =====================================================
 
     /**
-     * Generate a unique bill number
-     * @return A unique bill number
+     * Get bills based on user role
+     * @param user The current logged-in user
+     * @return List of bills filtered by role
      */
-    public String generateBillNumber() {
-        return billDAO.generateBillNumber();
+    public List<Bill> getBillsForUser(User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
+        return billDAO.getBillsForUser(user);
     }
 
     /**
-     * Calculate total amount for a list of bill items
-     * @param items The bill items
-     * @return The total amount
+     * Get bills for the current logged-in user
+     * @return List of bills filtered by current user's role
      */
-    public double calculateTotal(List<BillItem> items) {
-        double total = 0;
-        for (BillItem item : items) {
-            total += item.getTotalPrice();
-        }
-        return total;
+    public List<Bill> getBillsForCurrentUser() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        return getBillsForUser(currentUser);
     }
 
     /**
-     * Calculate balance for a bill.
-     *
-     * FIXED: previously this clamped any negative result to 0, which
-     * silently hid overpayments (e.g. total 1200, paid 1500 used to
-     * show a balance of 0 instead of the true -300 overpayment).
-     * Now it returns the real signed balance:
-     *   - positive  -> amount still owed
-     *   - zero      -> fully paid, exact
-     *   - negative  -> overpaid by that amount
-     *
-     * @param totalAmount The total amount
-     * @param amountPaid The amount paid
-     * @return The balance (can be negative if overpaid)
+     * Get bill by ID with permission check
+     * @param billId The bill ID
+     * @param user The current user
+     * @return Bill object if authorized, null otherwise
      */
-    public double calculateBalance(double totalAmount, double amountPaid) {
-        return totalAmount - amountPaid;
+    public Bill getBillByIdForUser(int billId, User user) {
+        if (user == null) {
+            return null;
+        }
+        return billDAO.getBillByIdForUser(billId, user);
     }
 
     /**
-     * Validate bill data before saving
-     * @param bill The bill to validate
-     * @return Error message if invalid, null if valid
+     * Get bill by ID for the current logged-in user
+     * @param billId The bill ID
+     * @return Bill object if authorized, null otherwise
      */
-    public String validateBill(Bill bill) {
-        if (bill.getPatientId() <= 0) {
-            return "Patient is required.";
-        }
-        if (bill.getBillNumber() == null || bill.getBillNumber().isEmpty()) {
-            return "Bill Number is required.";
-        }
-        if (bill.getBillDate() == null) {
-            return "Bill Date is required.";
-        }
-        if (bill.getDueDate() == null) {
-            return "Due Date is required.";
-        }
-        if (bill.getTotalAmount() < 0) {
-            return "Total amount cannot be negative.";
-        }
-        if (bill.getAmountPaid() < 0) {
-            return "Amount paid cannot be negative.";
-        }
-        if (bill.getStatus() == null || bill.getStatus().isEmpty()) {
-            return "Status is required.";
-        }
-        return null;
+    public Bill getBillByIdForCurrentUser(int billId) {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        return getBillByIdForUser(billId, currentUser);
     }
 
     /**
-     * Validate bill item data
-     * @param item The bill item to validate
-     * @return Error message if invalid, null if valid
-     */
-    public String validateBillItem(BillItem item) {
-        if (item.getDescription() == null || item.getDescription().isEmpty()) {
-            return "Item description is required.";
-        }
-        if (item.getQuantity() <= 0) {
-            return "Quantity must be greater than 0.";
-        }
-        if (item.getUnitPrice() < 0) {
-            return "Unit price cannot be negative.";
-        }
-        if (item.getTotalPrice() < 0) {
-            return "Total price cannot be negative.";
-        }
-        return null;
-    }
-
-    // =====================================================
-    // HELPER METHODS FOR LIST VIEW
-    // =====================================================
-
-    /**
-     * Load bills for the list view
-     */
-    public void loadBills() {
-        if (listView != null) {
-            listView.loadBills();
-        }
-    }
-
-    /**
-     * Refresh the bill list
-     */
-    public void refreshBillList() {
-        if (listView != null) {
-            listView.loadBills();
-        }
-    }
-
-    /**
-     * Get bills with filters
+     * Get filtered bills with role-based access
      * @param searchText The search text
      * @param status The status filter
      * @param dateFilter The date filter
+     * @param user The current user
      * @return List of filtered bills
      */
-    public List<Bill> getFilteredBills(String searchText, String status, String dateFilter) {
-        List<Bill> bills = billDAO.getAllBills();
+    public List<Bill> getFilteredBillsForUser(String searchText, String status, String dateFilter, User user) {
+        if (user == null) {
+            return new ArrayList<>();
+        }
         
-        if (bills == null) return new ArrayList<>();
+        List<Bill> bills = getBillsForUser(user);
+        
+        if (bills == null || bills.isEmpty()) {
+            return new ArrayList<>();
+        }
         
         // Apply status filter
         if (status != null && !status.equals("All Status")) {
@@ -488,15 +430,232 @@ public class BillController {
         
         // Apply search filter
         if (searchText != null && !searchText.isEmpty()) {
+            String searchLower = searchText.toLowerCase().trim();
             bills.removeIf(b -> {
                 String patientName = getPatientName(b.getPatientId());
-                return !patientName.toLowerCase().contains(searchText.toLowerCase()) &&
-                       !b.getBillNumber().toLowerCase().contains(searchText.toLowerCase()) &&
-                       !b.getStatus().toLowerCase().contains(searchText.toLowerCase());
+                return !patientName.toLowerCase().contains(searchLower) &&
+                       !b.getBillNumber().toLowerCase().contains(searchLower) &&
+                       !b.getStatus().toLowerCase().contains(searchLower);
             });
         }
         
         return bills;
+    }
+
+    /**
+     * Get filtered bills for the current logged-in user
+     * @param searchText The search text
+     * @param status The status filter
+     * @param dateFilter The date filter
+     * @return List of filtered bills
+     */
+    public List<Bill> getFilteredBillsForCurrentUser(String searchText, String status, String dateFilter) {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        return getFilteredBillsForUser(searchText, status, dateFilter, currentUser);
+    }
+
+    /**
+     * Get bills with pagination and role-based filtering
+     * @param page The page number (0-based)
+     * @param pageSize The page size
+     * @param user The current user
+     * @return List of bills for the page
+     */
+    public List<Bill> getBillsForUserPaginated(int page, int pageSize, User user) {
+        List<Bill> allBills = getBillsForUser(user);
+        if (allBills == null || allBills.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        int start = page * pageSize;
+        int end = Math.min(start + pageSize, allBills.size());
+        
+        if (start >= allBills.size()) {
+            return new ArrayList<>();
+        }
+        
+        return allBills.subList(start, end);
+    }
+
+    // =====================================================
+    // PERMISSION CHECK METHODS
+    // =====================================================
+
+    /**
+     * Check if user can generate a bill
+     * @param user The current user
+     * @return true if can generate, false otherwise
+     */
+    public boolean canGenerateBill(User user) {
+        if (user == null) {
+            return false;
+        }
+        return RolePermissions.hasActionPermission(user.getRole(), "ADD_BILLS");
+    }
+
+    /**
+     * Check if user can edit a bill
+     * @param bill The bill
+     * @param user The current user
+     * @return true if can edit, false otherwise
+     */
+    public boolean canEditBill(Bill bill, User user) {
+        if (user == null || bill == null) {
+            return false;
+        }
+        return RolePermissions.hasActionPermission(user.getRole(), "EDIT_BILLS");
+    }
+
+    /**
+     * Check if user can delete a bill
+     * @param bill The bill
+     * @param user The current user
+     * @return true if can delete, false otherwise
+     */
+    public boolean canDeleteBill(Bill bill, User user) {
+        if (user == null || bill == null) {
+            return false;
+        }
+        return RolePermissions.hasActionPermission(user.getRole(), "DELETE_BILLS");
+    }
+
+    /**
+     * Check if user can view bill details
+     * @param bill The bill
+     * @param user The current user
+     * @return true if can view, false otherwise
+     */
+    public boolean canViewBill(Bill bill, User user) {
+        if (user == null || bill == null) {
+            return false;
+        }
+        
+        UserRole role = user.getRole();
+        
+        switch (role) {
+            case ADMIN:
+            case RECEPTION:
+                return true;
+                
+            case DENTIST:
+                // Dentist can view bills from their appointments
+                if (user.getDentistId() != null) {
+                    // Check if this bill is from an appointment with this dentist
+                    return billDAO.getBillByIdForUser(bill.getBillId(), user) != null;
+                }
+                return false;
+                
+            case PATIENT:
+                // Patient can view their own bills
+                if (user.getPatientId() != null) {
+                    return bill.getPatientId() == user.getPatientId();
+                }
+                return false;
+                
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Check if dentist can add payment method (dentists can only create pending bills)
+     * @param user The current user
+     * @return true if dentist, false otherwise
+     */
+    public boolean isDentist(User user) {
+        return user != null && user.isDentist();
+    }
+
+    /**
+     * Get default status for bill based on user role
+     * @param user The current user
+     * @return Default status
+     */
+    public String getDefaultBillStatus(User user) {
+        if (user == null) {
+            return "Pending";
+        }
+        // Dentists can only create pending bills
+        if (user.isDentist()) {
+            return "Pending";
+        }
+        return "Pending";
+    }
+
+    // =====================================================
+    // BILL GENERATION WITH ROLE-BASED RESTRICTIONS
+    // =====================================================
+
+    /**
+     * Generate a new bill with role-based restrictions
+     * @param bill The bill to generate
+     * @param items The bill items
+     * @param user The current user
+     * @return true if successful, false otherwise
+     */
+    public boolean generateBillForUser(Bill bill, List<BillItem> items, User user) {
+        if (user == null) {
+            return false;
+        }
+        
+        if (!canGenerateBill(user)) {
+            return false;
+        }
+        
+        // If user is dentist, force status to Pending and remove payment details
+        if (user.isDentist()) {
+            bill.setStatus("Pending");
+            bill.setAmountPaid(0);
+            bill.setBalance(bill.getTotalAmount());
+            bill.setPaymentMethod(null);
+        }
+        
+        return billDAO.generateBill(bill, items);
+    }
+
+    // =====================================================
+    // HELPER METHODS FOR LIST VIEW
+    // =====================================================
+
+    /**
+     * Load bills for the list view
+     */
+    public void loadBills() {
+        if (listView != null) {
+            listView.loadBills();
+        }
+    }
+
+    /**
+     * Refresh the bill list
+     */
+    public void refreshBillList() {
+        if (listView != null) {
+            listView.loadBills();
+        }
+    }
+
+    /**
+     * Load bills for the list view based on current user
+     */
+    public void loadBillsForCurrentUser() {
+        if (listView != null) {
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            List<Bill> bills = getBillsForUser(currentUser);
+            listView.displayBills(bills);
+        }
+    }
+
+    /**
+     * Get bills with filters (backward compatibility)
+     * @param searchText The search text
+     * @param status The status filter
+     * @param dateFilter The date filter
+     * @return List of filtered bills
+     */
+    public List<Bill> getFilteredBills(String searchText, String status, String dateFilter) {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        return getFilteredBillsForUser(searchText, status, dateFilter, currentUser);
     }
 
     /**
@@ -521,7 +680,33 @@ public class BillController {
     // =====================================================
 
     /**
-     * Load bill details
+     * Load bill details with permission check
+     * @param billId The bill ID
+     * @param user The current user
+     */
+    public void loadBillDetailsForUser(int billId, User user) {
+        if (detailsView != null) {
+            Bill bill = getBillByIdForUser(billId, user);
+            if (bill != null) {
+                List<BillItem> items = getBillItemsByBillId(billId);
+                detailsView.displayBill(bill, items);
+            } else {
+                detailsView.showError("You don't have permission to view this bill.");
+            }
+        }
+    }
+
+    /**
+     * Load bill details for the current user
+     * @param billId The bill ID
+     */
+    public void loadBillDetailsForCurrentUser(int billId) {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        loadBillDetailsForUser(billId, currentUser);
+    }
+
+    /**
+     * Load bill details (backward compatibility)
      * @param billId The bill ID
      */
     public void loadBillDetails(int billId) {
@@ -550,5 +735,68 @@ public class BillController {
     public void sendBillEmail(int billId) {
         // TODO: Implement email sending functionality
         System.out.println("Sending bill email: " + billId);
+    }
+
+    // =====================================================
+    // COUNT METHODS WITH ROLE-BASED FILTERING
+    // =====================================================
+
+    /**
+     * Get bill count for a user
+     * @param user The current user
+     * @return Total number of bills for the user
+     */
+    public int getBillCountForUser(User user) {
+        List<Bill> bills = getBillsForUser(user);
+        return bills != null ? bills.size() : 0;
+    }
+
+    /**
+     * Get bill count for the current logged-in user
+     * @return Total number of bills for the current user
+     */
+    public int getBillCountForCurrentUser() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        return getBillCountForUser(currentUser);
+    }
+
+    /**
+     * Get bill count by status for a user
+     * @param status The status to count
+     * @param user The current user
+     * @return Number of bills with the specified status
+     */
+    public int getBillCountByStatusForUser(String status, User user) {
+        List<Bill> bills = getBillsForUser(user);
+        if (bills == null || bills.isEmpty()) {
+            return 0;
+        }
+        
+        int count = 0;
+        for (Bill bill : bills) {
+            if (bill.getStatus() != null && bill.getStatus().equals(status)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Get revenue for a user
+     * @param user The current user
+     * @return Total revenue for the user
+     */
+    public double getRevenueForUser(User user) {
+        List<Bill> bills = getBillsForUser(user);
+        return getTotalRevenueFromBills(bills);
+    }
+
+    /**
+     * Get revenue for the current logged-in user
+     * @return Total revenue for the current user
+     */
+    public double getRevenueForCurrentUser() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        return getRevenueForUser(currentUser);
     }
 }
