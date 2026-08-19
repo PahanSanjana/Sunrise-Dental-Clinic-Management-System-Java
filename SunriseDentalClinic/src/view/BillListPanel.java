@@ -4,6 +4,9 @@ import controller.BillController;
 import model.Bill;
 import model.Patient;
 import model.BillItem;
+import model.User;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -80,6 +83,8 @@ public class BillListPanel extends JPanel {
         initComponents();
         loadBills();
         startAutoRefresh();
+        // Update button visibility based on user role
+        updateActionButtons();
     }
 
     private void initComponents() {
@@ -271,7 +276,6 @@ public class BillListPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
 
-        // ✅ Removed "Actions" column - No buttons inside table
         String[] columns = {"ID", "Bill Number", "Patient", "Date", "Due Date", "Total", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -548,19 +552,52 @@ public class BillListPanel extends JPanel {
         }
     }
 
-    // ========================
-    // Public methods
-    // ========================
+    // =====================================================
+    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // =====================================================
+
+    /**
+     * Update action button visibility based on user role
+     */
+    private void updateActionButtons() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        // View button - All roles can view bills
+        viewButton.setVisible(true);
+        
+        // Add/Generate button - ADMIN, RECEPTION, and DENTIST can generate bills
+        // Dentist can only generate pending bills (handled in GenerateBillPanel)
+        addButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "ADD_BILLS"));
+        
+        // Edit button - Only ADMIN and RECEPTION can edit bills
+        editButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS"));
+        
+        // Mark Paid button - Only ADMIN and RECEPTION can mark bills as paid
+        markPaidButton.setVisible(currentUser.isAdmin() || currentUser.isReception());
+        
+        // Delete button - Only ADMIN can delete bills
+        deleteButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS"));
+    }
+
+    // =====================================================
+    // DATA LOADING METHODS
+    // =====================================================
 
     public void loadBills() {
         String searchText = searchField != null ? searchField.getText().trim() : "";
         String status = statusCombo != null ? (String) statusCombo.getSelectedItem() : "All Status";
         String dateFilter = dateFilterCombo != null ? (String) dateFilterCombo.getSelectedItem() : "All Dates";
         
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        
         SwingWorker<List<Bill>, Void> worker = new SwingWorker<List<Bill>, Void>() {
             @Override
             protected List<Bill> doInBackground() throws Exception {
-                return controller.getFilteredBills(searchText, status, dateFilter);
+                // Get bills based on user role
+                return controller.getFilteredBillsForUser(searchText, status, dateFilter, currentUser);
             }
 
             @Override
@@ -623,6 +660,10 @@ public class BillListPanel extends JPanel {
         totalRevenueLabel.setText("Total Revenue: RS" + df.format(totalRevenue));
     }
 
+    // =====================================================
+    // ACTION METHODS WITH PERMISSION CHECKS
+    // =====================================================
+
     public void viewBill(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
         
@@ -633,7 +674,8 @@ public class BillListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            Bill bill = controller.getBillById(billId);
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            Bill bill = controller.getBillByIdForUser(billId, currentUser);
             if (bill != null) {
                 List<BillItem> items = controller.getBillItemsByBillId(billId);
                 BillDetailsPanel detailsPanel = new BillDetailsPanel(bill, items);
@@ -641,13 +683,20 @@ public class BillListPanel extends JPanel {
                 mainFrame.addScreen("BILL_DETAILS", detailsPanel);
                 mainFrame.showCard("BILL_DETAILS");
             } else {
-                showError("Bill not found.");
+                showError("Bill not found or you don't have permission to view it.");
             }
         }
     }
 
     public void editBill(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
+        
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (!RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS")) {
+            showError("You don't have permission to edit bills.");
+            return;
+        }
         
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
@@ -656,7 +705,7 @@ public class BillListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            Bill bill = controller.getBillById(billId);
+            Bill bill = controller.getBillByIdForUser(billId, currentUser);
             if (bill != null) {
                 List<BillItem> items = controller.getBillItemsByBillId(billId);
                 BillDetailsPanel detailsPanel = new BillDetailsPanel(bill, items);
@@ -673,6 +722,13 @@ public class BillListPanel extends JPanel {
     public void deleteBill(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
         String billNumber = (String) tableModel.getValueAt(row, 1);
+        
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (!RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS")) {
+            showError("You don't have permission to delete bills.");
+            return;
+        }
         
         int confirm = JOptionPane.showConfirmDialog(
             this,
@@ -698,6 +754,13 @@ public class BillListPanel extends JPanel {
         String billNumber = (String) tableModel.getValueAt(row, 1);
         String currentStatus = (String) tableModel.getValueAt(row, 6);
         
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (!(currentUser.isAdmin() || currentUser.isReception())) {
+            showError("You don't have permission to mark bills as paid.");
+            return;
+        }
+        
         if ("Paid".equals(currentStatus)) {
             showError("This bill is already paid.");
             return;
@@ -721,6 +784,10 @@ public class BillListPanel extends JPanel {
             }
         }
     }
+
+    // =====================================================
+    // PUBLIC METHODS
+    // =====================================================
 
     public void showError(String message) {
         statusLabel.setText("Error: " + message);

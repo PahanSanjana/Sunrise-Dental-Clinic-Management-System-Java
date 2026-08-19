@@ -4,6 +4,9 @@ import controller.AppointmentController;
 import model.Appointment;
 import model.Patient;
 import model.Dentist;
+import model.User;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -88,6 +91,9 @@ public class AppointmentListPanel extends JPanel {
         
         // Main Content Panel (Search + Table + Footer)
         add(createMainContentPanel(), BorderLayout.CENTER);
+        
+        // Update button visibility based on user role
+        updateActionButtons();
     }
 
     // =====================================================
@@ -531,37 +537,117 @@ public class AppointmentListPanel extends JPanel {
         }
     }
 
-    // ========================
-    // Public methods
-    // ========================
+    // =====================================================
+    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // =====================================================
+
+    /**
+     * Update action button visibility based on user role
+     */
+    private void updateActionButtons() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        // Everyone can view appointments
+        viewButton.setVisible(true);
+        
+        // Add button - Only ADMIN and RECEPTION can book appointments
+        addButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "ADD_APPOINTMENTS"));
+        
+        // Edit button - ADMIN, RECEPTION, and DENTIST (own appointments) can edit
+        // Dentist can only edit their own appointments - handled in editAppointment()
+        editButton.setVisible(currentUser.isAdmin() || currentUser.isReception() || currentUser.isDentist());
+        
+        // Cancel button - All roles except PATIENT can cancel
+        cancelButton.setVisible(!currentUser.isPatient());
+        
+        // Delete button - Only ADMIN can delete
+        deleteButton.setVisible(currentUser.isAdmin());
+        
+        // Refresh button is always visible
+    }
+
+    /**
+     * Check if user can edit the selected appointment
+     */
+    private boolean canEditAppointment(int appointmentId) {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        Appointment appointment = controller.getAppointmentById(appointmentId);
+        if (appointment == null || currentUser == null) {
+            return false;
+        }
+        return controller.canEditAppointment(appointment, currentUser);
+    }
+
+    /**
+     * Check if user can cancel the selected appointment
+     */
+    private boolean canCancelAppointment(int appointmentId) {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        Appointment appointment = controller.getAppointmentById(appointmentId);
+        if (appointment == null || currentUser == null) {
+            return false;
+        }
+        return controller.canCancelAppointment(appointment, currentUser);
+    }
+
+    /**
+     * Check if user can delete the selected appointment
+     */
+    private boolean canDeleteAppointment(int appointmentId) {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        Appointment appointment = controller.getAppointmentById(appointmentId);
+        if (appointment == null || currentUser == null) {
+            return false;
+        }
+        return controller.canDeleteAppointment(appointment, currentUser);
+    }
+
+    // =====================================================
+    // DATA LOADING METHODS
+    // =====================================================
 
     public void loadAppointments() {
         String searchText = searchField != null ? searchField.getText().trim() : "";
         String status = statusCombo != null ? (String) statusCombo.getSelectedItem() : "All Status";
         String dateFilter = dateFilterCombo != null ? (String) dateFilterCombo.getSelectedItem() : "All Dates";
         
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        
         SwingWorker<List<Appointment>, Void> worker = new SwingWorker<List<Appointment>, Void>() {
             @Override
             protected List<Appointment> doInBackground() throws Exception {
-                List<Appointment> appointments = controller.getAllAppointments();
+                // Get appointments based on user role
+                List<Appointment> appointments = controller.getAppointmentsForUser(currentUser);
                 
-                if (status != null && !status.equals("All Status") && appointments != null) {
-                    appointments.removeIf(a -> !a.getStatus().equals(status));
+                if (appointments == null) {
+                    return new java.util.ArrayList<>();
                 }
                 
-                if (dateFilter != null && !dateFilter.equals("All Dates") && appointments != null) {
+                // Apply status filter
+                if (status != null && !status.equals("All Status")) {
+                    appointments.removeIf(a -> a.getStatus() == null || !a.getStatus().equals(status));
+                }
+                
+                // Apply date filter
+                if (dateFilter != null && !dateFilter.equals("All Dates")) {
                     java.time.LocalDate today = java.time.LocalDate.now();
                     switch (dateFilter) {
                         case "Today":
-                            appointments.removeIf(a -> !a.getAppointmentDate().toLocalDate().equals(today));
+                            appointments.removeIf(a -> a.getAppointmentDate() == null || 
+                                !a.getAppointmentDate().toLocalDate().equals(today));
                             break;
                         case "Tomorrow":
-                            appointments.removeIf(a -> !a.getAppointmentDate().toLocalDate().equals(today.plusDays(1)));
+                            appointments.removeIf(a -> a.getAppointmentDate() == null || 
+                                !a.getAppointmentDate().toLocalDate().equals(today.plusDays(1)));
                             break;
                         case "This Week":
                             java.time.LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
                             java.time.LocalDate weekEnd = weekStart.plusDays(6);
                             appointments.removeIf(a -> {
+                                if (a.getAppointmentDate() == null) return true;
                                 java.time.LocalDate date = a.getAppointmentDate().toLocalDate();
                                 return date.isBefore(weekStart) || date.isAfter(weekEnd);
                             });
@@ -570,6 +656,7 @@ public class AppointmentListPanel extends JPanel {
                             java.time.LocalDate nextWeekStart = today.plusDays(7 - today.getDayOfWeek().getValue() + 1);
                             java.time.LocalDate nextWeekEnd = nextWeekStart.plusDays(6);
                             appointments.removeIf(a -> {
+                                if (a.getAppointmentDate() == null) return true;
                                 java.time.LocalDate date = a.getAppointmentDate().toLocalDate();
                                 return date.isBefore(nextWeekStart) || date.isAfter(nextWeekEnd);
                             });
@@ -577,13 +664,19 @@ public class AppointmentListPanel extends JPanel {
                     }
                 }
                 
-                if (searchText != null && !searchText.isEmpty() && appointments != null) {
+                // Apply search filter
+                if (searchText != null && !searchText.isEmpty()) {
+                    String searchLower = searchText.toLowerCase().trim();
                     appointments.removeIf(a -> {
                         String patientName = getPatientName(a.getPatientId());
                         String dentistName = getDentistName(a.getDentistId());
-                        return !patientName.toLowerCase().contains(searchText.toLowerCase()) &&
-                               !dentistName.toLowerCase().contains(searchText.toLowerCase()) &&
-                               !a.getStatus().toLowerCase().contains(searchText.toLowerCase());
+                        String statusStr = a.getStatus() != null ? a.getStatus() : "";
+                        String reason = a.getReason() != null ? a.getReason() : "";
+                        
+                        return !patientName.toLowerCase().contains(searchLower) &&
+                               !dentistName.toLowerCase().contains(searchLower) &&
+                               !statusStr.toLowerCase().contains(searchLower) &&
+                               !reason.toLowerCase().contains(searchLower);
                     });
                 }
                 
@@ -650,6 +743,10 @@ public class AppointmentListPanel extends JPanel {
         countLabel.setText("Total: " + appointments.size() + " appointments");
     }
 
+    // =====================================================
+    // ACTION METHODS WITH PERMISSION CHECKS
+    // =====================================================
+
     public void viewAppointment(int row) {
         int appointmentId = (int) tableModel.getValueAt(row, 0);
         
@@ -659,14 +756,14 @@ public class AppointmentListPanel extends JPanel {
         }
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
-            Appointment appointment = controller.getAppointmentById(appointmentId);
+            Appointment appointment = controller.getAppointmentByIdForCurrentUser(appointmentId);
             if (appointment != null) {
                 AppointmentDetailsPanel detailsPanel = new AppointmentDetailsPanel(appointment);
                 detailsPanel.setName("APPOINTMENT_DETAILS");
                 mainFrame.addScreen("APPOINTMENT_DETAILS", detailsPanel);
                 mainFrame.showCard("APPOINTMENT_DETAILS");
             } else {
-                showError("Appointment not found.");
+                showError("Appointment not found or you don't have permission to view it.");
             }
         }
     }
@@ -674,13 +771,19 @@ public class AppointmentListPanel extends JPanel {
     public void editAppointment(int row) {
         int appointmentId = (int) tableModel.getValueAt(row, 0);
         
+        // Check permission before proceeding
+        if (!canEditAppointment(appointmentId)) {
+            showError("You don't have permission to edit this appointment.");
+            return;
+        }
+        
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
         }
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
-            Appointment appointment = controller.getAppointmentById(appointmentId);
+            Appointment appointment = controller.getAppointmentByIdForCurrentUser(appointmentId);
             if (appointment != null) {
                 AppointmentDetailsPanel detailsPanel = new AppointmentDetailsPanel(appointment);
                 detailsPanel.setName("APPOINTMENT_DETAILS");
@@ -695,6 +798,13 @@ public class AppointmentListPanel extends JPanel {
 
     public void cancelAppointment(int row) {
         int appointmentId = (int) tableModel.getValueAt(row, 0);
+        
+        // Check permission before proceeding
+        if (!canCancelAppointment(appointmentId)) {
+            showError("You don't have permission to cancel this appointment.");
+            return;
+        }
+        
         String patientName = (String) tableModel.getValueAt(row, 1);
         
         int confirm = JOptionPane.showConfirmDialog(
@@ -706,7 +816,8 @@ public class AppointmentListPanel extends JPanel {
         );
         
         if (confirm == JOptionPane.YES_OPTION) {
-            boolean success = controller.cancelAppointment(appointmentId);
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            boolean success = controller.cancelAppointmentForUser(appointmentId, currentUser);
             if (success) {
                 showSuccess("Appointment cancelled successfully!");
                 loadAppointments();
@@ -718,6 +829,13 @@ public class AppointmentListPanel extends JPanel {
 
     public void deleteAppointment(int row) {
         int appointmentId = (int) tableModel.getValueAt(row, 0);
+        
+        // Check permission before proceeding
+        if (!canDeleteAppointment(appointmentId)) {
+            showError("You don't have permission to delete this appointment.");
+            return;
+        }
+        
         String patientName = (String) tableModel.getValueAt(row, 1);
         
         int confirm = JOptionPane.showConfirmDialog(
@@ -729,7 +847,8 @@ public class AppointmentListPanel extends JPanel {
         );
         
         if (confirm == JOptionPane.YES_OPTION) {
-            boolean success = controller.deleteAppointment(appointmentId);
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            boolean success = controller.deleteAppointmentForUser(appointmentId, currentUser);
             if (success) {
                 showSuccess("Appointment deleted successfully!");
                 loadAppointments();
@@ -738,6 +857,10 @@ public class AppointmentListPanel extends JPanel {
             }
         }
     }
+
+    // =====================================================
+    // PUBLIC METHODS
+    // =====================================================
 
     public void showError(String message) {
         statusLabel.setText("Error: " + message);

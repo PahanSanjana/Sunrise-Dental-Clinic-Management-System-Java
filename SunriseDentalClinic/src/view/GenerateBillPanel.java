@@ -6,6 +6,9 @@ import model.Appointment;
 import model.Treatment;
 import model.Bill;
 import model.BillItem;
+import model.User;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -83,6 +86,10 @@ public class GenerateBillPanel extends JPanel {
     private BillController controller;
     private DecimalFormat df = new DecimalFormat("#.00");
     private boolean isUpdating = false;
+    
+    // Payment Section Panel (for visibility control)
+    private JPanel paymentSectionPanel;
+    private JPanel statusPanel;
 
     // ✅ Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -96,6 +103,8 @@ public class GenerateBillPanel extends JPanel {
         generateBillNumber();
         setDefaultDates();
         startAutoRefresh();
+        // Apply role-based restrictions
+        applyRoleBasedRestrictions();
     }
 
     private void initComponents() {
@@ -229,7 +238,8 @@ public class GenerateBillPanel extends JPanel {
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Payment Information Section
-        mainPanel.add(createSectionPanel("Payment Information", createPaymentPanel()));
+        paymentSectionPanel = createPaymentPanel();
+        mainPanel.add(createSectionPanel("Payment Information", paymentSectionPanel));
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Additional Information Section
@@ -804,6 +814,78 @@ public class GenerateBillPanel extends JPanel {
         // Empty implementation
     }
 
+    // =====================================================
+    // ROLE-BASED RESTRICTIONS
+    // =====================================================
+
+    /**
+     * Apply role-based restrictions to the form
+     */
+    private void applyRoleBasedRestrictions() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+
+        // If user is a dentist, restrict payment section
+        if (currentUser.isDentist()) {
+            // Hide payment section
+            if (paymentSectionPanel != null) {
+                Component parent = paymentSectionPanel.getParent();
+                if (parent instanceof JPanel) {
+                    JPanel sectionPanel = (JPanel) parent;
+                    // Find the parent TitledBorder panel and hide it
+                    Container grandParent = sectionPanel.getParent();
+                    if (grandParent instanceof JPanel) {
+                        grandParent.setVisible(false);
+                    }
+                }
+            }
+
+            // Force status to Pending
+            statusCombo.setSelectedItem("Pending");
+            statusCombo.setEnabled(false);
+            statusCombo.setVisible(false);
+            
+            // Disable payment method
+            paymentMethodCombo.setEnabled(false);
+            paymentMethodCombo.setVisible(false);
+            
+            // Disable amount paid and balance fields
+            amountPaidField.setEnabled(false);
+            amountPaidField.setVisible(false);
+            balanceField.setEnabled(false);
+            balanceField.setVisible(false);
+
+            // Hide related labels for cleaner UI
+            // Find parent panel and hide status and payment method rows
+            Container paymentPanel = paymentSectionPanel;
+            if (paymentPanel != null) {
+                Component[] components = paymentPanel.getComponents();
+                for (Component comp : components) {
+                    if (comp instanceof JPanel) {
+                        // Hide status and payment method panels
+                    }
+                }
+            }
+
+            // Set default values for dentist
+            amountPaidField.setText("0");
+            balanceField.setText("0");
+            paymentMethodCombo.setSelectedItem("Cash");
+            
+            showInfo("Dentist mode: Bills will be generated with Pending status.");
+        } else {
+            // For ADMIN and RECEPTION - full access
+            statusCombo.setEnabled(true);
+            paymentMethodCombo.setEnabled(true);
+            amountPaidField.setEnabled(true);
+            amountPaidField.setVisible(true);
+            balanceField.setEnabled(false);
+            balanceField.setVisible(true);
+        }
+    }
+
     // ========================
     // Data Loading Methods
     // ========================
@@ -1064,12 +1146,20 @@ public class GenerateBillPanel extends JPanel {
             return;
         }
 
+        // Check if dentist is generating bill - force Pending status
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        boolean isDentist = currentUser != null && currentUser.isDentist();
+
         double subtotal = Double.parseDouble(subtotalField.getText().trim());
         double taxPercentage = Double.parseDouble(taxField.getText().trim());
         double discountAmount = Double.parseDouble(discountField.getText().trim());
         double total = Double.parseDouble(totalAmountField.getText().trim());
-        double paid = Double.parseDouble(amountPaidField.getText().trim());
-        double balance = Double.parseDouble(balanceField.getText().trim());
+        
+        // For dentists, force amount paid to 0 and status to Pending
+        double paid = isDentist ? 0 : Double.parseDouble(amountPaidField.getText().trim());
+        double balance = isDentist ? total : Double.parseDouble(balanceField.getText().trim());
+        String status = isDentist ? "Pending" : (String) statusCombo.getSelectedItem();
+        String paymentMethod = isDentist ? null : (String) paymentMethodCombo.getSelectedItem();
 
         Bill bill = new Bill(
             patient.getPatientId(),
@@ -1083,8 +1173,8 @@ public class GenerateBillPanel extends JPanel {
             total,
             paid,
             balance,
-            (String) statusCombo.getSelectedItem(),
-            (String) paymentMethodCombo.getSelectedItem(),
+            status,
+            paymentMethod,
             notesArea.getText().trim()
         );
 
@@ -1139,6 +1229,9 @@ public class GenerateBillPanel extends JPanel {
         generateBillNumber();
         statusLabel.setText("Form cleared");
         statusLabel.setForeground(SECONDARY_TEXT);
+        
+        // Re-apply role-based restrictions after clearing
+        applyRoleBasedRestrictions();
     }
 
     private void navigateBack() {

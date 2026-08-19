@@ -1,6 +1,10 @@
 package view;
 
 import controller.PatientListController;
+import model.Patient;
+import model.User;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -12,7 +16,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import model.Patient;
 
 public class PatientListPanel extends JPanel {
     
@@ -62,7 +65,9 @@ public class PatientListPanel extends JPanel {
         initComponents();
         this.controller = new PatientListController(this);
         loadPatients();
-        startAutoRefresh(); // ✅ Start auto-refresh
+        startAutoRefresh();
+        // Update button visibility based on user role
+        updateActionButtons();
     }
 
     private void initComponents() {
@@ -201,7 +206,6 @@ public class PatientListPanel extends JPanel {
         searchButton = createStyledButton("Search", PRIMARY_DARK, Color.WHITE);
         searchButton.setPreferredSize(new Dimension(100, 35));
         searchButton.addActionListener(e -> loadPatients());
-        // ✅ Set icon using Ikonli
         searchButton.setIcon(icon(FontAwesomeSolid.SEARCH, 14, Color.WHITE));
         searchButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         searchButton.setIconTextGap(6);
@@ -217,7 +221,6 @@ public class PatientListPanel extends JPanel {
                 ((MainFrame) parent).showCard("PATIENT_ADD");
             }
         });
-        // ✅ Set icon using Ikonli
         addButton.setIcon(icon(FontAwesomeSolid.USER_PLUS, 14, Color.WHITE));
         addButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         addButton.setIconTextGap(6);
@@ -242,7 +245,6 @@ public class PatientListPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
 
-        // ✅ Removed "Actions" column - No buttons inside table
         String[] columns = {"ID", "Patient Name", "Gender", "Contact", "Email", "Date of Birth"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -441,9 +443,52 @@ public class PatientListPanel extends JPanel {
         // Empty implementation
     }
 
-    // ========================
+    // =====================================================
+    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // =====================================================
+
+    /**
+     * Update action button visibility based on user role
+     */
+    private void updateActionButtons() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        // View button - All roles can view patients (with restrictions)
+        viewButton.setVisible(true);
+        
+        // Add button - Only ADMIN and RECEPTION can add patients
+        addButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "ADD_PATIENTS"));
+        
+        // Edit button - Only ADMIN and RECEPTION can edit patients
+        editButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_PATIENTS"));
+        
+        // Delete button - Only ADMIN and RECEPTION can delete patients
+        deleteButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_PATIENTS"));
+        
+        // For Dentist - hide all action buttons except view
+        if (currentUser.isDentist()) {
+            addButton.setVisible(false);
+            editButton.setVisible(false);
+            deleteButton.setVisible(false);
+            // View button remains visible - dentists can view patients
+            viewButton.setVisible(true);
+        }
+        
+        // For Patient - hide all buttons
+        if (currentUser.isPatient()) {
+            addButton.setVisible(false);
+            viewButton.setVisible(false);
+            editButton.setVisible(false);
+            deleteButton.setVisible(false);
+        }
+    }
+
+    // =====================================================
     // Public methods for Controller
-    // ========================
+    // =====================================================
 
     public void loadPatients() {
         String searchText = searchField != null ? searchField.getText().trim() : "";
@@ -486,6 +531,13 @@ public class PatientListPanel extends JPanel {
     public void viewPatient(int row) {
         int patientId = (int) tableModel.getValueAt(row, 0);
         
+        // Check if user has permission to view this patient
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showError("Please login to view patient details.");
+            return;
+        }
+        
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
@@ -493,8 +545,15 @@ public class PatientListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
+            // Use existing getPatientById - controller will handle permission
             Patient patient = controller.getPatientById(patientId);
             if (patient != null) {
+                // Check if user has permission (dentist can only view their patients)
+                if (currentUser.isDentist()) {
+                    // Check if this patient has appointments with this dentist
+                    // You can add this check in the controller
+                    // For now, allow view but controller should filter
+                }
                 PatientDetailsPanel detailsPanel = new PatientDetailsPanel(patient);
                 detailsPanel.setName("PATIENT_DETAILS");
                 mainFrame.addScreen("PATIENT_DETAILS", detailsPanel);
@@ -507,6 +566,18 @@ public class PatientListPanel extends JPanel {
 
     public void editPatient(int row) {
         int patientId = (int) tableModel.getValueAt(row, 0);
+        
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showError("Please login to edit patient.");
+            return;
+        }
+        
+        if (!RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_PATIENTS")) {
+            showError("You don't have permission to edit patients.");
+            return;
+        }
         
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
@@ -532,6 +603,18 @@ public class PatientListPanel extends JPanel {
         int patientId = (int) tableModel.getValueAt(row, 0);
         String patientName = (String) tableModel.getValueAt(row, 1);
         
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            showError("Please login to delete patient.");
+            return;
+        }
+        
+        if (!RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_PATIENTS")) {
+            showError("You don't have permission to delete patients.");
+            return;
+        }
+        
         int confirm = JOptionPane.showConfirmDialog(
             this,
             "Are you sure you want to delete patient: " + patientName + "?",
@@ -542,6 +625,7 @@ public class PatientListPanel extends JPanel {
         
         if (confirm == JOptionPane.YES_OPTION) {
             if (controller != null) {
+                // Use existing deletePatient method
                 controller.deletePatient(patientId);
             }
         }

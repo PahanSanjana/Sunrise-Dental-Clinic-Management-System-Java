@@ -4,6 +4,9 @@ import controller.AppointmentController;
 import model.Appointment;
 import model.Patient;
 import model.Dentist;
+import model.User;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -97,6 +100,7 @@ public class AppointmentDetailsPanel extends JPanel {
         setViewMode(false);
         displayEmptyState();
         startAutoRefresh();
+        updateActionButtons();
     }
 
     public AppointmentDetailsPanel(Appointment appointment) {
@@ -108,6 +112,7 @@ public class AppointmentDetailsPanel extends JPanel {
         setViewMode(false);
         displayAppointment(appointment);
         startAutoRefresh();
+        updateActionButtons();
     }
 
     // =====================================================
@@ -167,12 +172,49 @@ public class AppointmentDetailsPanel extends JPanel {
         return button;
     }
 
+    // =====================================================
+    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // =====================================================
+
+    /**
+     * Update action button visibility based on user role
+     */
+    private void updateActionButtons() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        // Check if current user can perform actions on this appointment
+        boolean canEdit = false;
+        boolean canCancel = false;
+        boolean canDelete = false;
+        
+        if (currentAppointment != null) {
+            canEdit = controller.canEditAppointment(currentAppointment, currentUser);
+            canCancel = controller.canCancelAppointment(currentAppointment, currentUser);
+            canDelete = controller.canDeleteAppointment(currentAppointment, currentUser);
+        }
+        
+        // Edit button - visible if user can edit
+        editButton.setVisible(canEdit);
+        
+        // Cancel Appointment button - visible if user can cancel
+        cancelAppointmentButton.setVisible(canCancel && !"Cancelled".equals(currentAppointment != null ? currentAppointment.getStatus() : ""));
+        
+        // Delete button - only ADMIN can delete
+        deleteButton.setVisible(canDelete);
+        
+        // Save and Cancel (edit mode) buttons - managed by setViewMode()
+    }
+
     private void loadAppointmentData() {
         if (currentAppointment != null) {
             Appointment updated = controller.getAppointmentById(currentAppointment.getAppointmentId());
             if (updated != null) {
                 currentAppointment = updated;
                 displayAppointment(currentAppointment);
+                updateActionButtons();
             }
         }
     }
@@ -850,6 +892,7 @@ public class AppointmentDetailsPanel extends JPanel {
         
         statusLabel.setText(" ");
         setViewMode(false);
+        updateActionButtons();
     }
 
     private void displayEmptyState() {
@@ -870,6 +913,7 @@ public class AppointmentDetailsPanel extends JPanel {
         statusBadge.setVisible(false);
         statusLabel.setText("No appointment selected");
         setViewMode(false);
+        updateActionButtons();
     }
 
     private void setViewMode(boolean editMode) {
@@ -882,9 +926,9 @@ public class AppointmentDetailsPanel extends JPanel {
         reasonArea.setEnabled(editMode);
         notesArea.setEnabled(editMode);
 
-        editButton.setVisible(!editMode);
-        cancelAppointmentButton.setVisible(!editMode);
-        deleteButton.setVisible(!editMode);
+        editButton.setVisible(!editMode && canEditAppointment());
+        cancelAppointmentButton.setVisible(!editMode && canCancelAppointment());
+        deleteButton.setVisible(!editMode && canDeleteAppointment());
         saveButton.setVisible(editMode);
         cancelButton.setVisible(editMode);
 
@@ -897,9 +941,40 @@ public class AppointmentDetailsPanel extends JPanel {
         }
     }
 
+    private boolean canEditAppointment() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || currentAppointment == null) {
+            return false;
+        }
+        return controller.canEditAppointment(currentAppointment, currentUser);
+    }
+
+    private boolean canCancelAppointment() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || currentAppointment == null) {
+            return false;
+        }
+        if ("Cancelled".equals(currentAppointment.getStatus())) {
+            return false;
+        }
+        return controller.canCancelAppointment(currentAppointment, currentUser);
+    }
+
+    private boolean canDeleteAppointment() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || currentAppointment == null) {
+            return false;
+        }
+        return controller.canDeleteAppointment(currentAppointment, currentUser);
+    }
+
     public void toggleEditMode() {
         if (currentAppointment == null) {
             showError("No appointment loaded to edit.");
+            return;
+        }
+        if (!canEditAppointment()) {
+            showError("You don't have permission to edit this appointment.");
             return;
         }
         setViewMode(true);
@@ -991,6 +1066,11 @@ public class AppointmentDetailsPanel extends JPanel {
             return;
         }
 
+        if (!canCancelAppointment()) {
+            showError("You don't have permission to cancel this appointment.");
+            return;
+        }
+
         if ("Cancelled".equals(currentAppointment.getStatus())) {
             showError("This appointment is already cancelled.");
             return;
@@ -1014,6 +1094,7 @@ public class AppointmentDetailsPanel extends JPanel {
                 showSuccess("Appointment cancelled successfully!");
                 statusLabel.setText("Appointment cancelled");
                 statusLabel.setForeground(SUCCESS_COLOR);
+                updateActionButtons();
             } else {
                 showError("Failed to cancel appointment. Please try again.");
             }
@@ -1023,6 +1104,11 @@ public class AppointmentDetailsPanel extends JPanel {
     private void deleteAppointment() {
         if (currentAppointment == null) {
             showError("No appointment loaded to delete.");
+            return;
+        }
+
+        if (!canDeleteAppointment()) {
+            showError("You don't have permission to delete this appointment.");
             return;
         }
 
