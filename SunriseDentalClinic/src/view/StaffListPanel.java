@@ -2,6 +2,9 @@ package view;
 
 import controller.StaffController;
 import model.Staff;
+import model.User;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -75,6 +78,7 @@ public class StaffListPanel extends JPanel {
         initComponents();
         loadStaff();
         startAutoRefresh();
+        updateActionButtons();
     }
 
     private void initComponents() {
@@ -131,6 +135,50 @@ public class StaffListPanel extends JPanel {
     public void removeNotify() {
         super.removeNotify();
         stopAutoRefresh();
+    }
+
+    // =====================================================
+    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // =====================================================
+
+    /**
+     * Update action button visibility based on user role
+     */
+    private void updateActionButtons() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        // Staff management is ADMIN only
+        boolean isAdmin = currentUser.isAdmin();
+        
+        // View button - Only ADMIN can view staff details
+        viewButton.setVisible(isAdmin);
+        
+        // Add button - Only ADMIN can add staff
+        addButton.setVisible(isAdmin);
+        
+        // Edit button - Only ADMIN can edit staff
+        editButton.setVisible(isAdmin);
+        
+        // Toggle Status button - Only ADMIN can toggle status
+        toggleStatusButton.setVisible(isAdmin);
+        
+        // Delete button - Only ADMIN can delete staff
+        deleteButton.setVisible(isAdmin);
+        
+        // Search button - Only ADMIN can search staff
+        searchButton.setVisible(isAdmin);
+        searchField.setVisible(isAdmin);
+        departmentCombo.setVisible(isAdmin);
+        filterCombo.setVisible(isAdmin);
+        
+        // For non-admin users, show a message or hide the entire panel
+        if (!isAdmin) {
+            // The table will show empty or a message
+            statusLabel.setText("Staff management is restricted to Administrators only.");
+        }
     }
 
     // =====================================================
@@ -226,6 +274,12 @@ public class StaffListPanel extends JPanel {
         addButton = createStyledButton("Add Staff", PRIMARY_DARK, Color.WHITE);
         addButton.setPreferredSize(new Dimension(120, 35));
         addButton.addActionListener(e -> {
+            // Check permission before navigating
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            if (currentUser == null || !currentUser.isAdmin()) {
+                showError("Only Administrators can add staff members.");
+                return;
+            }
             Container parent = getParent();
             while (parent != null && !(parent instanceof MainFrame)) {
                 parent = parent.getParent();
@@ -343,6 +397,11 @@ public class StaffListPanel extends JPanel {
         viewButton.setBorderColor(LIGHT_SURFACE);
         viewButton.setPreferredSize(new Dimension(80, 30));
         viewButton.addActionListener(e -> {
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            if (currentUser == null || !currentUser.isAdmin()) {
+                showError("Only Administrators can view staff details.");
+                return;
+            }
             int row = staffTable.getSelectedRow();
             if (row != -1) {
                 viewStaff(row);
@@ -358,6 +417,11 @@ public class StaffListPanel extends JPanel {
         editButton.setBorderColor(LIGHT_SURFACE);
         editButton.setPreferredSize(new Dimension(80, 30));
         editButton.addActionListener(e -> {
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            if (currentUser == null || !currentUser.isAdmin()) {
+                showError("Only Administrators can edit staff members.");
+                return;
+            }
             int row = staffTable.getSelectedRow();
             if (row != -1) {
                 editStaff(row);
@@ -373,6 +437,11 @@ public class StaffListPanel extends JPanel {
         toggleStatusButton.setBorderColor(LIGHT_SURFACE);
         toggleStatusButton.setPreferredSize(new Dimension(130, 30));
         toggleStatusButton.addActionListener(e -> {
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            if (currentUser == null || !currentUser.isAdmin()) {
+                showError("Only Administrators can toggle staff status.");
+                return;
+            }
             int row = staffTable.getSelectedRow();
             if (row != -1) {
                 toggleStatus(row);
@@ -388,6 +457,11 @@ public class StaffListPanel extends JPanel {
         deleteButton.setBorderColor(LIGHT_SURFACE);
         deleteButton.setPreferredSize(new Dimension(100, 30));
         deleteButton.addActionListener(e -> {
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            if (currentUser == null || !currentUser.isAdmin()) {
+                showError("Only Administrators can delete staff members.");
+                return;
+            }
             int row = staffTable.getSelectedRow();
             if (row != -1) {
                 deleteStaff(row);
@@ -525,6 +599,14 @@ public class StaffListPanel extends JPanel {
     // ========================
 
     public void loadStaff() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            statusLabel.setText("Staff management is restricted to Administrators only.");
+            countLabel.setText("Total: 0 staff members");
+            tableModel.setRowCount(0);
+            return;
+        }
+        
         String searchText = searchField != null ? searchField.getText().trim() : "";
         String filter = filterCombo != null ? (String) filterCombo.getSelectedItem() : "All";
         String department = departmentCombo != null ? (String) departmentCombo.getSelectedItem() : "All Departments";
@@ -609,6 +691,13 @@ public class StaffListPanel extends JPanel {
     public void viewStaff(int row) {
         int staffId = (int) tableModel.getValueAt(row, 0);
         
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            showError("Only Administrators can view staff details.");
+            return;
+        }
+        
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
             parent = parent.getParent();
@@ -630,6 +719,13 @@ public class StaffListPanel extends JPanel {
 
     public void editStaff(int row) {
         int staffId = (int) tableModel.getValueAt(row, 0);
+        
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            showError("Only Administrators can edit staff members.");
+            return;
+        }
         
         Container parent = getParent();
         while (parent != null && !(parent instanceof MainFrame)) {
@@ -657,6 +753,13 @@ public class StaffListPanel extends JPanel {
         String currentStatus = (String) tableModel.getValueAt(row, 8);
         boolean isActive = "Active".equals(currentStatus);
         String newStatus = isActive ? "Inactive" : "Active";
+        
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            showError("Only Administrators can toggle staff status.");
+            return;
+        }
         
         int confirm = JOptionPane.showConfirmDialog(
             this,
@@ -686,6 +789,13 @@ public class StaffListPanel extends JPanel {
     public void deleteStaff(int row) {
         int staffId = (int) tableModel.getValueAt(row, 0);
         String staffName = (String) tableModel.getValueAt(row, 1);
+        
+        // Check permission before proceeding
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            showError("Only Administrators can delete staff members.");
+            return;
+        }
         
         int confirm = JOptionPane.showConfirmDialog(
             this,

@@ -1,6 +1,12 @@
 package view;
 
 import controller.BillController;
+import model.Bill;
+import model.BillItem;
+import model.Patient;
+import model.User;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -18,9 +24,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import model.Bill;
-import model.BillItem;
-import model.Patient;
 
 public class BillDetailsPanel extends JPanel {
     
@@ -113,6 +116,7 @@ public class BillDetailsPanel extends JPanel {
         setViewMode(false);
         displayEmptyState();
         startAutoRefresh();
+        updateActionButtons();
     }
 
     public BillDetailsPanel(Bill bill, List<BillItem> items) {
@@ -123,6 +127,7 @@ public class BillDetailsPanel extends JPanel {
         setViewMode(false);
         displayBill(bill, items);
         startAutoRefresh();
+        updateActionButtons();
     }
 
     private void initComponents() {
@@ -197,6 +202,54 @@ public class BillDetailsPanel extends JPanel {
         return button;
     }
 
+    // =====================================================
+    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // =====================================================
+
+    /**
+     * Update action button visibility based on user role
+     */
+    private void updateActionButtons() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        // Check permissions based on user role
+        boolean canEdit = RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS");
+        boolean canDelete = RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS");
+        boolean canMarkPaid = currentUser.isAdmin() || currentUser.isReception();
+        boolean canViewBill = true; // All roles can view bills
+        
+        // For Dentist - can only view, not edit/delete
+        if (currentUser.isDentist()) {
+            canEdit = false;
+            canDelete = false;
+            canMarkPaid = false;
+        }
+        
+        // For Patient - can only view their own bills
+        if (currentUser.isPatient()) {
+            canEdit = false;
+            canDelete = false;
+            canMarkPaid = false;
+        }
+        
+        // Update button visibility
+        editButton.setVisible(canEdit && !isEditMode);
+        markPaidButton.setVisible(canMarkPaid && !isEditMode && currentBill != null && !"Paid".equals(currentBill.getStatus()));
+        deleteButton.setVisible(canDelete && !isEditMode);
+        saveButton.setVisible(isEditMode);
+        cancelButton.setVisible(isEditMode);
+        
+        // Print and Email buttons are always visible (all roles can print/email)
+        printButton.setVisible(true);
+        emailButton.setVisible(true);
+        
+        // Back button always visible
+        backButton.setVisible(true);
+    }
+
     private void loadBillData() {
         if (currentBill != null) {
             Bill updated = controller.getBillById(currentBill.getBillId());
@@ -205,6 +258,7 @@ public class BillDetailsPanel extends JPanel {
                 currentBill = updated;
                 currentItems = items;
                 displayBill(currentBill, currentItems);
+                updateActionButtons();
             }
         }
     }
@@ -526,7 +580,7 @@ public class BillDetailsPanel extends JPanel {
         gbc.gridx = 3;
         gbc.gridwidth = 1;
         gbc.weightx = 0.35;
-        taxLabel = new JLabel("0%");  // Changed from RS0.00 to 0%
+        taxLabel = new JLabel("0%");
         taxLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         taxLabel.setForeground(SECONDARY_TEXT);
         panel.add(taxLabel, gbc);
@@ -966,6 +1020,7 @@ public class BillDetailsPanel extends JPanel {
         
         statusLabel.setText(" ");
         setViewMode(false);
+        updateActionButtons();
     }
 
     private void displayBillItems(List<BillItem> items) {
@@ -995,7 +1050,7 @@ public class BillDetailsPanel extends JPanel {
         patientEmailLabel.setText("--");
         billDateLabel.setText("--");
         subtotalLabel.setText("RS0.00");
-        taxLabel.setText("0%");  // Changed from RS0.00 to 0%
+        taxLabel.setText("0%");
         discountLabel.setText("RS0.00");
         totalAmountLabel.setText("RS0.00");
         amountPaidLabel.setText("RS0.00");
@@ -1011,6 +1066,7 @@ public class BillDetailsPanel extends JPanel {
         setViewMode(false);
         tableModel.setRowCount(0);
         updateMarkPaidButton();
+        updateActionButtons();
     }
 
     private void updateMarkPaidButton() {
@@ -1028,11 +1084,18 @@ public class BillDetailsPanel extends JPanel {
         paymentMethodCombo.setEnabled(editMode);
         notesArea.setEnabled(editMode);
 
-        editButton.setVisible(!editMode);
-        markPaidButton.setVisible(!editMode);
-        printButton.setVisible(!editMode);
-        emailButton.setVisible(!editMode);
-        deleteButton.setVisible(!editMode);
+        // Update button visibility based on role and edit mode
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        boolean canEdit = currentUser != null && 
+                          RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS");
+        boolean canDelete = currentUser != null && 
+                            RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS");
+        boolean canMarkPaid = currentUser != null && 
+                              (currentUser.isAdmin() || currentUser.isReception());
+
+        editButton.setVisible(!editMode && canEdit);
+        markPaidButton.setVisible(!editMode && canMarkPaid && currentBill != null && !"Paid".equals(currentBill.getStatus()));
+        deleteButton.setVisible(!editMode && canDelete);
         saveButton.setVisible(editMode);
         cancelButton.setVisible(editMode);
 
@@ -1050,6 +1113,13 @@ public class BillDetailsPanel extends JPanel {
             showError("No bill loaded to edit.");
             return;
         }
+        
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS")) {
+            showError("You don't have permission to edit this bill.");
+            return;
+        }
+        
         setViewMode(true);
     }
 
@@ -1098,6 +1168,12 @@ public class BillDetailsPanel extends JPanel {
             return;
         }
 
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !(currentUser.isAdmin() || currentUser.isReception())) {
+            showError("You don't have permission to mark this bill as paid.");
+            return;
+        }
+
         int confirm = JOptionPane.showConfirmDialog(
             this,
             "Are you sure you want to mark this bill as paid?",
@@ -1117,6 +1193,7 @@ public class BillDetailsPanel extends JPanel {
                 showSuccess("Bill marked as paid!");
                 statusLabel.setText("Bill marked as paid");
                 statusLabel.setForeground(SUCCESS_COLOR);
+                updateActionButtons();
             } else {
                 showError("Failed to mark bill as paid.");
             }
@@ -1310,6 +1387,12 @@ public class BillDetailsPanel extends JPanel {
     private void deleteBill() {
         if (currentBill == null) {
             showError("No bill loaded to delete.");
+            return;
+        }
+
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS")) {
+            showError("You don't have permission to delete this bill.");
             return;
         }
 

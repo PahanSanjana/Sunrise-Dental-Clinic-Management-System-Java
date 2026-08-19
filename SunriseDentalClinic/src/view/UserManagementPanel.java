@@ -3,6 +3,8 @@ package view;
 import controller.UserController;
 import model.User;
 import model.User.UserRole;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -59,7 +61,8 @@ public class UserManagementPanel extends JPanel {
         this.controller = new UserController(this);
         initComponents();
         loadUsers();
-        startAutoRefresh(); // ✅ Start auto-refresh
+        startAutoRefresh();
+        updateActionButtons();
     }
 
     private void initComponents() {
@@ -98,6 +101,49 @@ public class UserManagementPanel extends JPanel {
     public void removeNotify() {
         super.removeNotify();
         stopAutoRefresh();
+    }
+
+    // =====================================================
+    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // =====================================================
+
+    /**
+     * Update action button visibility based on user role
+     */
+    private void updateActionButtons() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        // User management is ADMIN only
+        boolean isAdmin = currentUser.isAdmin();
+        
+        // Edit button - Only ADMIN can edit user roles
+        editButton.setVisible(isAdmin);
+        
+        // Deactivate button - Only ADMIN can deactivate users
+        deactivateButton.setVisible(isAdmin);
+        
+        // Activate button - Only ADMIN can activate users
+        activateButton.setVisible(isAdmin);
+        
+        // Role filter - Only ADMIN can filter by role
+        roleFilterCombo.setVisible(isAdmin);
+        
+        // Status filter - Only ADMIN can filter by status
+        statusFilterCombo.setVisible(isAdmin);
+        
+        // Search field - Only ADMIN can search users
+        searchField.setVisible(isAdmin);
+        
+        // Refresh button - Only ADMIN can refresh
+        refreshButton.setVisible(isAdmin);
+        
+        // If not admin, show a message
+        if (!isAdmin) {
+            statusLabel.setText("User management is restricted to Administrators only.");
+        }
     }
 
     // =====================================================
@@ -254,8 +300,14 @@ public class UserManagementPanel extends JPanel {
         editButton = createStyledButton("Edit Role", SOFT_SURFACE, PRIMARY_DARK);
         editButton.setBorderColor(LIGHT_SURFACE);
         editButton.setPreferredSize(new Dimension(120, 30));
-        editButton.addActionListener(e -> editUserRole());
-        // ✅ Set icon using Ikonli
+        editButton.addActionListener(e -> {
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            if (currentUser == null || !currentUser.isAdmin()) {
+                showError("Only Administrators can edit user roles.");
+                return;
+            }
+            editUserRole();
+        });
         editButton.setIcon(icon(FontAwesomeSolid.EDIT, 12, PRIMARY_DARK));
         editButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         editButton.setIconTextGap(6);
@@ -263,7 +315,14 @@ public class UserManagementPanel extends JPanel {
         deactivateButton = createStyledButton("Deactivate", SOFT_SURFACE, ERROR_COLOR);
         deactivateButton.setBorderColor(LIGHT_SURFACE);
         deactivateButton.setPreferredSize(new Dimension(120, 30));
-        deactivateButton.addActionListener(e -> deactivateUser());
+        deactivateButton.addActionListener(e -> {
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            if (currentUser == null || !currentUser.isAdmin()) {
+                showError("Only Administrators can deactivate users.");
+                return;
+            }
+            deactivateUser();
+        });
         deactivateButton.setIcon(icon(FontAwesomeSolid.TIMES_CIRCLE, 12, ERROR_COLOR));
         deactivateButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         deactivateButton.setIconTextGap(6);
@@ -271,7 +330,14 @@ public class UserManagementPanel extends JPanel {
         activateButton = createStyledButton("Activate", SOFT_SURFACE, SUCCESS_COLOR);
         activateButton.setBorderColor(LIGHT_SURFACE);
         activateButton.setPreferredSize(new Dimension(120, 30));
-        activateButton.addActionListener(e -> activateUser());
+        activateButton.addActionListener(e -> {
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            if (currentUser == null || !currentUser.isAdmin()) {
+                showError("Only Administrators can activate users.");
+                return;
+            }
+            activateUser();
+        });
         activateButton.setIcon(icon(FontAwesomeSolid.CHECK_CIRCLE, 12, SUCCESS_COLOR));
         activateButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         activateButton.setIconTextGap(6);
@@ -393,6 +459,15 @@ public class UserManagementPanel extends JPanel {
     // ========================
 
     public void loadUsers() {
+        // Check if user is admin before loading
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            statusLabel.setText("User management is restricted to Administrators only.");
+            countLabel.setText("Total: 0 users");
+            tableModel.setRowCount(0);
+            return;
+        }
+        
         String searchText = searchField.getText().trim();
         String role = (String) roleFilterCombo.getSelectedItem();
         String status = (String) statusFilterCombo.getSelectedItem();
@@ -470,6 +545,13 @@ public class UserManagementPanel extends JPanel {
             return;
         }
         
+        // Double-check permission
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            showError("Only Administrators can edit user roles.");
+            return;
+        }
+        
         int userId = (int) tableModel.getValueAt(row, 0);
         String username = (String) tableModel.getValueAt(row, 1);
         String currentRole = (String) tableModel.getValueAt(row, 3);
@@ -507,6 +589,13 @@ public class UserManagementPanel extends JPanel {
             return;
         }
         
+        // Double-check permission
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            showError("Only Administrators can deactivate users.");
+            return;
+        }
+        
         int userId = (int) tableModel.getValueAt(row, 0);
         String username = (String) tableModel.getValueAt(row, 1);
         
@@ -533,6 +622,13 @@ public class UserManagementPanel extends JPanel {
         int row = userTable.getSelectedRow();
         if (row == -1) {
             showError("Please select a user to activate.");
+            return;
+        }
+        
+        // Double-check permission
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            showError("Only Administrators can activate users.");
             return;
         }
         

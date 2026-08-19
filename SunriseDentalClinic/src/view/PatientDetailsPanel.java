@@ -2,6 +2,9 @@ package view;
 
 import controller.PatientController;
 import model.Patient;
+import model.User;
+import model.LoginSession;
+import model.RolePermissions;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -79,6 +82,7 @@ public class PatientDetailsPanel extends JPanel {
         setViewMode(false);
         displayEmptyState();
         startAutoRefresh();
+        updateActionButtons();
     }
 
     public PatientDetailsPanel(Patient patient) {
@@ -88,6 +92,7 @@ public class PatientDetailsPanel extends JPanel {
         setViewMode(false);
         displayPatient(patient);
         startAutoRefresh();
+        updateActionButtons();
     }
 
     // =====================================================
@@ -147,12 +152,56 @@ public class PatientDetailsPanel extends JPanel {
         return button;
     }
 
+    // =====================================================
+    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // =====================================================
+
+    /**
+     * Update action button visibility based on user role
+     */
+    private void updateActionButtons() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return;
+        }
+        
+        // Check permissions based on user role
+        boolean canEdit = RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_PATIENTS");
+        boolean canDelete = RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_PATIENTS");
+        boolean canView = true; // All roles can view patients
+        
+        // For Dentist - can only view, not edit/delete
+        if (currentUser.isDentist()) {
+            canEdit = false;
+            canDelete = false;
+        }
+        
+        // For Patient - can only view themselves, not edit/delete
+        if (currentUser.isPatient()) {
+            canEdit = false;
+            canDelete = false;
+            // Patient can only view themselves (handled in display logic)
+        }
+        
+        // Update button visibility
+        editButton.setVisible(canEdit && !isEditMode);
+        deleteButton.setVisible(canDelete && !isEditMode);
+        saveButton.setVisible(isEditMode);
+        cancelButton.setVisible(isEditMode);
+        
+        // Back button always visible
+        backButton.setVisible(true);
+    }
+
     private void loadPatientData() {
         if (currentPatient != null) {
-            Patient updatedPatient = controller.getPatientById(currentPatient.getPatientId());
+            // Use controller with permission check
+            User currentUser = LoginSession.getInstance().getCurrentUser();
+            Patient updatedPatient = controller.getPatientByIdForUser(currentPatient.getPatientId(), currentUser);
             if (updatedPatient != null) {
                 currentPatient = updatedPatient;
                 displayPatient(currentPatient);
+                updateActionButtons();
             }
         }
     }
@@ -695,6 +744,7 @@ public class PatientDetailsPanel extends JPanel {
         
         statusLabel.setText(" ");
         setViewMode(false);
+        updateActionButtons();
     }
 
     public void toggleEditMode() {
@@ -702,6 +752,13 @@ public class PatientDetailsPanel extends JPanel {
             showError("No patient loaded to edit.");
             return;
         }
+        
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_PATIENTS")) {
+            showError("You don't have permission to edit this patient.");
+            return;
+        }
+        
         setViewMode(true);
     }
 
@@ -721,6 +778,7 @@ public class PatientDetailsPanel extends JPanel {
         updatedDateLabel.setText("Last Updated: --");
         statusLabel.setText("No patient selected");
         setViewMode(false);
+        updateActionButtons();
     }
 
     private void setViewMode(boolean editMode) {
@@ -737,8 +795,15 @@ public class PatientDetailsPanel extends JPanel {
         allergiesArea.setEnabled(editMode);
         dobField.setEnabled(editMode);
 
-        editButton.setVisible(!editMode);
-        deleteButton.setVisible(!editMode);
+        // Update button visibility based on role and edit mode
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        boolean canEdit = currentUser != null && 
+                          RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_PATIENTS");
+        boolean canDelete = currentUser != null && 
+                            RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_PATIENTS");
+
+        editButton.setVisible(!editMode && canEdit);
+        deleteButton.setVisible(!editMode && canDelete);
         saveButton.setVisible(editMode);
         cancelButton.setVisible(editMode);
 
@@ -826,6 +891,12 @@ public class PatientDetailsPanel extends JPanel {
     private void deletePatient() {
         if (currentPatient == null) {
             showError("No patient loaded to delete.");
+            return;
+        }
+
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null || !RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_PATIENTS")) {
+            showError("You don't have permission to delete this patient.");
             return;
         }
 
