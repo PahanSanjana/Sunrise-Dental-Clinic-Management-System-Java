@@ -14,7 +14,6 @@ import javax.imageio.ImageIO;
 
 public class Signup extends javax.swing.JFrame {
     
-    // Color Palette - Modern & Minimal
     private static final Color PRIMARY_DARK = new Color(0x2F3E3C);
     private static final Color PRIMARY_LIGHT = new Color(0x4A6A65);
     private static final Color MINT = new Color(0xBDDBD1);
@@ -26,7 +25,6 @@ public class Signup extends javax.swing.JFrame {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color CARD_BG = new Color(255, 255, 255);
 
-    // Form Fields - Full Patient Details
     private JTextField usernameField;
     private JTextField fullNameField;
     private JComboBox<String> genderCombo;
@@ -71,43 +69,31 @@ public class Signup extends javax.swing.JFrame {
         setMinimumSize(new Dimension(1100, 700));
         setResizable(true);
 
-        // Main panel with BorderLayout
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(SOFT_SURFACE);
 
-        // Create the split panel
         JPanel splitPanel = new JPanel(new GridLayout(1, 2));
         splitPanel.setBackground(SOFT_SURFACE);
 
-        // Left Panel - Signup Form (60% width)
         splitPanel.add(createSignupPanel());
-        
-        // Right Panel - Welcome Branding (40% width)
         splitPanel.add(createWelcomePanel());
 
         mainPanel.add(splitPanel, BorderLayout.CENTER);
         setContentPane(mainPanel);
     }
 
-    // =====================================================
     // LEFT PANEL - Signup Form (Professional Layout)
-    // =====================================================
     private JPanel createSignupPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(SOFT_SURFACE);
         panel.setBorder(new EmptyBorder(20, 40, 20, 40));
 
-        // Create the form panel with proper layout
         JPanel formPanel = new JPanel();
         formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBackground(SOFT_SURFACE);
         formPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
-        // =============================================
-        // HEADER SECTION
-        // =============================================
-        
-        // Logo + Brand
+        // HEADER SECTION        
         JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         brandPanel.setOpaque(false);
         brandPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -122,15 +108,13 @@ public class Signup extends javax.swing.JFrame {
         
         formPanel.add(brandPanel);
         formPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-
-        // Title
+ 
         JLabel titleLabel = new JLabel("Create Account");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         formPanel.add(titleLabel);
 
-        // Subtitle
         JLabel subtitleLabel = new JLabel("Sign up as a new patient");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(SECONDARY_TEXT);
@@ -138,10 +122,7 @@ public class Signup extends javax.swing.JFrame {
         formPanel.add(subtitleLabel);
         formPanel.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // =============================================
         // FORM FIELDS CONTAINER
-        // =============================================
-        
         JPanel fieldsPanel = new JPanel();
         fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));
         fieldsPanel.setBackground(Color.WHITE);
@@ -156,11 +137,7 @@ public class Signup extends javax.swing.JFrame {
         int labelGap = 2;
         int fieldGap = 6;
 
-        // =============================================
         // LOGIN CREDENTIALS SECTION
-        // =============================================
-        
-        // Section Label
         JLabel loginSectionLabel = new JLabel("LOGIN CREDENTIALS");
         loginSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         loginSectionLabel.setForeground(PRIMARY_LIGHT);
@@ -168,7 +145,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(loginSectionLabel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        // Username
         JLabel userLabel = new JLabel("Username *");
         userLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         userLabel.setForeground(PRIMARY_DARK);
@@ -182,7 +158,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(usernameField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Password
         JLabel passLabelTitle = new JLabel("Password *");
         passLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         passLabelTitle.setForeground(PRIMARY_DARK);
@@ -196,7 +171,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(passwordField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Confirm Password
         JLabel confirmLabelTitle = new JLabel("Confirm Password *");
         confirmLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         confirmLabelTitle.setForeground(PRIMARY_DARK);
@@ -210,11 +184,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(confirmPasswordField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // =============================================
-        // PERSONAL INFORMATION SECTION
-        // =============================================
-        
-        // Section Label
+        // PERSONAL INFORMATION SECTION        
         JLabel personalSectionLabel = new JLabel("PERSONAL INFORMATION");
         personalSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         personalSectionLabel.setForeground(PRIMARY_LIGHT);
@@ -222,7 +192,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(personalSectionLabel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        // Full Name
         JLabel nameLabel = new JLabel("Full Name *");
         nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         nameLabel.setForeground(PRIMARY_DARK);
@@ -236,7 +205,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(fullNameField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Gender + DOB in one row
         JPanel rowPanel = new JPanel(new GridLayout(1, 2, 15, 0));
         rowPanel.setOpaque(false);
         rowPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -273,11 +241,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(rowPanel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // =============================================
-        // CONTACT INFORMATION SECTION
-        // =============================================
-        
-        // Section Label
         JLabel contactSectionLabel = new JLabel("CONTACT INFORMATION");
         contactSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         contactSectionLabel.setForeground(PRIMARY_LIGHT);
@@ -285,7 +248,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(contactSectionLabel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        // Email
         JLabel emailLabelTitle = new JLabel("Email");
         emailLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         emailLabelTitle.setForeground(PRIMARY_DARK);
@@ -299,7 +261,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(emailField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Phone
         JLabel phoneLabelTitle = new JLabel("Phone Number *");
         phoneLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         phoneLabelTitle.setForeground(PRIMARY_DARK);
@@ -313,7 +274,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(phoneField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Address - FIXED ALIGNMENT
         JLabel addressLabelTitle = new JLabel("Address");
         addressLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         addressLabelTitle.setForeground(PRIMARY_DARK);
@@ -333,11 +293,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(addressScroll);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // =============================================
-        // EMERGENCY CONTACT SECTION
-        // =============================================
-        
-        // Section Label
+        // EMERGENCY CONTACT SECTION     
         JLabel emergencySectionLabel = new JLabel("EMERGENCY CONTACT");
         emergencySectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         emergencySectionLabel.setForeground(PRIMARY_LIGHT);
@@ -345,7 +301,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(emergencySectionLabel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        // Emergency Contact Name
         JLabel emergencyLabel = new JLabel("Contact Name");
         emergencyLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         emergencyLabel.setForeground(PRIMARY_DARK);
@@ -359,7 +314,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(emergencyContactField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Emergency Phone
         JLabel emergencyPhoneLabel = new JLabel("Contact Phone");
         emergencyPhoneLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         emergencyPhoneLabel.setForeground(PRIMARY_DARK);
@@ -373,11 +327,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(emergencyPhoneField);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // =============================================
-        // MEDICAL INFORMATION SECTION
-        // =============================================
-        
-        // Section Label
+        // MEDICAL INFORMATION SECTION        
         JLabel medicalSectionLabel = new JLabel("MEDICAL INFORMATION");
         medicalSectionLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         medicalSectionLabel.setForeground(PRIMARY_LIGHT);
@@ -385,7 +335,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(medicalSectionLabel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        // Medical History - FIXED ALIGNMENT
         JLabel medicalLabel = new JLabel("Medical History");
         medicalLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         medicalLabel.setForeground(PRIMARY_DARK);
@@ -405,7 +354,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(medicalScroll);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // Allergies - FIXED ALIGNMENT
         JLabel allergiesLabelTitle = new JLabel("Allergies");
         allergiesLabelTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         allergiesLabelTitle.setForeground(PRIMARY_DARK);
@@ -425,11 +373,7 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(allergiesScroll);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, fieldGap)));
 
-        // =============================================
-        // MESSAGE & BUTTONS
-        // =============================================
-        
-        // Message
+        // MESSAGE & BUTTONS        
         messageLabel = new JLabel(" ");
         messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         messageLabel.setForeground(ERROR_COLOR);
@@ -437,7 +381,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(messageLabel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, 6)));
 
-        // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         buttonPanel.setOpaque(false);
         buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -456,7 +399,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(buttonPanel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, 6)));
 
-        // Login Link
         JPanel loginLinkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         loginLinkPanel.setOpaque(false);
         loginLinkPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -478,7 +420,6 @@ public class Signup extends javax.swing.JFrame {
         fieldsPanel.add(loginLinkPanel);
         fieldsPanel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        // Add fields panel to scroll pane
         JScrollPane scrollPane = new JScrollPane(fieldsPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
@@ -491,9 +432,7 @@ public class Signup extends javax.swing.JFrame {
         return panel;
     }
 
-    // =====================================================
     // RIGHT PANEL - Welcome Branding
-    // =====================================================
     private JPanel createWelcomePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(PRIMARY_DARK);
@@ -568,10 +507,7 @@ public class Signup extends javax.swing.JFrame {
         return panel;
     }
 
-    // =====================================================
-    // HELPER METHODS
-    // =====================================================
-    
+    // HELPER METHODS    
     private JLabel createLogoLabel() {
         JLabel logo = new JLabel();
         try {
@@ -641,9 +577,6 @@ public class Signup extends javax.swing.JFrame {
         return new RoundedButton(text, bg, fg);
     }
 
-    // =====================================================
-    // ROUNDED BUTTON
-    // =====================================================
     private static class RoundedButton extends JButton {
         private Color bg;
         private Color borderColor;
@@ -708,11 +641,7 @@ public class Signup extends javax.swing.JFrame {
         }
     }
 
-    // =====================================================
     // PUBLIC METHODS FOR CONTROLLER
-    // =====================================================
-    
-    // Login credentials
     public String getUsername() {
         return usernameField.getText().trim();
     }
@@ -803,6 +732,16 @@ public class Signup extends javax.swing.JFrame {
 
     public void addLoginLinkListener(ActionListener listener) {
         loginLinkButton.addActionListener(listener);
+    }
+
+    public void navigateToLogin() {
+        // Navigate to Login page
+        this.dispose();
+        SwingUtilities.invokeLater(() -> {
+            Login loginView = new Login();
+            new controller.LoginController(loginView);
+            loginView.setVisible(true);
+        });
     }
 
     public static void main(String[] args) {

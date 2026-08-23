@@ -112,12 +112,12 @@ public class LoginSession {
         return null;
     }
 
-    // ✅ Check if user has access to a specific page
+    // ✅ Check if user has access to a specific page - FIXED
     public boolean hasPageAccess(String cardName) {
         if (currentUser == null) {
             return false;
         }
-        return RolePermissions.hasAccess(currentUser.getRole(), cardName);
+        return RolePermissions.hasPageAccess(currentUser.getRole(), cardName);
     }
 
     // ✅ Get the appropriate dashboard card for the current user
@@ -128,13 +128,13 @@ public class LoginSession {
         
         switch (currentUser.getRole()) {
             case ADMIN:
-                return "DASHBOARD"; // AdminDashboard
+                return "DASHBOARD";
             case RECEPTION:
-                return "DASHBOARD"; // ReceptionDashboard
+                return "DASHBOARD";
             case DENTIST:
-                return "DASHBOARD"; // DentistDashboard
+                return "DASHBOARD";
             case PATIENT:
-                return "DASHBOARD"; // PatientDashboard
+                return "DASHBOARD";
             default:
                 return "DASHBOARD";
         }

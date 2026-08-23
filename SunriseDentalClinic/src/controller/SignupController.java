@@ -147,7 +147,7 @@ public class SignupController {
                 profileData.put("address", finalAddress);
                 profileData.put("contactNumber", finalPhone);
                 profileData.put("email", finalEmail);
-                profileData.put("dateOfBirth", finalDateOfBirth);  // ✅ java.sql.Date
+                profileData.put("dateOfBirth", finalDateOfBirth);
                 profileData.put("emergencyContact", finalEmergencyContact);
                 profileData.put("emergencyPhone", finalEmergencyPhone);
                 profileData.put("medicalHistory", finalMedicalHistory);
@@ -170,10 +170,10 @@ public class SignupController {
                         signupView.showSuccess("Account created successfully!");
                         signupView.clearFields();
                         
-                        // ✅ Auto-login and open main application
+                        // ✅ FIXED: Navigate to Login page instead of Dashboard
                         Timer timer = new Timer(1500, e -> {
                             signupView.dispose();
-                            openMainApplication(user);
+                            openLoginView();  // ✅ Opens Login page, NOT Dashboard
                         });
                         timer.setRepeats(false);
                         timer.start();
@@ -189,15 +189,7 @@ public class SignupController {
         worker.execute();
     }
 
-    private void openMainApplication(User user) {
-        // ✅ Use login() method
-        LoginSession.getInstance().login(user);
-        SwingUtilities.invokeLater(() -> {
-            MainFrame mainFrame = new MainFrame();
-            mainFrame.configureSidebarForRole(user.getRole());
-            mainFrame.setVisible(true);
-        });
-    }
+    // ✅ REMOVED: openMainApplication() - No longer needed
 
     private void openLoginView() {
         SwingUtilities.invokeLater(() -> {

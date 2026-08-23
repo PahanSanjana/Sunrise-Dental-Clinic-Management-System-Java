@@ -393,7 +393,7 @@ public class SidebarPanel extends JPanel {
                 g2.setColor(PRIMARY_DARK);
                 g2.setFont(new Font(FONT_FAMILY, Font.BOLD, 16));
                 FontMetrics fm = g2.getFontMetrics();
-                User currentUser = model.LoginSession.getInstance().getCurrentUser();
+                User currentUser = LoginSession.getInstance().getCurrentUser();
                 String initial = currentUser != null ? 
                     String.valueOf(currentUser.getUsername().charAt(0)).toUpperCase() : "U";
                 int textX = (getWidth() - fm.stringWidth(initial)) / 2;
@@ -431,7 +431,7 @@ public class SidebarPanel extends JPanel {
     }
 
     private void updateUserFooter() {
-        User currentUser = model.LoginSession.getInstance().getCurrentUser();
+        User currentUser = LoginSession.getInstance().getCurrentUser();
         if (currentUser != null) {
             userNameLabel.setText(currentUser.getUsername());
             userRoleLabel.setText(currentUser.getRole().name());
