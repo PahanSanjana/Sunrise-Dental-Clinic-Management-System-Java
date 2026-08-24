@@ -15,10 +15,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 public class UserProfilePanel extends JPanel {
     
-    // Color Palette
     private static final Color PRIMARY_DARK = new Color(0x2F3E3C);
     private static final Color MINT = new Color(0xBDDBD1);
     private static final Color SOFT_SURFACE = new Color(0xFBF9F1);
@@ -27,15 +27,12 @@ public class UserProfilePanel extends JPanel {
     private static final Color SUCCESS_COLOR = new Color(60, 160, 80);
     private static final Color SECONDARY_TEXT = new Color(122, 138, 135);
 
-    // Refresh button colors
     private static final Color COLOR_REFRESH = new Color(52, 152, 219);
     private static final Color COLOR_REFRESH_HOVER = new Color(41, 128, 185);
 
     private static final String UI_FONT_FAMILY = "Segoe UI";
 
-    // =====================================================
     // ICON HELPERS (Ikonli FontIcon)
-    // =====================================================
     private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
         return FontIcon.of(glyph, size, color);
     }
@@ -44,7 +41,6 @@ public class UserProfilePanel extends JPanel {
         return new JLabel(icon(glyph, size, color));
     }
 
-    // Components
     private JLabel usernameLabel;
     private JLabel emailLabel;
     private JLabel roleLabel;
@@ -52,10 +48,8 @@ public class UserProfilePanel extends JPanel {
     private JLabel createdDateLabel;
     private JLabel lastLoginLabel;
     
-    // Profile details for each role
     private JPanel profileDetailsPanel;
     
-    // Buttons
     private RoundedButton editProfileButton;
     private RoundedButton changePasswordButton;
     private JButton refreshButton;
@@ -64,7 +58,6 @@ public class UserProfilePanel extends JPanel {
     private UserProfileController controller;
     private User currentUser;
 
-    // ✅ Auto-refresh timer (hidden)
     private Timer refreshTimer;
     private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
 
@@ -72,7 +65,7 @@ public class UserProfilePanel extends JPanel {
         initComponents();
         this.controller = new UserProfileController(this);
         loadUserProfile();
-        startAutoRefresh(); // ✅ Start auto-refresh
+        startAutoRefresh();
     }
 
     private void initComponents() {
@@ -80,19 +73,29 @@ public class UserProfilePanel extends JPanel {
         setBackground(SOFT_SURFACE);
         setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header Panel
         add(createHeaderPanel(), BorderLayout.NORTH);
         
-        // Main Content Panel
-        add(createMainContentPanel(), BorderLayout.CENTER);
+        JPanel mainWrapper = new JPanel(new BorderLayout());
+        mainWrapper.setBackground(Color.WHITE);
+        mainWrapper.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
+            new EmptyBorder(20, 30, 20, 30)
+        ));
         
-        // Footer Panel
+        JPanel mainContentPanel = createMainContentPanel();
+        
+        JScrollPane scrollPane = new JScrollPane(mainContentPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(12, 0));
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        
+        mainWrapper.add(scrollPane, BorderLayout.CENTER);
+        add(mainWrapper, BorderLayout.CENTER);
+        
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
-    // =====================================================
-    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
-    // =====================================================
     
     private void startAutoRefresh() {
         if (refreshTimer == null) {
@@ -118,9 +121,7 @@ public class UserProfilePanel extends JPanel {
         stopAutoRefresh();
     }
 
-    // =====================================================
-    // HEADER PANEL - With Manual Refresh Icon Only
-    // =====================================================
+    // HEADER PANEL 
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(SOFT_SURFACE);
@@ -141,7 +142,6 @@ public class UserProfilePanel extends JPanel {
         titlePanel.add(titleLabel);
         titlePanel.add(subtitleLabel);
 
-        // ✅ Manual Refresh Button - ICON ONLY
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
         
@@ -157,9 +157,6 @@ public class UserProfilePanel extends JPanel {
         return header;
     }
 
-    // =====================================================
-    // ✅ CREATE ICON BUTTON (No text, only icon)
-    // =====================================================
     private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
         JButton button = new JButton(icon(glyph, 18, Color.WHITE));
         button.setBackground(bg);
@@ -190,20 +187,13 @@ public class UserProfilePanel extends JPanel {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(Color.WHITE);
-        mainPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
-            new EmptyBorder(20, 30, 20, 30)
-        ));
 
-        // User Info Section
         mainPanel.add(createUserInfoSection());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        // Profile Details Section (role-specific)
         mainPanel.add(createProfileDetailsSection());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        // Action Buttons
         mainPanel.add(createActionPanel());
 
         return mainPanel;
@@ -231,7 +221,6 @@ public class UserProfilePanel extends JPanel {
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.weightx = 1.0;
 
-        // Row 0: Username
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
@@ -248,7 +237,6 @@ public class UserProfilePanel extends JPanel {
         usernameLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(usernameLabel, gbc);
 
-        // Row 0: Role
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
@@ -265,7 +253,6 @@ public class UserProfilePanel extends JPanel {
         roleLabel.setForeground(PRIMARY_DARK);
         infoPanel.add(roleLabel, gbc);
 
-        // Row 1: Email
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -282,7 +269,6 @@ public class UserProfilePanel extends JPanel {
         emailLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(emailLabel, gbc);
 
-        // Row 1: Status
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
@@ -298,7 +284,6 @@ public class UserProfilePanel extends JPanel {
         statusLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(statusLabel, gbc);
 
-        // Row 2: Created Date
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 1;
@@ -315,7 +300,6 @@ public class UserProfilePanel extends JPanel {
         createdDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         infoPanel.add(createdDateLabel, gbc);
 
-        // Row 3: Last Login
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 1;
@@ -354,7 +338,6 @@ public class UserProfilePanel extends JPanel {
         profileDetailsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         profileDetailsPanel.setLayout(new BoxLayout(profileDetailsPanel, BoxLayout.Y_AXIS));
 
-        // Initially show loading message
         JLabel loadingLabel = new JLabel("Loading profile details...");
         loadingLabel.setFont(new Font(UI_FONT_FAMILY, Font.ITALIC, 13));
         loadingLabel.setForeground(SECONDARY_TEXT);
@@ -415,7 +398,6 @@ public class UserProfilePanel extends JPanel {
         return button;
     }
 
-    // Inner class for RoundedButton
     private static class RoundedButton extends JButton {
         private Color bg;
         private Color borderColor;
@@ -481,13 +463,8 @@ public class UserProfilePanel extends JPanel {
         }
     }
 
-    // =====================================================
-    // PUBLIC METHODS FOR CONTROLLER
-    // =====================================================
 
-    /**
-     * Load user profile - refreshes from database
-     */
+
     public void loadUserProfile() {
         int userId = LoginSession.getInstance().getCurrentUserId();
         
@@ -535,15 +512,33 @@ public class UserProfilePanel extends JPanel {
                 loadDentistProfile(user);
                 break;
             default:
-                JLabel label = new JLabel("No profile details available for this role.");
-                label.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
-                label.setForeground(SECONDARY_TEXT);
-                profileDetailsPanel.add(label);
+                addNoProfileMessage();
                 break;
         }
 
         profileDetailsPanel.revalidate();
         profileDetailsPanel.repaint();
+    }
+
+    private void addNoProfileMessage() {
+        JLabel label = new JLabel("No profile details available for this role.");
+        label.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
+        label.setForeground(SECONDARY_TEXT);
+        profileDetailsPanel.add(label);
+    }
+
+    private void addEmptyProfileMessage(String roleName) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.setBackground(Color.WHITE);
+        
+        JLabel iconLabel = iconLabel(FontAwesomeSolid.EXCLAMATION_TRIANGLE, 24, ERROR_COLOR);
+        JLabel messageLabel = new JLabel(" No " + roleName + " profile found. Please contact administrator.");
+        messageLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
+        messageLabel.setForeground(ERROR_COLOR);
+        
+        panel.add(iconLabel);
+        panel.add(messageLabel);
+        profileDetailsPanel.add(panel);
     }
 
     private void loadAdminProfile(User user) {
@@ -553,58 +548,116 @@ public class UserProfilePanel extends JPanel {
     }
 
     private void loadPatientProfile(User user) {
+        profileDetailsPanel.add(new JLabel("Loading patient data..."));
+        profileDetailsPanel.revalidate();
+        
         controller.loadPatientProfile(user.getUserId(), data -> {
-            if (data != null) {
-                addProfileField("Patient ID", String.valueOf(data.get("patientId")));
-                addProfileField("Full Name", (String) data.get("patientName"));
-                addProfileField("Gender", (String) data.get("gender"));
-                addProfileField("Contact Number", (String) data.get("contactNumber"));
-                addProfileField("Email", (String) data.get("email"));
-                addProfileField("Address", (String) data.get("address"));
-                addProfileField("Date of Birth", (String) data.get("dateOfBirth"));
-                addProfileField("Medical History", (String) data.get("medicalHistory"));
-                addProfileField("Allergies", (String) data.get("allergies"));
-            } else {
-                addProfileField("Status", "No patient profile found. Please contact admin.");
-            }
+            SwingUtilities.invokeLater(() -> {
+                profileDetailsPanel.removeAll();
+                profileDetailsPanel.setLayout(new BoxLayout(profileDetailsPanel, BoxLayout.Y_AXIS));
+                
+                if (data != null && !data.isEmpty()) {
+                    if (data.get("patientId") != null && ((Number) data.get("patientId")).intValue() > 0) {
+                        addProfileField("Patient ID", String.valueOf(data.get("patientId")));
+                        addProfileField("Full Name", getString(data.get("patientName")));
+                        addProfileField("Gender", getString(data.get("gender")));
+                        addProfileField("Contact Number", getString(data.get("contactNumber")));
+                        addProfileField("Email", getString(data.get("email")));
+                        addProfileField("Address", getString(data.get("address")));
+                        addProfileField("Date of Birth", getString(data.get("dateOfBirth")));
+                        addProfileField("Emergency Contact", getString(data.get("emergencyContact")));
+                        addProfileField("Emergency Phone", getString(data.get("emergencyPhone")));
+                        addProfileField("Medical History", getString(data.get("medicalHistory")));
+                        addProfileField("Allergies", getString(data.get("allergies")));
+                    } else {
+                        addEmptyProfileMessage("patient");
+                    }
+                } else {
+                    addEmptyProfileMessage("patient");
+                }
+                
+                profileDetailsPanel.revalidate();
+                profileDetailsPanel.repaint();
+            });
         });
     }
 
     private void loadStaffProfile(User user) {
+        profileDetailsPanel.add(new JLabel("Loading staff data..."));
+        profileDetailsPanel.revalidate();
+        
         controller.loadStaffProfile(user.getUserId(), data -> {
-            if (data != null) {
-                addProfileField("Staff ID", String.valueOf(data.get("staffId")));
-                addProfileField("First Name", (String) data.get("firstName"));
-                addProfileField("Last Name", (String) data.get("lastName"));
-                addProfileField("Position", (String) data.get("position"));
-                addProfileField("Department", (String) data.get("department"));
-                addProfileField("Phone", (String) data.get("phone"));
-                addProfileField("Email", (String) data.get("email"));
-                addProfileField("Hire Date", (String) data.get("hireDate"));
-                addProfileField("Salary", "$" + data.get("salary"));
-            } else {
-                addProfileField("Status", "No staff profile found. Please contact admin.");
-            }
+            SwingUtilities.invokeLater(() -> {
+                profileDetailsPanel.removeAll();
+                profileDetailsPanel.setLayout(new BoxLayout(profileDetailsPanel, BoxLayout.Y_AXIS));
+                
+                if (data != null && !data.isEmpty()) {
+                    if (data.get("staffId") != null && ((Number) data.get("staffId")).intValue() > 0) {
+                        addProfileField("Staff ID", String.valueOf(data.get("staffId")));
+                        addProfileField("Full Name", getString(data.get("fullName")));
+                        addProfileField("First Name", getString(data.get("firstName")));
+                        addProfileField("Last Name", getString(data.get("lastName")));
+                        addProfileField("Position", getString(data.get("position")));
+                        addProfileField("Department", getString(data.get("department")));
+                        addProfileField("Phone", getString(data.get("phone")));
+                        addProfileField("Email", getString(data.get("email")));
+                        addProfileField("Hire Date", getString(data.get("hireDate")));
+                        addProfileField("Salary", data.get("salary") != null ? "$" + data.get("salary") : "N/A");
+                        addProfileField("Status", data.get("isActive") != null ? 
+                            (Boolean) data.get("isActive") ? "Active" : "Inactive" : "N/A");
+                    } else {
+                        addEmptyProfileMessage("staff");
+                    }
+                } else {
+                    addEmptyProfileMessage("staff");
+                }
+                
+                profileDetailsPanel.revalidate();
+                profileDetailsPanel.repaint();
+            });
         });
     }
 
     private void loadDentistProfile(User user) {
+        profileDetailsPanel.add(new JLabel("Loading dentist data..."));
+        profileDetailsPanel.revalidate();
+        
         controller.loadDentistProfile(user.getUserId(), data -> {
-            if (data != null) {
-                addProfileField("Dentist ID", String.valueOf(data.get("dentistId")));
-                addProfileField("Dentist Name", (String) data.get("dentistName"));
-                addProfileField("Specialization", (String) data.get("specialization"));
-                addProfileField("License Number", (String) data.get("licenseNumber"));
-                addProfileField("Working Hours", (String) data.get("workingHours"));
-                addProfileField("Phone", (String) data.get("phone"));
-                addProfileField("Email", (String) data.get("email"));
-                addProfileField("Years of Experience", String.valueOf(data.get("yearsOfExperience")));
-                addProfileField("Consultation Fee", "$" + data.get("consultationFee"));
-                addProfileField("Available", (Boolean) data.get("isAvailable") ? "Yes" : "No");
-            } else {
-                addProfileField("Status", "No dentist profile found. Please contact admin.");
-            }
+            SwingUtilities.invokeLater(() -> {
+                profileDetailsPanel.removeAll();
+                profileDetailsPanel.setLayout(new BoxLayout(profileDetailsPanel, BoxLayout.Y_AXIS));
+                
+                if (data != null && !data.isEmpty()) {
+                    if (data.get("dentistId") != null && ((Number) data.get("dentistId")).intValue() > 0) {
+                        addProfileField("Dentist ID", String.valueOf(data.get("dentistId")));
+                        addProfileField("Dentist Name", getString(data.get("dentistName")));
+                        addProfileField("Specialization", getString(data.get("specialization")));
+                        addProfileField("License Number", getString(data.get("licenseNumber")));
+                        addProfileField("Working Hours", getString(data.get("workingHours")));
+                        addProfileField("Phone", getString(data.get("phone")));
+                        addProfileField("Email", getString(data.get("email")));
+                        addProfileField("Years of Experience", String.valueOf(data.get("yearsOfExperience")));
+                        addProfileField("Consultation Fee", data.get("consultationFee") != null ? 
+                            "$" + data.get("consultationFee") : "N/A");
+                        addProfileField("Availability", data.get("isAvailable") != null ? 
+                            (Boolean) data.get("isAvailable") ? "Available" : "Unavailable" : "N/A");
+                    } else {
+                        addEmptyProfileMessage("dentist");
+                    }
+                } else {
+                    addEmptyProfileMessage("dentist");
+                }
+                
+                profileDetailsPanel.revalidate();
+                profileDetailsPanel.repaint();
+            });
         });
+    }
+
+    private String getString(Object value) {
+        if (value == null) return "N/A";
+        String str = value.toString();
+        return str.isEmpty() ? "N/A" : str;
     }
 
     private void addProfileField(String label, String value) {
@@ -677,6 +730,5 @@ public class UserProfilePanel extends JPanel {
     }
 
     private static class MouseAdapter extends java.awt.event.MouseAdapter {
-        // Empty implementation
     }
 }

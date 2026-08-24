@@ -80,13 +80,11 @@ public class EditProfileDialog extends JDialog {
         getContentPane().setBackground(Color.WHITE);
         setModal(true);
 
-        // Main panel with scroll
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Header
         JLabel titleLabel = new JLabel("Edit Profile");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(PRIMARY_DARK);
@@ -94,11 +92,9 @@ public class EditProfileDialog extends JDialog {
         mainPanel.add(titleLabel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // Common fields
         mainPanel.add(createCommonFields());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // Role-specific fields
         switch (currentUser.getRole()) {
             case PATIENT:
                 mainPanel.add(createPatientFields());
@@ -121,7 +117,6 @@ public class EditProfileDialog extends JDialog {
 
         mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Buttons
         mainPanel.add(createButtonPanel());
 
         JScrollPane scrollPane = new JScrollPane(mainPanel);
@@ -129,7 +124,6 @@ public class EditProfileDialog extends JDialog {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Status label at bottom
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         statusPanel.setBackground(Color.WHITE);
         statusPanel.setBorder(new EmptyBorder(5, 30, 10, 30));
@@ -161,7 +155,6 @@ public class EditProfileDialog extends JDialog {
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.weightx = 1.0;
 
-        // Email (editable for all)
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
@@ -208,7 +201,6 @@ public class EditProfileDialog extends JDialog {
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.weightx = 1.0;
 
-        // Patient Name
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
@@ -229,7 +221,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(patientNameField, gbc);
 
-        // Gender
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -246,7 +237,6 @@ public class EditProfileDialog extends JDialog {
         genderCombo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         fieldsPanel.add(genderCombo, gbc);
 
-        // Date of Birth
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -266,7 +256,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(dobField, gbc);
 
-        // Contact Number
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 1;
@@ -287,7 +276,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(contactNumberField, gbc);
 
-        // Email (already in common fields, but we'll show it again for patient)
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -307,7 +295,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(patientEmailField, gbc);
 
-        // Address
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 1;
@@ -333,7 +320,6 @@ public class EditProfileDialog extends JDialog {
         addressScroll.setPreferredSize(new Dimension(300, 60));
         fieldsPanel.add(addressScroll, gbc);
 
-        // Emergency Contact
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 1;
@@ -354,7 +340,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(emergencyContactField, gbc);
 
-        // Emergency Phone
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -374,7 +359,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(emergencyPhoneField, gbc);
 
-        // Medical History
         gbc.gridx = 0;
         gbc.gridy = 5;
         gbc.gridwidth = 1;
@@ -400,7 +384,6 @@ public class EditProfileDialog extends JDialog {
         historyScroll.setPreferredSize(new Dimension(300, 60));
         fieldsPanel.add(historyScroll, gbc);
 
-        // Allergies
         gbc.gridx = 0;
         gbc.gridy = 6;
         gbc.gridwidth = 1;
@@ -452,7 +435,6 @@ public class EditProfileDialog extends JDialog {
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.weightx = 1.0;
 
-        // First Name
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
@@ -473,7 +455,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(firstNameField, gbc);
 
-        // Last Name
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -493,7 +474,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(lastNameField, gbc);
 
-        // Position
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -514,7 +494,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(positionField, gbc);
 
-        // Department
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -534,7 +513,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(departmentField, gbc);
 
-        // Phone
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 1;
@@ -555,7 +533,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(phoneField, gbc);
 
-        // Hire Date
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -575,7 +552,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(hireDateField, gbc);
 
-        // Salary
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 1;
@@ -622,7 +598,6 @@ public class EditProfileDialog extends JDialog {
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.weightx = 1.0;
 
-        // Dentist Name
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
@@ -643,7 +618,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(dentistNameField, gbc);
 
-        // Specialization
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -664,7 +638,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(specializationField, gbc);
 
-        // License Number
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -706,7 +679,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(workingHoursField, gbc);
 
-        // Phone
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -726,7 +698,7 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(dentistPhoneField, gbc);
 
-        // Experience
+         
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 1;
@@ -747,7 +719,6 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(experienceField, gbc);
 
-        // Consultation Fee
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
@@ -767,7 +738,7 @@ public class EditProfileDialog extends JDialog {
         ));
         fieldsPanel.add(consultationFeeField, gbc);
 
-        // Availability
+         
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 1;
@@ -793,18 +764,27 @@ public class EditProfileDialog extends JDialog {
         panel.setBackground(Color.WHITE);
 
         saveButton = new JButton("Save Changes");
-        saveButton.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        saveButton.setBackground(PRIMARY_DARK);
+        saveButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        saveButton.setBackground(new Color(52, 152, 219));  // Bright professional blue
         saveButton.setForeground(Color.WHITE);
         saveButton.setFocusPainted(false);
+        saveButton.setBorderPainted(false);
+        saveButton.setOpaque(true);
+        saveButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        saveButton.setPreferredSize(new Dimension(150, 40));
         saveButton.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
         saveButton.addActionListener(e -> saveProfile());
 
+        // Cancel Button
         cancelButton = new JButton("Cancel");
-        cancelButton.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        cancelButton.setBackground(LIGHT_SURFACE);
-        cancelButton.setForeground(PRIMARY_DARK);
+        cancelButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        cancelButton.setBackground(new Color(236, 240, 241));  // Light gray
+        cancelButton.setForeground(new Color(44, 62, 80));  // Dark text
         cancelButton.setFocusPainted(false);
+        cancelButton.setBorderPainted(false);
+        cancelButton.setOpaque(true);
+        cancelButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancelButton.setPreferredSize(new Dimension(120, 40));
         cancelButton.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
         cancelButton.addActionListener(e -> dispose());
 
@@ -814,10 +794,9 @@ public class EditProfileDialog extends JDialog {
     }
 
     private void loadData() {
-        // Load common data
         emailField.setText(currentUser.getEmail());
 
-        // Load role-specific data
+        // Load role specific data
         if (profileData != null) {
             switch (currentUser.getRole()) {
                 case PATIENT:
@@ -857,14 +836,12 @@ public class EditProfileDialog extends JDialog {
     }
 
     private void saveProfile() {
-        // Validate email
         String email = emailField.getText().trim();
         if (!email.isEmpty() && !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             showError("Please enter a valid email address.");
             return;
         }
 
-        // Save common data (email)
         boolean success = controller.updateUserEmail(currentUser.getUserId(), email);
         
         if (!success) {
@@ -872,7 +849,6 @@ public class EditProfileDialog extends JDialog {
             return;
         }
 
-        // Save role-specific data
         switch (currentUser.getRole()) {
             case PATIENT:
                 success = controller.updatePatientProfile(currentUser.getUserId(), collectPatientData());
