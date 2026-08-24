@@ -2,6 +2,9 @@ package view;
 
 import controller.TreatmentController;
 import model.Treatment;
+import model.LoginSession;
+import model.User;
+import model.User.UserRole;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -64,6 +67,7 @@ public class TreatmentListPanel extends JPanel {
     private JComboBox<String> filterCombo;
     
     private TreatmentController controller;
+    private User currentUser;
 
     // Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -71,6 +75,7 @@ public class TreatmentListPanel extends JPanel {
 
     public TreatmentListPanel() {
         this.controller = new TreatmentController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         initComponents();
         loadTreatments();
         startAutoRefresh();
@@ -188,6 +193,22 @@ public class TreatmentListPanel extends JPanel {
     }
 
     /**
+     * ✅ Check if current user has edit/delete permissions
+     */
+    private boolean hasEditPermission() {
+        if (currentUser == null) return false;
+        UserRole role = currentUser.getRole();
+        return role == UserRole.ADMIN || role == UserRole.RECEPTION;
+    }
+
+    /**
+     * ✅ Check if current user has view permission (all roles can view)
+     */
+    private boolean hasViewPermission() {
+        return currentUser != null;
+    }
+
+    /**
      * ✅ Search Panel - Search and filter controls
      */
     private JPanel createSearchPanel() {
@@ -224,6 +245,7 @@ public class TreatmentListPanel extends JPanel {
         searchButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         searchButton.setIconTextGap(8);
 
+        // Add Treatment button - Only for ADMIN and RECEPTION
         addButton = createStyledButton("Add Treatment", PRIMARY_DARK, Color.WHITE);
         addButton.setPreferredSize(new Dimension(140, 35));
         addButton.addActionListener(e -> {
@@ -238,6 +260,11 @@ public class TreatmentListPanel extends JPanel {
         addButton.setIcon(icon(FontAwesomeSolid.PLUS, 14, Color.WHITE));
         addButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         addButton.setIconTextGap(8);
+        
+        // Hide Add button for DENTIST and PATIENT
+        if (!hasEditPermission()) {
+            addButton.setVisible(false);
+        }
 
         searchPanel.add(new JLabel("Category:"));
         searchPanel.add(categoryCombo);
@@ -297,18 +324,20 @@ public class TreatmentListPanel extends JPanel {
         // Custom cell renderer for status column
         treatmentTable.getColumnModel().getColumn(5).setCellRenderer(new StatusCellRenderer());
 
-        // Add mouse listener for double click to view
-        treatmentTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = treatmentTable.getSelectedRow();
-                    if (row != -1) {
-                        viewTreatment(row);
+        // Add mouse listener for double click to view - Only if user has view permission
+        if (hasViewPermission()) {
+            treatmentTable.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2) {
+                        int row = treatmentTable.getSelectedRow();
+                        if (row != -1) {
+                            viewTreatment(row);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
 
         JScrollPane scrollPane = new JScrollPane(treatmentTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -339,6 +368,7 @@ public class TreatmentListPanel extends JPanel {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
         
+        // View Button - Available to all logged-in users
         viewButton = createStyledButton("View", SOFT_SURFACE, PRIMARY_DARK);
         viewButton.setBorderColor(LIGHT_SURFACE);
         viewButton.setPreferredSize(new Dimension(80, 30));
@@ -354,6 +384,7 @@ public class TreatmentListPanel extends JPanel {
         viewButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         viewButton.setIconTextGap(6);
 
+        // Edit Button - Only for ADMIN and RECEPTION
         editButton = createStyledButton("Edit", SOFT_SURFACE, PRIMARY_DARK);
         editButton.setBorderColor(LIGHT_SURFACE);
         editButton.setPreferredSize(new Dimension(80, 30));
@@ -368,7 +399,13 @@ public class TreatmentListPanel extends JPanel {
         editButton.setIcon(icon(FontAwesomeSolid.EDIT, 12, PRIMARY_DARK));
         editButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         editButton.setIconTextGap(6);
+        
+        // Hide Edit button for DENTIST and PATIENT
+        if (!hasEditPermission()) {
+            editButton.setVisible(false);
+        }
 
+        // Toggle Status Button - Only for ADMIN and RECEPTION
         toggleStatusButton = createStyledButton("Toggle Status", SOFT_SURFACE, PRIMARY_DARK);
         toggleStatusButton.setBorderColor(LIGHT_SURFACE);
         toggleStatusButton.setPreferredSize(new Dimension(130, 30));
@@ -383,7 +420,13 @@ public class TreatmentListPanel extends JPanel {
         toggleStatusButton.setIcon(icon(FontAwesomeSolid.SYNC, 12, PRIMARY_DARK));
         toggleStatusButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         toggleStatusButton.setIconTextGap(6);
+        
+        // Hide Toggle Status button for DENTIST and PATIENT
+        if (!hasEditPermission()) {
+            toggleStatusButton.setVisible(false);
+        }
 
+        // Delete Button - Only for ADMIN and RECEPTION
         deleteButton = createStyledButton("Delete", SOFT_SURFACE, ERROR_COLOR);
         deleteButton.setBorderColor(LIGHT_SURFACE);
         deleteButton.setPreferredSize(new Dimension(80, 30));
@@ -398,6 +441,11 @@ public class TreatmentListPanel extends JPanel {
         deleteButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, ERROR_COLOR));
         deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         deleteButton.setIconTextGap(6);
+        
+        // Hide Delete button for DENTIST and PATIENT
+        if (!hasEditPermission()) {
+            deleteButton.setVisible(false);
+        }
 
         rightPanel.add(viewButton);
         rightPanel.add(editButton);
@@ -602,7 +650,15 @@ public class TreatmentListPanel extends JPanel {
         countLabel.setText("Total: " + treatments.size() + " treatments");
     }
 
+    /**
+     * View Treatment - Available to all logged-in users
+     */
     public void viewTreatment(int row) {
+        if (!hasViewPermission()) {
+            showError("You don't have permission to view treatments.");
+            return;
+        }
+        
         int treatmentId = (int) tableModel.getValueAt(row, 0);
         
         Container parent = getParent();
@@ -624,7 +680,15 @@ public class TreatmentListPanel extends JPanel {
         }
     }
 
+    /**
+     * Edit Treatment - Only for ADMIN and RECEPTION
+     */
     public void editTreatment(int row) {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to edit treatments.");
+            return;
+        }
+        
         int treatmentId = (int) tableModel.getValueAt(row, 0);
         
         Container parent = getParent();
@@ -647,7 +711,15 @@ public class TreatmentListPanel extends JPanel {
         }
     }
 
+    /**
+     * Toggle Status - Only for ADMIN and RECEPTION
+     */
     public void toggleStatus(int row) {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to change treatment status.");
+            return;
+        }
+        
         int treatmentId = (int) tableModel.getValueAt(row, 0);
         String treatmentName = (String) tableModel.getValueAt(row, 1);
         String currentStatus = (String) tableModel.getValueAt(row, 5);
@@ -679,7 +751,15 @@ public class TreatmentListPanel extends JPanel {
         }
     }
 
+    /**
+     * Delete Treatment - Only for ADMIN and RECEPTION
+     */
     public void deleteTreatment(int row) {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to delete treatments.");
+            return;
+        }
+        
         int treatmentId = (int) tableModel.getValueAt(row, 0);
         String treatmentName = (String) tableModel.getValueAt(row, 1);
         

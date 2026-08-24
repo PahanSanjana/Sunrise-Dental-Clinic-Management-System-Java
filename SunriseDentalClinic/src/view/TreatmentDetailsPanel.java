@@ -10,6 +10,9 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import model.Treatment;
+import model.LoginSession;
+import model.User;
+import model.User.UserRole;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -69,6 +72,7 @@ public class TreatmentDetailsPanel extends JPanel {
     private boolean isEditMode = false;
     private Treatment currentTreatment;
     private TreatmentController controller;
+    private User currentUser;
 
     // Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -76,6 +80,7 @@ public class TreatmentDetailsPanel extends JPanel {
 
     public TreatmentDetailsPanel() {
         this.controller = new TreatmentController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         initComponents();
         setViewMode(false);
         displayEmptyState();
@@ -84,6 +89,7 @@ public class TreatmentDetailsPanel extends JPanel {
 
     public TreatmentDetailsPanel(Treatment treatment) {
         this.controller = new TreatmentController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         this.currentTreatment = treatment;
         initComponents();
         setViewMode(false);
@@ -171,6 +177,22 @@ public class TreatmentDetailsPanel extends JPanel {
         });
 
         return button;
+    }
+
+    /**
+     * ✅ Check if current user has edit/delete permissions
+     */
+    private boolean hasEditPermission() {
+        if (currentUser == null) return false;
+        UserRole role = currentUser.getRole();
+        return role == UserRole.ADMIN || role == UserRole.RECEPTION;
+    }
+
+    /**
+     * ✅ Check if current user has view permission (all roles can view)
+     */
+    private boolean hasViewPermission() {
+        return currentUser != null;
     }
 
     private JPanel createHeaderPanel() {
@@ -441,7 +463,7 @@ public class TreatmentDetailsPanel extends JPanel {
         buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
 
-        // Back button
+        // Back button - Available to all
         backButton = createStyledButton("Back", SOFT_SURFACE, PRIMARY_DARK);
         backButton.setBorderColor(LIGHT_SURFACE);
         backButton.setPreferredSize(new Dimension(100, 35));
@@ -450,15 +472,20 @@ public class TreatmentDetailsPanel extends JPanel {
         backButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         backButton.setIconTextGap(6);
 
-        // Edit button
+        // Edit button - Only for ADMIN and RECEPTION
         editButton = createStyledButton("Edit", PRIMARY_DARK, Color.WHITE);
         editButton.setPreferredSize(new Dimension(100, 35));
         editButton.addActionListener(e -> toggleEditMode());
         editButton.setIcon(icon(FontAwesomeSolid.EDIT, 12, Color.WHITE));
         editButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         editButton.setIconTextGap(6);
+        
+        // Hide Edit button for DENTIST and PATIENT
+        if (!hasEditPermission()) {
+            editButton.setVisible(false);
+        }
 
-        // Toggle Status button
+        // Toggle Status button - Only for ADMIN and RECEPTION
         toggleStatusButton = createStyledButton("Toggle Status", SOFT_SURFACE, PRIMARY_DARK);
         toggleStatusButton.setBorderColor(LIGHT_SURFACE);
         toggleStatusButton.setPreferredSize(new Dimension(120, 35));
@@ -466,8 +493,13 @@ public class TreatmentDetailsPanel extends JPanel {
         toggleStatusButton.setIcon(icon(FontAwesomeSolid.SYNC, 12, PRIMARY_DARK));
         toggleStatusButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         toggleStatusButton.setIconTextGap(6);
+        
+        // Hide Toggle Status button for DENTIST and PATIENT
+        if (!hasEditPermission()) {
+            toggleStatusButton.setVisible(false);
+        }
 
-        // Save button (hidden initially)
+        // Save button (hidden initially) - Only for ADMIN and RECEPTION
         saveButton = createStyledButton("Save", PRIMARY_DARK, Color.WHITE);
         saveButton.setPreferredSize(new Dimension(100, 35));
         saveButton.setVisible(false);
@@ -476,7 +508,7 @@ public class TreatmentDetailsPanel extends JPanel {
         saveButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         saveButton.setIconTextGap(6);
 
-        // Cancel button (hidden initially)
+        // Cancel button (hidden initially) - Only for ADMIN and RECEPTION
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(LIGHT_SURFACE);
         cancelButton.setPreferredSize(new Dimension(100, 35));
@@ -486,13 +518,18 @@ public class TreatmentDetailsPanel extends JPanel {
         cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         cancelButton.setIconTextGap(6);
 
-        // Delete button
+        // Delete button - Only for ADMIN and RECEPTION
         deleteButton = createStyledButton("Delete", ERROR_COLOR, Color.WHITE);
         deleteButton.setPreferredSize(new Dimension(100, 35));
         deleteButton.addActionListener(e -> deleteTreatment());
         deleteButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, Color.WHITE));
         deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         deleteButton.setIconTextGap(6);
+        
+        // Hide Delete button for DENTIST and PATIENT
+        if (!hasEditPermission()) {
+            deleteButton.setVisible(false);
+        }
 
         buttonPanel.add(backButton);
         buttonPanel.add(editButton);
@@ -678,11 +715,14 @@ public class TreatmentDetailsPanel extends JPanel {
         activeCheckBox.setEnabled(editMode);
 
         // Show/hide buttons
-        editButton.setVisible(!editMode);
-        toggleStatusButton.setVisible(!editMode);
-        deleteButton.setVisible(!editMode);
-        saveButton.setVisible(editMode);
-        cancelButton.setVisible(editMode);
+        // Only show edit/save/cancel buttons if user has permission
+        if (hasEditPermission()) {
+            editButton.setVisible(!editMode);
+            toggleStatusButton.setVisible(!editMode);
+            deleteButton.setVisible(!editMode);
+            saveButton.setVisible(editMode);
+            cancelButton.setVisible(editMode);
+        }
 
         if (editMode) {
             statusLabel.setText("Editing treatment information...");
@@ -694,6 +734,11 @@ public class TreatmentDetailsPanel extends JPanel {
     }
 
     public void toggleEditMode() {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to edit treatments.");
+            return;
+        }
+        
         if (currentTreatment == null) {
             showError("No treatment loaded to edit.");
             return;
@@ -702,6 +747,10 @@ public class TreatmentDetailsPanel extends JPanel {
     }
 
     private void cancelEdit() {
+        if (!hasEditPermission()) {
+            return;
+        }
+        
         if (currentTreatment != null) {
             displayTreatment(currentTreatment);
         } else {
@@ -713,6 +762,11 @@ public class TreatmentDetailsPanel extends JPanel {
     }
 
     private void saveTreatment() {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to save changes.");
+            return;
+        }
+        
         if (currentTreatment == null) {
             showError("No treatment loaded to save.");
             return;
@@ -799,6 +853,11 @@ public class TreatmentDetailsPanel extends JPanel {
     }
 
     private void toggleStatus() {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to change treatment status.");
+            return;
+        }
+        
         if (currentTreatment == null) {
             showError("No treatment loaded.");
             return;
@@ -836,6 +895,11 @@ public class TreatmentDetailsPanel extends JPanel {
     }
 
     private void deleteTreatment() {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to delete treatments.");
+            return;
+        }
+        
         if (currentTreatment == null) {
             showError("No treatment loaded to delete.");
             return;
