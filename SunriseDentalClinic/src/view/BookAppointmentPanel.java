@@ -4,6 +4,9 @@ import controller.AppointmentController;
 import model.Patient;
 import model.Dentist;
 import model.Appointment;
+import model.LoginSession;
+import model.User;
+import model.User.UserRole;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -70,6 +73,7 @@ public class BookAppointmentPanel extends JPanel {
     
     private JLabel statusLabel;
     private AppointmentController controller;
+    private User currentUser;
 
     // ✅ Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -78,6 +82,7 @@ public class BookAppointmentPanel extends JPanel {
     public BookAppointmentPanel() {
         initComponents();
         this.controller = new AppointmentController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         loadData();
         startAutoRefresh();
     }
@@ -168,7 +173,7 @@ public class BookAppointmentPanel extends JPanel {
         titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
-        JLabel subtitleLabel = new JLabel("Schedule a new appointment for a patient");
+        JLabel subtitleLabel = new JLabel("Schedule a new appointment");
         subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
@@ -427,7 +432,7 @@ public class BookAppointmentPanel extends JPanel {
         durationCombo.setPreferredSize(new Dimension(100, 35));
         panel.add(durationCombo, gbc);
 
-        // Status
+        // Status - Based on role
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 1;
@@ -440,9 +445,18 @@ public class BookAppointmentPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridwidth = 3;
         gbc.weightx = 0.8;
-        statusCombo = new JComboBox<>(new String[]{"Scheduled", "Confirmed", "Pending"});
+        statusCombo = new JComboBox<>(new String[]{"Scheduled", "Confirmed", "Pending", "Completed", "Cancelled"});
         statusCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         statusCombo.setPreferredSize(new Dimension(200, 35));
+        
+        // Disable status for patients - they can only book as "Scheduled"
+        if (currentUser != null && currentUser.getRole() == UserRole.PATIENT) {
+            statusCombo.setSelectedItem("Scheduled");
+            statusCombo.setEnabled(false);
+        } else {
+            statusCombo.setSelectedItem("Scheduled");
+            statusCombo.setEnabled(true);
+        }
         panel.add(statusCombo, gbc);
 
         return panel;
@@ -656,17 +670,55 @@ public class BookAppointmentPanel extends JPanel {
     // ========================
 
     private void loadData() {
-        loadPatients();
+        loadPatientsBasedOnRole();
         loadDentists();
     }
 
-    private void loadPatients() {
-        List<Patient> patients = controller.getAllPatients();
+    private void loadPatientsBasedOnRole() {
         patientCombo.removeAllItems();
-        if (patients != null) {
-            for (Patient patient : patients) {
-                patientCombo.addItem(patient);
-            }
+        
+        if (currentUser == null) {
+            showError("Please login first.");
+            return;
+        }
+
+        UserRole role = currentUser.getRole();
+
+        switch (role) {
+            case PATIENT:
+                // Patient can only see themselves
+                Patient loggedInPatient = controller.getPatientByUserId(currentUser.getUserId());
+                if (loggedInPatient != null) {
+                    patientCombo.addItem(loggedInPatient);
+                    patientCombo.setSelectedItem(loggedInPatient);
+                    patientCombo.setEnabled(false); // Disable selection
+                    loadPatientDetails();
+                } else {
+                    showError("No patient profile found for your account. Please contact admin.");
+                }
+                break;
+
+            case ADMIN:
+            case RECEPTION:
+                // Admin and Reception can see all patients
+                List<Patient> allPatients = controller.getAllPatients();
+                if (allPatients != null && !allPatients.isEmpty()) {
+                    for (Patient patient : allPatients) {
+                        patientCombo.addItem(patient);
+                    }
+                    patientCombo.setEnabled(true); // Enable selection
+                    if (patientCombo.getItemCount() > 0) {
+                        patientCombo.setSelectedIndex(0);
+                        loadPatientDetails();
+                    }
+                } else {
+                    showError("No patients found in the system.");
+                }
+                break;
+
+            default:
+                showError("You don't have permission to book appointments.");
+                break;
         }
     }
 
@@ -795,6 +847,11 @@ public class BookAppointmentPanel extends JPanel {
 
         LocalTime endTime = LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm")).plusMinutes(durationMinutes);
 
+        // For patients, force status to "Scheduled"
+        if (currentUser != null && currentUser.getRole() == UserRole.PATIENT) {
+            status = "Scheduled";
+        }
+
         Appointment appointment = new Appointment(
             patient.getPatientId(),
             dentist.getDentistId(),
@@ -840,14 +897,23 @@ public class BookAppointmentPanel extends JPanel {
     }
 
     private void clearForm() {
-        if (patientCombo.getItemCount() > 0) patientCombo.setSelectedIndex(0);
+        // Reload based on role
+        loadPatientsBasedOnRole();
+        
         if (dentistCombo.getItemCount() > 0) dentistCombo.setSelectedIndex(0);
         dateField.setText(LocalDate.now().toString());
         if (timeCombo.getItemCount() > 0) timeCombo.setSelectedIndex(0);
         if (durationCombo.getItemCount() > 0) durationCombo.setSelectedIndex(1);
         reasonArea.setText("");
         notesArea.setText("");
-        if (statusCombo.getItemCount() > 0) statusCombo.setSelectedIndex(0);
+        
+        // Reset status based on role
+        if (currentUser != null && currentUser.getRole() == UserRole.PATIENT) {
+            statusCombo.setSelectedItem("Scheduled");
+        } else {
+            statusCombo.setSelectedItem("Scheduled");
+        }
+        
         statusLabel.setText("Form cleared");
         statusLabel.setForeground(SECONDARY_TEXT);
         loadPatientDetails();

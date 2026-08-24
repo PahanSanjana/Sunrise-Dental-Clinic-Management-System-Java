@@ -99,6 +99,15 @@ public class AppointmentController {
     }
 
     /**
+     * Get patient by User ID
+     * @param userId The user ID
+     * @return Patient object if found, null otherwise
+     */
+    public Patient getPatientByUserId(int userId) {
+        return patientDAO.getPatientByUserId(userId);
+    }
+
+    /**
      * Get patient name by ID
      * @param patientId The patient ID
      * @return Patient name or "Unknown"
@@ -811,7 +820,6 @@ public class AppointmentController {
         // Get all appointments for this dentist on this date
         List<Appointment> appointments = appointmentDAO.getAppointmentsByDentistAndDate(dentistId, date);
         
-        // Check if any appointment (except the excluded one) has the same time
         for (Appointment appt : appointments) {
             if (appt.getAppointmentId() != excludeAppointmentId && 
                 appt.getAppointmentTime() != null) {
@@ -825,6 +833,6 @@ public class AppointmentController {
             }
         }
         
-        return true; // Slot is available
+        return true; 
     }
 }
