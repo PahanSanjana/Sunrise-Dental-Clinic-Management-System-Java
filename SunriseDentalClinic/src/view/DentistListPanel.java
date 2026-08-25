@@ -2,6 +2,9 @@ package view;
 
 import controller.DentistController;
 import model.Dentist;
+import model.LoginSession;
+import model.User;
+import model.User.UserRole;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -63,6 +66,7 @@ public class DentistListPanel extends JPanel {
     private JComboBox<String> filterCombo;
     
     private DentistController controller;
+    private User currentUser;
 
     // Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -70,6 +74,7 @@ public class DentistListPanel extends JPanel {
 
     public DentistListPanel() {
         this.controller = new DentistController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         initComponents();
         loadDentists();
         startAutoRefresh();
@@ -161,6 +166,21 @@ public class DentistListPanel extends JPanel {
     }
 
     /**
+     * ✅ Check if current user has edit/delete permissions (Only ADMIN)
+     */
+    private boolean hasEditPermission() {
+        if (currentUser == null) return false;
+        return currentUser.getRole() == UserRole.ADMIN;
+    }
+
+    /**
+     * ✅ Check if current user has view permission (all roles can view)
+     */
+    private boolean hasViewPermission() {
+        return currentUser != null;
+    }
+
+    /**
      * ✅ Title Panel - Separate from other content
      */
     private JPanel createTitlePanel() {
@@ -215,6 +235,7 @@ public class DentistListPanel extends JPanel {
         searchButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         searchButton.setIconTextGap(8);
 
+        // Add Dentist button - Only for ADMIN
         addButton = createStyledButton("Add Dentist", PRIMARY_DARK, Color.WHITE);
         addButton.setPreferredSize(new Dimension(120, 35));
         addButton.addActionListener(e -> {
@@ -229,6 +250,11 @@ public class DentistListPanel extends JPanel {
         addButton.setIcon(icon(FontAwesomeSolid.USER_PLUS, 14, Color.WHITE));
         addButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         addButton.setIconTextGap(8);
+        
+        // Hide Add button for RECEPTION and PATIENT
+        if (!hasEditPermission()) {
+            addButton.setVisible(false);
+        }
 
         searchPanel.add(new JLabel("Filter:"));
         searchPanel.add(filterCombo);
@@ -286,18 +312,20 @@ public class DentistListPanel extends JPanel {
         // Custom cell renderer for status column
         dentistTable.getColumnModel().getColumn(7).setCellRenderer(new StatusCellRenderer());
 
-        // Add mouse listener for double click to view
-        dentistTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = dentistTable.getSelectedRow();
-                    if (row != -1) {
-                        viewDentist(row);
+        // Add mouse listener for double click to view - Available to all logged-in users
+        if (hasViewPermission()) {
+            dentistTable.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2) {
+                        int row = dentistTable.getSelectedRow();
+                        if (row != -1) {
+                            viewDentist(row);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
 
         JScrollPane scrollPane = new JScrollPane(dentistTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -328,6 +356,7 @@ public class DentistListPanel extends JPanel {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
         
+        // View Button - Available to all logged-in users
         viewButton = createStyledButton("View", SOFT_SURFACE, PRIMARY_DARK);
         viewButton.setBorderColor(LIGHT_SURFACE);
         viewButton.setPreferredSize(new Dimension(80, 30));
@@ -343,6 +372,7 @@ public class DentistListPanel extends JPanel {
         viewButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         viewButton.setIconTextGap(6);
 
+        // Edit Button - Only for ADMIN
         editButton = createStyledButton("Edit", SOFT_SURFACE, PRIMARY_DARK);
         editButton.setBorderColor(LIGHT_SURFACE);
         editButton.setPreferredSize(new Dimension(80, 30));
@@ -357,7 +387,13 @@ public class DentistListPanel extends JPanel {
         editButton.setIcon(icon(FontAwesomeSolid.EDIT, 12, PRIMARY_DARK));
         editButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         editButton.setIconTextGap(6);
+        
+        // Hide Edit button for RECEPTION and PATIENT
+        if (!hasEditPermission()) {
+            editButton.setVisible(false);
+        }
 
+        // Toggle Availability Button - Only for ADMIN
         toggleAvailabilityButton = createStyledButton("Toggle Status", SOFT_SURFACE, PRIMARY_DARK);
         toggleAvailabilityButton.setBorderColor(LIGHT_SURFACE);
         toggleAvailabilityButton.setPreferredSize(new Dimension(130, 30));
@@ -372,7 +408,13 @@ public class DentistListPanel extends JPanel {
         toggleAvailabilityButton.setIcon(icon(FontAwesomeSolid.SYNC, 12, PRIMARY_DARK));
         toggleAvailabilityButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         toggleAvailabilityButton.setIconTextGap(6);
+        
+        // Hide Toggle Status button for RECEPTION and PATIENT
+        if (!hasEditPermission()) {
+            toggleAvailabilityButton.setVisible(false);
+        }
 
+        // Delete Button - Only for ADMIN
         deleteButton = createStyledButton("Delete", SOFT_SURFACE, ERROR_COLOR);
         deleteButton.setBorderColor(LIGHT_SURFACE);
         deleteButton.setPreferredSize(new Dimension(80, 30));
@@ -387,6 +429,11 @@ public class DentistListPanel extends JPanel {
         deleteButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, ERROR_COLOR));
         deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         deleteButton.setIconTextGap(6);
+        
+        // Hide Delete button for RECEPTION and PATIENT
+        if (!hasEditPermission()) {
+            deleteButton.setVisible(false);
+        }
 
         rightPanel.add(viewButton);
         rightPanel.add(editButton);
@@ -588,7 +635,15 @@ public class DentistListPanel extends JPanel {
         countLabel.setText("Total: " + dentists.size() + " dentists");
     }
 
+    /**
+     * View Dentist - Available to all logged-in users
+     */
     public void viewDentist(int row) {
+        if (!hasViewPermission()) {
+            showError("You don't have permission to view dentists.");
+            return;
+        }
+        
         int dentistId = (int) tableModel.getValueAt(row, 0);
         
         Container parent = getParent();
@@ -610,7 +665,15 @@ public class DentistListPanel extends JPanel {
         }
     }
 
+    /**
+     * Edit Dentist - Only for ADMIN
+     */
     public void editDentist(int row) {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to edit dentists.");
+            return;
+        }
+        
         int dentistId = (int) tableModel.getValueAt(row, 0);
         
         Container parent = getParent();
@@ -633,7 +696,15 @@ public class DentistListPanel extends JPanel {
         }
     }
 
+    /**
+     * Toggle Availability - Only for ADMIN
+     */
     public void toggleAvailability(int row) {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to change dentist status.");
+            return;
+        }
+        
         int dentistId = (int) tableModel.getValueAt(row, 0);
         String dentistName = (String) tableModel.getValueAt(row, 1);
         String currentStatus = (String) tableModel.getValueAt(row, 7);
@@ -659,7 +730,15 @@ public class DentistListPanel extends JPanel {
         }
     }
 
+    /**
+     * Delete Dentist - Only for ADMIN
+     */
     public void deleteDentist(int row) {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to delete dentists.");
+            return;
+        }
+        
         int dentistId = (int) tableModel.getValueAt(row, 0);
         String dentistName = (String) tableModel.getValueAt(row, 1);
         

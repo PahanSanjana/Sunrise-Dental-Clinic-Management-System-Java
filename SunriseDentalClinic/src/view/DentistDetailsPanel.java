@@ -10,6 +10,9 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import model.Dentist;
+import model.LoginSession;
+import model.User;
+import model.User.UserRole;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -72,6 +75,7 @@ public class DentistDetailsPanel extends JPanel {
     private boolean isEditMode = false;
     private Dentist currentDentist;
     private DentistController controller;
+    private User currentUser;
 
     // Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -79,6 +83,7 @@ public class DentistDetailsPanel extends JPanel {
 
     public DentistDetailsPanel() {
         this.controller = new DentistController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         initComponents();
         setViewMode(false);
         displayEmptyState();
@@ -87,6 +92,7 @@ public class DentistDetailsPanel extends JPanel {
 
     public DentistDetailsPanel(Dentist dentist) {
         this.controller = new DentistController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         this.currentDentist = dentist;
         initComponents();
         setViewMode(false);
@@ -174,6 +180,21 @@ public class DentistDetailsPanel extends JPanel {
         });
 
         return button;
+    }
+
+    /**
+     * ✅ Check if current user has edit/delete permissions (Only ADMIN)
+     */
+    private boolean hasEditPermission() {
+        if (currentUser == null) return false;
+        return currentUser.getRole() == UserRole.ADMIN;
+    }
+
+    /**
+     * ✅ Check if current user has view permission (all roles can view)
+     */
+    private boolean hasViewPermission() {
+        return currentUser != null;
     }
 
     private JPanel createHeaderPanel() {
@@ -487,7 +508,7 @@ public class DentistDetailsPanel extends JPanel {
         buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
 
-        // Back button
+        // Back button - Available to all
         backButton = createStyledButton("Back", SOFT_SURFACE, PRIMARY_DARK);
         backButton.setBorderColor(LIGHT_SURFACE);
         backButton.setPreferredSize(new Dimension(100, 35));
@@ -496,15 +517,20 @@ public class DentistDetailsPanel extends JPanel {
         backButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         backButton.setIconTextGap(6);
 
-        // Edit button
+        // Edit button - Only for ADMIN
         editButton = createStyledButton("Edit", PRIMARY_DARK, Color.WHITE);
         editButton.setPreferredSize(new Dimension(100, 35));
         editButton.addActionListener(e -> toggleEditMode());
         editButton.setIcon(icon(FontAwesomeSolid.EDIT, 12, Color.WHITE));
         editButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         editButton.setIconTextGap(6);
+        
+        // Hide Edit button for RECEPTION and PATIENT
+        if (!hasEditPermission()) {
+            editButton.setVisible(false);
+        }
 
-        // Toggle Availability button
+        // Toggle Availability button - Only for ADMIN
         toggleAvailabilityButton = createStyledButton("Toggle Availability", SOFT_SURFACE, PRIMARY_DARK);
         toggleAvailabilityButton.setBorderColor(LIGHT_SURFACE);
         toggleAvailabilityButton.setPreferredSize(new Dimension(160, 35));
@@ -512,8 +538,13 @@ public class DentistDetailsPanel extends JPanel {
         toggleAvailabilityButton.setIcon(icon(FontAwesomeSolid.SYNC, 12, PRIMARY_DARK));
         toggleAvailabilityButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         toggleAvailabilityButton.setIconTextGap(6);
+        
+        // Hide Toggle Availability button for RECEPTION and PATIENT
+        if (!hasEditPermission()) {
+            toggleAvailabilityButton.setVisible(false);
+        }
 
-        // Save button (hidden initially)
+        // Save button (hidden initially) - Only for ADMIN
         saveButton = createStyledButton("Save", PRIMARY_DARK, Color.WHITE);
         saveButton.setPreferredSize(new Dimension(100, 35));
         saveButton.setVisible(false);
@@ -522,7 +553,7 @@ public class DentistDetailsPanel extends JPanel {
         saveButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         saveButton.setIconTextGap(6);
 
-        // Cancel button (hidden initially)
+        // Cancel button (hidden initially) - Only for ADMIN
         cancelButton = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
         cancelButton.setBorderColor(LIGHT_SURFACE);
         cancelButton.setPreferredSize(new Dimension(100, 35));
@@ -532,13 +563,18 @@ public class DentistDetailsPanel extends JPanel {
         cancelButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         cancelButton.setIconTextGap(6);
 
-        // Delete button
+        // Delete button - Only for ADMIN
         deleteButton = createStyledButton("Delete", ERROR_COLOR, Color.WHITE);
         deleteButton.setPreferredSize(new Dimension(100, 35));
         deleteButton.addActionListener(e -> deleteDentist());
         deleteButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, Color.WHITE));
         deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         deleteButton.setIconTextGap(6);
+        
+        // Hide Delete button for RECEPTION and PATIENT
+        if (!hasEditPermission()) {
+            deleteButton.setVisible(false);
+        }
 
         buttonPanel.add(backButton);
         buttonPanel.add(editButton);
@@ -719,12 +755,14 @@ public class DentistDetailsPanel extends JPanel {
         consultationFeeField.setEnabled(editMode);
         availableCheckBox.setEnabled(editMode);
 
-        // Show/hide buttons
-        editButton.setVisible(!editMode);
-        toggleAvailabilityButton.setVisible(!editMode);
-        deleteButton.setVisible(!editMode);
-        saveButton.setVisible(editMode);
-        cancelButton.setVisible(editMode);
+        // Show/hide buttons - Only if user has permission
+        if (hasEditPermission()) {
+            editButton.setVisible(!editMode);
+            toggleAvailabilityButton.setVisible(!editMode);
+            deleteButton.setVisible(!editMode);
+            saveButton.setVisible(editMode);
+            cancelButton.setVisible(editMode);
+        }
 
         if (editMode) {
             statusLabel.setText("Editing dentist information...");
@@ -736,6 +774,11 @@ public class DentistDetailsPanel extends JPanel {
     }
 
     public void toggleEditMode() {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to edit dentists.");
+            return;
+        }
+        
         if (currentDentist == null) {
             showError("No dentist loaded to edit.");
             return;
@@ -744,6 +787,10 @@ public class DentistDetailsPanel extends JPanel {
     }
 
     private void cancelEdit() {
+        if (!hasEditPermission()) {
+            return;
+        }
+        
         if (currentDentist != null) {
             displayDentist(currentDentist);
         } else {
@@ -755,6 +802,11 @@ public class DentistDetailsPanel extends JPanel {
     }
 
     private void saveDentist() {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to save changes.");
+            return;
+        }
+        
         if (currentDentist == null) {
             showError("No dentist loaded to save.");
             return;
@@ -843,6 +895,11 @@ public class DentistDetailsPanel extends JPanel {
     }
 
     private void toggleAvailability() {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to change dentist availability.");
+            return;
+        }
+        
         if (currentDentist == null) {
             showError("No dentist loaded.");
             return;
@@ -875,6 +932,11 @@ public class DentistDetailsPanel extends JPanel {
     }
 
     private void deleteDentist() {
+        if (!hasEditPermission()) {
+            showError("You don't have permission to delete dentists.");
+            return;
+        }
+        
         if (currentDentist == null) {
             showError("No dentist loaded to delete.");
             return;
