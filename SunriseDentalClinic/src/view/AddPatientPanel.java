@@ -79,6 +79,11 @@ public class AddPatientPanel extends JPanel {
         this.controller = new PatientController(this);
         loginPanel.setVisible(false); // Initially hidden
         startAutoRefresh(); // ✅ Start auto-refresh
+        
+        // ✅ Add save listener
+        saveButton.addActionListener(e -> savePatient());
+        clearButton.addActionListener(e -> clearForm());
+        cancelButton.addActionListener(e -> navigateBack());
     }
 
     private void initComponents() {
@@ -364,7 +369,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel nameLabel = new JLabel("Patient Name:");
+        JLabel nameLabel = new JLabel("Patient Name:*");
         nameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         nameLabel.setForeground(PRIMARY_DARK);
         panel.add(nameLabel, gbc);
@@ -425,7 +430,7 @@ public class AddPatientPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel contactLabel = new JLabel("Contact Number:");
+        JLabel contactLabel = new JLabel("Contact Number:*");
         contactLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         contactLabel.setForeground(PRIMARY_DARK);
         panel.add(contactLabel, gbc);
@@ -706,6 +711,178 @@ public class AddPatientPanel extends JPanel {
 
     private static class MouseAdapter extends java.awt.event.MouseAdapter {
         // Empty implementation
+    }
+
+    // =====================================================
+    // ✅ SAVE PATIENT METHOD
+    // =====================================================
+    
+    private void savePatient() {
+        // Validate required fields
+        String patientName = getPatientName();
+        if (patientName.isEmpty()) {
+            showError("Patient Name is required.");
+            patientNameField.requestFocus();
+            return;
+        }
+        if (patientName.length() < 2) {
+            showError("Patient Name must be at least 2 characters.");
+            patientNameField.requestFocus();
+            return;
+        }
+
+        String contactNumber = getContactNumber();
+        if (contactNumber.isEmpty()) {
+            showError("Contact Number is required.");
+            contactNumberField.requestFocus();
+            return;
+        }
+        // Validate phone number (at least 10 digits)
+        String phoneDigits = contactNumber.replaceAll("[^0-9]", "");
+        if (phoneDigits.length() < 10) {
+            showError("Please enter a valid phone number (at least 10 digits).");
+            contactNumberField.requestFocus();
+            return;
+        }
+
+        // Validate email if provided
+        String email = getEmail();
+        if (!email.isEmpty() && !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            showError("Please enter a valid email address.");
+            emailField.requestFocus();
+            return;
+        }
+
+        // Validate date of birth if provided
+        String dobStr = getDateOfBirth();
+        Date dob = null;
+        if (!dobStr.isEmpty()) {
+            try {
+                LocalDate localDate = LocalDate.parse(dobStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                dob = Date.valueOf(localDate);
+                
+                // Check if DOB is in the future
+                if (localDate.isAfter(LocalDate.now())) {
+                    showError("Date of Birth cannot be in the future.");
+                    dobField.requestFocus();
+                    return;
+                }
+            } catch (Exception e) {
+                showError("Invalid date format. Please use YYYY-MM-DD.");
+                dobField.requestFocus();
+                return;
+            }
+        }
+
+        // Validate login credentials if creating login
+        if (isCreateLogin()) {
+            String username = getUsername();
+            if (username.isEmpty()) {
+                showError("Username is required when creating login account.");
+                usernameField.requestFocus();
+                return;
+            }
+            if (username.length() < 3) {
+                showError("Username must be at least 3 characters.");
+                usernameField.requestFocus();
+                return;
+            }
+
+            String password = getPassword();
+            if (password.isEmpty()) {
+                showError("Password is required when creating login account.");
+                passwordField.requestFocus();
+                return;
+            }
+            if (password.length() < 6) {
+                showError("Password must be at least 6 characters.");
+                passwordField.requestFocus();
+                return;
+            }
+
+            String confirmPassword = getConfirmPassword();
+            if (!password.equals(confirmPassword)) {
+                showError("Passwords do not match.");
+                confirmPasswordField.requestFocus();
+                return;
+            }
+        }
+
+        // Create Patient object
+        Patient patient = new Patient();
+        patient.setPatientName(patientName);
+        patient.setGender(getGender());
+        patient.setAddress(getAddress());
+        patient.setContactNumber(contactNumber);
+        patient.setEmail(email);
+        patient.setDateOfBirth(dob);
+        patient.setEmergencyContact(getEmergencyContact());
+        patient.setEmergencyPhone(getEmergencyPhone());
+        patient.setMedicalHistory(getMedicalHistory());
+        patient.setAllergies(getAllergies());
+
+        // Save to database
+        showInfo("Saving patient... Please wait.");
+        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+        saveButton.setEnabled(false);
+
+        SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                // Save patient
+                boolean patientSaved = controller.addPatient(patient);
+                if (!patientSaved) {
+                    return false;
+                }
+                
+                // If login account is requested, create it
+                if (isCreateLogin()) {
+                    String username = getUsername();
+                    String password = getPassword();
+                    return controller.createLoginForPatient(patient.getPatientId(), username, password);
+                }
+                
+                return true;
+            }
+
+            @Override
+            protected void done() {
+                setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                saveButton.setEnabled(true);
+                try {
+                    boolean success = get();
+                    if (success) {
+                        showSuccess("Patient saved successfully!");
+                        clearForm();
+                        
+                        // Navigate back after a delay
+                        Timer timer = new Timer(1500, e -> navigateBack());
+                        timer.setRepeats(false);
+                        timer.start();
+                    } else {
+                        showError("Failed to save patient. Please try again.");
+                    }
+                } catch (Exception e) {
+                    showError("Error saving patient: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    // ========================
+    // Navigation Methods
+    // ========================
+    
+    private void navigateBack() {
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            ((MainFrame) parent).showCard("PATIENT_LIST");
+        }
     }
 
     // ========================

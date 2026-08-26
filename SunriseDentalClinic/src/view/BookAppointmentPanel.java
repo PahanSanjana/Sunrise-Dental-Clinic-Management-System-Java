@@ -700,7 +700,8 @@ public class BookAppointmentPanel extends JPanel {
 
             case ADMIN:
             case RECEPTION:
-                // Admin and Reception can see all patients
+            case DENTIST:
+                // Admin, Reception, and Dentist can see all patients
                 List<Patient> allPatients = controller.getAllPatients();
                 if (allPatients != null && !allPatients.isEmpty()) {
                     for (Patient patient : allPatients) {

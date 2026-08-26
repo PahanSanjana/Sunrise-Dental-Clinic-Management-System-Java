@@ -59,15 +59,12 @@ public class PatientReportPanel extends JPanel {
     
     // Summary Cards - Store references directly
     private JLabel totalAppointmentsLabel;
-    private JLabel totalTreatmentsLabel;
     private JLabel totalBillsLabel;
     private JLabel totalSpentLabel;
     
     // Tables
     private JTable appointmentTable;
     private DefaultTableModel appointmentTableModel;
-    private JTable treatmentTable;
-    private DefaultTableModel treatmentTableModel;
     private JTable billTable;
     private DefaultTableModel billTableModel;
     
@@ -114,10 +111,6 @@ public class PatientReportPanel extends JPanel {
         
         // Appointment Table
         mainPanel.add(createAppointmentTablePanel());
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-        
-        // Treatment Table
-        mainPanel.add(createTreatmentTablePanel());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Bill Table
@@ -262,7 +255,7 @@ public class PatientReportPanel extends JPanel {
     }
 
     private JPanel createSummaryPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 4, 15, 0));
+        JPanel panel = new JPanel(new GridLayout(1, 3, 15, 0));
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(LIGHT_SURFACE, 1),
@@ -272,10 +265,6 @@ public class PatientReportPanel extends JPanel {
         // Total Appointments
         JPanel apptPanel = createSummaryCard(FontAwesomeSolid.CALENDAR_ALT, "Total Appointments", "0", MINT);
         panel.add(apptPanel);
-
-        // Total Treatments
-        JPanel treatmentPanel = createSummaryCard(FontAwesomeSolid.PILLS, "Total Treatments", "0", new Color(200, 220, 240));
-        panel.add(treatmentPanel);
 
         // Total Bills
         JPanel billPanel = createSummaryCard(FontAwesomeSolid.FILE_INVOICE, "Total Bills", "0", new Color(240, 220, 200));
@@ -328,8 +317,6 @@ public class PatientReportPanel extends JPanel {
         // Store reference to value label based on title
         if (title.equals("Total Appointments")) {
             totalAppointmentsLabel = valueLabel;
-        } else if (title.equals("Total Treatments")) {
-            totalTreatmentsLabel = valueLabel;
         } else if (title.equals("Total Bills")) {
             totalBillsLabel = valueLabel;
         } else if (title.equals("Total Spent")) {
@@ -390,46 +377,6 @@ public class PatientReportPanel extends JPanel {
         header.setForeground(PRIMARY_DARK);
 
         JScrollPane scrollPane = new JScrollPane(appointmentTable);
-        scrollPane.setPreferredSize(new Dimension(600, 120));
-        scrollPane.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
-
-        panel.add(scrollPane, BorderLayout.CENTER);
-        return panel;
-    }
-
-    private JPanel createTreatmentTablePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(MINT, 1),
-            "Treatment History",
-            TitledBorder.LEFT,
-            TitledBorder.TOP,
-            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
-            PRIMARY_DARK
-        ));
-
-        String[] columns = {"ID", "Treatment", "Category", "Date", "Dentist", "Cost", "Status"};
-        treatmentTableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-
-        treatmentTable = new JTable(treatmentTableModel);
-        treatmentTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
-        treatmentTable.setRowHeight(30);
-        treatmentTable.setSelectionBackground(new Color(235, 245, 240));
-        treatmentTable.setShowGrid(true);
-        treatmentTable.setGridColor(LIGHT_SURFACE);
-
-        JTableHeader header = treatmentTable.getTableHeader();
-        header.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
-        header.setBackground(MINT);
-        header.setForeground(PRIMARY_DARK);
-
-        JScrollPane scrollPane = new JScrollPane(treatmentTable);
         scrollPane.setPreferredSize(new Dimension(600, 120));
         scrollPane.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
 
@@ -601,14 +548,12 @@ public class PatientReportPanel extends JPanel {
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             private Patient patientData;
             private List<Appointment> appointments;
-            private List<Treatment> treatments;
             private List<Bill> bills;
 
             @Override
             protected Void doInBackground() throws Exception {
                 patientData = controller.getPatientDetails(selectedPatient.getPatientId());
                 appointments = controller.getAppointmentsByPatient(selectedPatient.getPatientId());
-                treatments = controller.getTreatmentsByPatient(selectedPatient.getPatientId());
                 bills = controller.getBillsByPatient(selectedPatient.getPatientId());
                 return null;
             }
@@ -617,7 +562,7 @@ public class PatientReportPanel extends JPanel {
             protected void done() {
                 setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
                 try {
-                    displayReport(patientData, appointments, treatments, bills);
+                    displayReport(patientData, appointments, bills);
                     statusLabel.setText("Report generated successfully!");
                     statusLabel.setForeground(SUCCESS_COLOR);
                     
@@ -632,8 +577,7 @@ public class PatientReportPanel extends JPanel {
         worker.execute();
     }
 
-    private void displayReport(Patient patient, List<Appointment> appointments, 
-                               List<Treatment> treatments, List<Bill> bills) {
+    private void displayReport(Patient patient, List<Appointment> appointments, List<Bill> bills) {
         if (patient == null) {
             showError("Patient not found.");
             return;
@@ -655,11 +599,11 @@ public class PatientReportPanel extends JPanel {
 
         // Update summary
         int apptCount = appointments != null ? appointments.size() : 0;
-        int treatmentCount = treatments != null ? treatments.size() : 0;
         int billCount = bills != null ? bills.size() : 0;
         double totalSpent = 0;
         if (bills != null) {
             for (Bill bill : bills) {
+                // Only count bills that are paid or partially paid
                 if ("Paid".equals(bill.getStatus()) || "Partial".equals(bill.getStatus())) {
                     totalSpent += bill.getTotalAmount();
                 }
@@ -667,7 +611,6 @@ public class PatientReportPanel extends JPanel {
         }
 
         totalAppointmentsLabel.setText(String.valueOf(apptCount));
-        totalTreatmentsLabel.setText(String.valueOf(treatmentCount));
         totalBillsLabel.setText(String.valueOf(billCount));
         totalSpentLabel.setText("RS" + df.format(totalSpent));
 
@@ -684,23 +627,6 @@ public class PatientReportPanel extends JPanel {
                     appt.getReason() != null ? appt.getReason() : "N/A"
                 };
                 appointmentTableModel.addRow(row);
-            }
-        }
-
-        // Update treatment table
-        treatmentTableModel.setRowCount(0);
-        if (treatments != null) {
-            for (Treatment treatment : treatments) {
-                Object[] row = {
-                    treatment.getTreatmentId(),
-                    treatment.getTreatmentName(),
-                    treatment.getCategory() != null ? treatment.getCategory() : "N/A",
-                    treatment.getCreatedAt() != null ? treatment.getCreatedAt().substring(0, 10) : "N/A",
-                    "N/A",
-                    "RS" + df.format(treatment.getCost()),
-                    treatment.isActive() ? "Active" : "Inactive"
-                };
-                treatmentTableModel.addRow(row);
             }
         }
 

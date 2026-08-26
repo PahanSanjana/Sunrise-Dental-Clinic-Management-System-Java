@@ -1,13 +1,16 @@
 package view;
 
 import controller.StaffController;
+import model.Staff;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.sql.Date;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -72,6 +75,11 @@ public class AddStaffPanel extends JPanel {
         this.controller = new StaffController(this);
         loginPanel.setVisible(false); // Initially hidden
         startAutoRefresh();
+        
+        // ✅ Add save listener
+        saveButton.addActionListener(e -> saveStaff());
+        clearButton.addActionListener(e -> clearForm());
+        cancelButton.addActionListener(e -> navigateBack());
     }
 
     private void initComponents() {
@@ -356,7 +364,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel firstNameLabel = new JLabel("First Name:");
+        JLabel firstNameLabel = new JLabel("First Name:*");
         firstNameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         firstNameLabel.setForeground(PRIMARY_DARK);
         panel.add(firstNameLabel, gbc);
@@ -371,7 +379,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel lastNameLabel = new JLabel("Last Name:");
+        JLabel lastNameLabel = new JLabel("Last Name:*");
         lastNameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         lastNameLabel.setForeground(PRIMARY_DARK);
         panel.add(lastNameLabel, gbc);
@@ -400,7 +408,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel positionLabel = new JLabel("Position:");
+        JLabel positionLabel = new JLabel("Position:*");
         positionLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         positionLabel.setForeground(PRIMARY_DARK);
         panel.add(positionLabel, gbc);
@@ -416,7 +424,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel departmentLabel = new JLabel("Department:");
+        JLabel departmentLabel = new JLabel("Department:*");
         departmentLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         departmentLabel.setForeground(PRIMARY_DARK);
         panel.add(departmentLabel, gbc);
@@ -433,7 +441,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel hireDateLabel = new JLabel("Hire Date (YYYY-MM-DD):");
+        JLabel hireDateLabel = new JLabel("Hire Date (YYYY-MM-DD):*");
         hireDateLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         hireDateLabel.setForeground(PRIMARY_DARK);
         panel.add(hireDateLabel, gbc);
@@ -450,7 +458,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel salaryLabel = new JLabel("Salary (RS):");
+        JLabel salaryLabel = new JLabel("Salary (RS):*");
         salaryLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         salaryLabel.setForeground(PRIMARY_DARK);
         panel.add(salaryLabel, gbc);
@@ -499,7 +507,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel phoneLabel = new JLabel("Phone:");
+        JLabel phoneLabel = new JLabel("Phone:*");
         phoneLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         phoneLabel.setForeground(PRIMARY_DARK);
         panel.add(phoneLabel, gbc);
@@ -515,7 +523,7 @@ public class AddStaffPanel extends JPanel {
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.2;
-        JLabel emailLabel = new JLabel("Email:");
+        JLabel emailLabel = new JLabel("Email:*");
         emailLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
         emailLabel.setForeground(PRIMARY_DARK);
         panel.add(emailLabel, gbc);
@@ -655,6 +663,257 @@ public class AddStaffPanel extends JPanel {
 
     private static class MouseAdapter extends java.awt.event.MouseAdapter {
         // Empty implementation
+    }
+
+    // =====================================================
+    // ✅ SAVE STAFF METHOD
+    // =====================================================
+    
+    private void saveStaff() {
+        // Get all form values
+        String firstName = getFirstName();
+        String lastName = getLastName();
+        String position = getPosition();
+        String department = getDepartment();
+        String phone = getPhone();
+        String email = getEmail();
+        String hireDateStr = getHireDate();
+        String salaryStr = getSalary();
+        boolean isActive = isActive();
+
+        // Check if login account is requested
+        boolean createLogin = isCreateLogin();
+        String username = getUsername();
+        String password = getPassword();
+        String confirmPassword = getConfirmPassword();
+
+        // =============================================
+        // VALIDATE REQUIRED FIELDS
+        // =============================================
+
+        // Validate Name
+        if (firstName.isEmpty() || lastName.isEmpty()) {
+            showError("First Name and Last Name are required.");
+            if (firstName.isEmpty()) firstNameField.requestFocus();
+            else lastNameField.requestFocus();
+            return;
+        }
+
+        if (firstName.length() < 2 || lastName.length() < 2) {
+            showError("Name must be at least 2 characters.");
+            if (firstName.length() < 2) firstNameField.requestFocus();
+            else lastNameField.requestFocus();
+            return;
+        }
+
+        if (!firstName.matches("^[a-zA-Z\\s]+$") || !lastName.matches("^[a-zA-Z\\s]+$")) {
+            showError("Name can only contain letters and spaces.");
+            if (!firstName.matches("^[a-zA-Z\\s]+$")) firstNameField.requestFocus();
+            else lastNameField.requestFocus();
+            return;
+        }
+
+        // Validate Position
+        if (position.isEmpty()) {
+            showError("Position is required.");
+            positionField.requestFocus();
+            return;
+        }
+
+        // Validate Department
+        if (department.isEmpty()) {
+            showError("Department is required.");
+            departmentField.requestFocus();
+            return;
+        }
+
+        // Validate Phone
+        if (phone.isEmpty()) {
+            showError("Phone number is required.");
+            phoneField.requestFocus();
+            return;
+        }
+        String phoneDigits = phone.replaceAll("[^0-9]", "");
+        if (phoneDigits.length() < 10) {
+            showError("Please enter a valid phone number (at least 10 digits).");
+            phoneField.requestFocus();
+            return;
+        }
+
+        // Validate Email
+        if (email.isEmpty()) {
+            showError("Email is required.");
+            emailField.requestFocus();
+            return;
+        }
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            showError("Please enter a valid email address.");
+            emailField.requestFocus();
+            return;
+        }
+
+        // Validate Hire Date
+        if (hireDateStr.isEmpty()) {
+            showError("Hire Date is required.");
+            hireDateField.requestFocus();
+            return;
+        }
+
+        Date hireDate = null;
+        try {
+            LocalDate localDate = LocalDate.parse(hireDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            hireDate = Date.valueOf(localDate);
+            
+            if (localDate.isAfter(LocalDate.now())) {
+                showError("Hire Date cannot be in the future.");
+                hireDateField.requestFocus();
+                return;
+            }
+        } catch (Exception e) {
+            showError("Invalid date format. Please use YYYY-MM-DD.");
+            hireDateField.requestFocus();
+            return;
+        }
+
+        // Validate Salary
+        double salary = 0;
+        if (salaryStr.isEmpty()) {
+            showError("Salary is required.");
+            salaryField.requestFocus();
+            return;
+        }
+        try {
+            salary = Double.parseDouble(salaryStr);
+            if (salary < 0) {
+                showError("Salary cannot be negative.");
+                salaryField.requestFocus();
+                return;
+            }
+        } catch (NumberFormatException e) {
+            showError("Please enter a valid number for salary.");
+            salaryField.requestFocus();
+            return;
+        }
+
+        // =============================================
+        // VALIDATE LOGIN CREDENTIALS
+        // =============================================
+        if (createLogin) {
+            if (username.isEmpty()) {
+                showError("Username is required for login account.");
+                usernameField.requestFocus();
+                return;
+            }
+            if (username.length() < 3) {
+                showError("Username must be at least 3 characters.");
+                usernameField.requestFocus();
+                return;
+            }
+            if (!username.matches("^[a-zA-Z0-9_]+$")) {
+                showError("Username can only contain letters, numbers, and underscores.");
+                usernameField.requestFocus();
+                return;
+            }
+            
+            if (password.isEmpty()) {
+                showError("Password is required for login account.");
+                passwordField.requestFocus();
+                return;
+            }
+            if (password.length() < 6) {
+                showError("Password must be at least 6 characters.");
+                passwordField.requestFocus();
+                return;
+            }
+            if (!password.equals(confirmPassword)) {
+                showError("Passwords do not match.");
+                confirmPasswordField.requestFocus();
+                return;
+            }
+        }
+
+        // =============================================
+        // CREATE STAFF OBJECT
+        // =============================================
+        Staff staff = new Staff();
+        staff.setFirstName(firstName);
+        staff.setLastName(lastName);
+        staff.setPosition(position);
+        staff.setDepartment(department);
+        staff.setPhone(phone);
+        staff.setEmail(email);
+        staff.setHireDate(hireDate);
+        staff.setSalary(salary);
+        staff.setActive(isActive);
+
+        // =============================================
+        // SAVE WITH SWINGWORKER
+        // =============================================
+        showInfo("Saving staff... Please wait.");
+        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+        saveButton.setEnabled(false);
+
+        SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
+            private int savedStaffId = -1;
+            
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                // 1. Save staff
+                boolean staffSaved = controller.addStaff(staff);
+                if (!staffSaved) {
+                    return false;
+                }
+                savedStaffId = staff.getStaffId();
+                
+                // 2. If login required, create user and link
+                if (createLogin) {
+                    return controller.createLoginForStaff(savedStaffId, username, password);
+                }
+                
+                return true;
+            }
+
+            @Override
+            protected void done() {
+                setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                saveButton.setEnabled(true);
+                try {
+                    boolean success = get();
+                    if (success) {
+                        String message = "Staff saved successfully! Staff ID: " + savedStaffId;
+                        if (createLogin) {
+                            message += "\nLogin account created for: " + username;
+                        }
+                        showSuccess(message);
+                        clearForm();
+                        
+                        Timer timer = new Timer(2000, e -> navigateBack());
+                        timer.setRepeats(false);
+                        timer.start();
+                    } else {
+                        showError("Failed to save staff. Please try again.");
+                    }
+                } catch (Exception e) {
+                    showError("Error saving staff: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    // ========================
+    // Navigation Methods
+    // ========================
+    
+    private void navigateBack() {
+        Container parent = getParent();
+        while (parent != null && !(parent instanceof MainFrame)) {
+            parent = parent.getParent();
+        }
+        if (parent instanceof MainFrame) {
+            ((MainFrame) parent).showCard("STAFF_LIST");
+        }
     }
 
     // ========================
