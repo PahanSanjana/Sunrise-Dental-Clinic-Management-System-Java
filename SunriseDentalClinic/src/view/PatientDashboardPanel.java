@@ -250,22 +250,22 @@ public class PatientDashboardPanel extends JPanel {
             new EmptyBorder(20, 20, 20, 20)
         ));
 
-        // Total Appointments
-        JPanel appointmentCard = createStatCard(FontAwesomeSolid.CALENDAR_ALT, "Appointments", "0", COLOR_APPOINTMENTS);
+        // My Appointments
+        JPanel appointmentCard = createStatCard(FontAwesomeSolid.CALENDAR_ALT, "My Appointments", "0", COLOR_APPOINTMENTS);
         panel.add(appointmentCard);
         totalAppointmentsLabel = findValueLabel(appointmentCard);
 
-        // Total Treatments
-        JPanel treatmentCard = createStatCard(FontAwesomeSolid.PILLS, "Treatments", "0", COLOR_TREATMENTS);
+        // My Treatments
+        JPanel treatmentCard = createStatCard(FontAwesomeSolid.PILLS, "My Treatments", "0", COLOR_TREATMENTS);
         panel.add(treatmentCard);
         totalTreatmentsLabel = findValueLabel(treatmentCard);
 
-        // Total Bills
-        JPanel billCard = createStatCard(FontAwesomeSolid.FILE_INVOICE_DOLLAR, "Bills", "0", COLOR_BILLS);
+        // My Bills
+        JPanel billCard = createStatCard(FontAwesomeSolid.FILE_INVOICE_DOLLAR, "My Bills", "0", COLOR_BILLS);
         panel.add(billCard);
         totalBillsLabel = findValueLabel(billCard);
 
-        // Status
+        // Account Status
         JPanel statusCard = createStatCard(FontAwesomeSolid.THUMBTACK, "Account Status", "Active", COLOR_STATUS);
         panel.add(statusCard);
         statusLabelCard = findValueLabel(statusCard);
@@ -508,9 +508,9 @@ public class PatientDashboardPanel extends JPanel {
 
             @Override
             protected Void doInBackground() throws Exception {
-                stats = controller.getDashboardStats();
-                activities = controller.getRecentActivities();
-                patientName = controller.getPatientName();
+                stats = controller.getDashboardStatsForCurrentPatient();
+                activities = controller.getRecentActivitiesForCurrentPatient();
+                patientName = controller.getCurrentPatientName();
                 return null;
             }
 
@@ -562,7 +562,7 @@ public class PatientDashboardPanel extends JPanel {
         activityModel.clear();
         
         if (activities == null || activities.isEmpty()) {
-            activityModel.addElement("No recent activity");
+            activityModel.addElement("No recent activity for you");
             return;
         }
 
