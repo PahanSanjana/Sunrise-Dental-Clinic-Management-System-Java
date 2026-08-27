@@ -678,7 +678,7 @@ public class StaffListPanel extends JPanel {
                 staff.getPhone() != null ? staff.getPhone() : "N/A",
                 staff.getEmail() != null ? staff.getEmail() : "N/A",
                 staff.getHireDate() != null ? sdf.format(staff.getHireDate()) : "N/A",
-                "$" + df.format(staff.getSalary()),
+                "Rs" + df.format(staff.getSalary()),
                 status
             };
             tableModel.addRow(row);

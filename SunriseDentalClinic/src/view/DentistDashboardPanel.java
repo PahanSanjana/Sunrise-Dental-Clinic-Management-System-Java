@@ -55,6 +55,7 @@ public class DentistDashboardPanel extends JPanel {
     // Components
     private JLabel statusLabel;
     private JLabel lastUpdatedLabel;
+    private JLabel dentistNameLabel;
     
     // Quick Stats Cards
     private JLabel totalPatientsLabel;
@@ -187,12 +188,24 @@ public class DentistDashboardPanel extends JPanel {
         titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
-        JLabel subtitleLabel = new JLabel("Overview of your patients and appointments");
-        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
-        subtitleLabel.setForeground(new Color(107, 123, 121));
+        // Welcome message with dentist name
+        JPanel welcomePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        welcomePanel.setOpaque(false);
+        
+        JLabel welcomeLabel = new JLabel("Welcome, ");
+        welcomeLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
+        welcomeLabel.setForeground(new Color(107, 123, 121));
+        
+        dentistNameLabel = new JLabel("Loading...");
+        dentistNameLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
+        dentistNameLabel.setForeground(PRIMARY_DARK);
+        
+        welcomePanel.add(welcomeLabel);
+        welcomePanel.add(dentistNameLabel);
         
         titlePanel.add(titleLabel);
-        titlePanel.add(subtitleLabel);
+        titlePanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        titlePanel.add(welcomePanel);
 
         header.add(titlePanel, BorderLayout.WEST);
         
@@ -220,12 +233,12 @@ public class DentistDashboardPanel extends JPanel {
         ));
 
         // Total Patients
-        JPanel patientCard = createStatCard(FontAwesomeSolid.HOSPITAL, "Total Patients", "0", COLOR_PATIENTS);
+        JPanel patientCard = createStatCard(FontAwesomeSolid.HOSPITAL, "My Patients", "0", COLOR_PATIENTS);
         panel.add(patientCard);
         totalPatientsLabel = findValueLabel(patientCard);
 
         // Total Appointments
-        JPanel appointmentCard = createStatCard(FontAwesomeSolid.CALENDAR_ALT, "Total Appointments", "0", COLOR_APPOINTMENTS);
+        JPanel appointmentCard = createStatCard(FontAwesomeSolid.CALENDAR_ALT, "My Appointments", "0", COLOR_APPOINTMENTS);
         panel.add(appointmentCard);
         totalAppointmentsLabel = findValueLabel(appointmentCard);
 
@@ -235,7 +248,7 @@ public class DentistDashboardPanel extends JPanel {
         todayAppointmentsLabel = findValueLabel(todayCard);
 
         // Total Treatments
-        JPanel treatmentCard = createStatCard(FontAwesomeSolid.PILLS, "Total Treatments", "0", COLOR_TREATMENTS);
+        JPanel treatmentCard = createStatCard(FontAwesomeSolid.PILLS, "Treatments List", "0", COLOR_TREATMENTS);
         panel.add(treatmentCard);
         totalTreatmentsLabel = findValueLabel(treatmentCard);
 
@@ -308,10 +321,10 @@ public class DentistDashboardPanel extends JPanel {
 
         // Action buttons - Only dentist allowed actions
         Object[][] actions = {
-            {FontAwesomeSolid.USERS, "View Patients", "View patient records"},
+            {FontAwesomeSolid.USERS, "View Patients", "View your patients"},
             {FontAwesomeSolid.CALENDAR_ALT, "View Appointments", "View your appointments"},
             {FontAwesomeSolid.CLIPBOARD_LIST, "Daily Schedule", "View today's schedule"},
-            {FontAwesomeSolid.PILLS, "Treatments", "View treatment plans"}
+            {FontAwesomeSolid.PILLS, "Treatments", "View treatments provided"}
         };
 
         for (Object[] action : actions) {
@@ -473,11 +486,13 @@ public class DentistDashboardPanel extends JPanel {
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             private DashboardStats stats;
             private List<RecentActivity> activities;
+            private String dentistName;
 
             @Override
             protected Void doInBackground() throws Exception {
-                stats = controller.getDashboardStats();
-                activities = controller.getRecentActivities();
+                stats = controller.getDashboardStatsForCurrentDentist();
+                activities = controller.getRecentActivitiesForCurrentDentist();
+                dentistName = controller.getCurrentDentistName();
                 return null;
             }
 
@@ -485,6 +500,13 @@ public class DentistDashboardPanel extends JPanel {
             protected void done() {
                 setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
                 try {
+                    // Update dentist name
+                    if (dentistName != null && !dentistName.isEmpty()) {
+                        dentistNameLabel.setText(dentistName);
+                    } else {
+                        dentistNameLabel.setText("Dentist");
+                    }
+                    
                     displayStats(stats);
                     displayActivities(activities);
                     statusLabel.setText("Dashboard updated successfully!");
@@ -520,7 +542,7 @@ public class DentistDashboardPanel extends JPanel {
         activityModel.clear();
         
         if (activities == null || activities.isEmpty()) {
-            activityModel.addElement("No recent activity");
+            activityModel.addElement("No recent activity for you");
             return;
         }
 

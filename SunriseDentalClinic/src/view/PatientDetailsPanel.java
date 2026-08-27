@@ -4,7 +4,7 @@ import controller.PatientController;
 import model.Patient;
 import model.User;
 import model.LoginSession;
-import model.RolePermissions;
+import model.User.UserRole;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -153,8 +153,39 @@ public class PatientDetailsPanel extends JPanel {
     }
 
     // =====================================================
-    // ROLE-BASED ACTION BUTTON VISIBILITY
+    // ROLE-BASED PERMISSION METHODS
     // =====================================================
+
+    /**
+     * Check if current user can edit patients
+     * Admin, Reception, and Dentist can edit
+     */
+    private boolean canEdit() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) return false;
+        
+        UserRole role = currentUser.getRole();
+        return role == UserRole.ADMIN || role == UserRole.RECEPTION || role == UserRole.DENTIST;
+    }
+
+    /**
+     * Check if current user can delete patients
+     * Only Admin can delete
+     */
+    private boolean canDelete() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) return false;
+        
+        return currentUser.getRole() == UserRole.ADMIN;
+    }
+
+    /**
+     * Check if current user can view patients
+     * All logged-in users can view
+     */
+    private boolean canView() {
+        return LoginSession.getInstance().getCurrentUser() != null;
+    }
 
     /**
      * Update action button visibility based on user role
@@ -165,25 +196,28 @@ public class PatientDetailsPanel extends JPanel {
             return;
         }
         
-        // Check permissions based on user role
-        boolean canEdit = RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_PATIENTS");
-        boolean canDelete = RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_PATIENTS");
-        boolean canView = true; // All roles can view patients
-        
-        // For Dentist - can only view, not edit/delete
-        if (currentUser.isDentist()) {
-            canEdit = false;
-            canDelete = false;
-        }
-        
-        // For Patient - can only view themselves, not edit/delete
+        // For Patient role - they can only view themselves, not edit/delete
         if (currentUser.isPatient()) {
-            canEdit = false;
-            canDelete = false;
-            // Patient can only view themselves (handled in display logic)
+            // Check if this patient is the logged-in user
+            if (currentPatient != null && currentUser.getPatientId() != null) {
+                if (currentPatient.getPatientId() != currentUser.getPatientId()) {
+                    // Patient trying to view another patient - show error
+                    showError("You don't have permission to view this patient.");
+                    return;
+                }
+            }
+            editButton.setVisible(false);
+            deleteButton.setVisible(false);
+            saveButton.setVisible(false);
+            cancelButton.setVisible(false);
+            return;
         }
         
-        // Update button visibility
+        // For Admin, Reception, Dentist
+        boolean canEdit = canEdit();
+        boolean canDelete = canDelete();
+        
+        // Update button visibility based on edit mode
         editButton.setVisible(canEdit && !isEditMode);
         deleteButton.setVisible(canDelete && !isEditMode);
         saveButton.setVisible(isEditMode);
@@ -753,8 +787,7 @@ public class PatientDetailsPanel extends JPanel {
             return;
         }
         
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        if (currentUser == null || !RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_PATIENTS")) {
+        if (!canEdit()) {
             showError("You don't have permission to edit this patient.");
             return;
         }
@@ -784,6 +817,7 @@ public class PatientDetailsPanel extends JPanel {
     private void setViewMode(boolean editMode) {
         this.isEditMode = editMode;
         
+        // Enable/disable fields based on edit mode
         patientNameField.setEnabled(editMode);
         genderCombo.setEnabled(editMode);
         contactNumberField.setEnabled(editMode);
@@ -796,11 +830,8 @@ public class PatientDetailsPanel extends JPanel {
         dobField.setEnabled(editMode);
 
         // Update button visibility based on role and edit mode
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        boolean canEdit = currentUser != null && 
-                          RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_PATIENTS");
-        boolean canDelete = currentUser != null && 
-                            RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_PATIENTS");
+        boolean canEdit = canEdit();
+        boolean canDelete = canDelete();
 
         editButton.setVisible(!editMode && canEdit);
         deleteButton.setVisible(!editMode && canDelete);
@@ -836,30 +867,36 @@ public class PatientDetailsPanel extends JPanel {
         String patientName = patientNameField.getText().trim();
         if (patientName.isEmpty()) {
             showError("Patient Name is required.");
+            patientNameField.requestFocus();
             return;
         }
         if (patientName.length() < 2) {
             showError("Patient Name must be at least 2 characters.");
+            patientNameField.requestFocus();
             return;
         }
 
         String contactNumber = contactNumberField.getText().trim();
         if (contactNumber.isEmpty()) {
             showError("Contact Number is required.");
+            contactNumberField.requestFocus();
             return;
         }
         String contactDigits = contactNumber.replaceAll("[^0-9]", "");
         if (contactDigits.length() < 10) {
             showError("Please enter a valid contact number (at least 10 digits).");
+            contactNumberField.requestFocus();
             return;
         }
 
         String email = emailField.getText().trim();
         if (!email.isEmpty() && !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             showError("Please enter a valid email address.");
+            emailField.requestFocus();
             return;
         }
 
+        // Update patient object
         currentPatient.setPatientName(patientName);
         currentPatient.setGender((String) genderCombo.getSelectedItem());
         currentPatient.setContactNumber(contactNumber);
@@ -869,6 +906,19 @@ public class PatientDetailsPanel extends JPanel {
         currentPatient.setEmergencyPhone(emergencyPhoneField.getText().trim());
         currentPatient.setMedicalHistory(medicalHistoryArea.getText().trim());
         currentPatient.setAllergies(allergiesArea.getText().trim());
+
+        // Update Date of Birth if changed
+        String dobStr = dobField.getText().trim();
+        if (!dobStr.isEmpty()) {
+            try {
+                LocalDate localDate = LocalDate.parse(dobStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                currentPatient.setDateOfBirth(Date.valueOf(localDate));
+            } catch (Exception e) {
+                showError("Invalid date format. Please use YYYY-MM-DD.");
+                dobField.requestFocus();
+                return;
+            }
+        }
 
         statusLabel.setText("Saving patient...");
         statusLabel.setForeground(new Color(0, 120, 215));
@@ -894,8 +944,7 @@ public class PatientDetailsPanel extends JPanel {
             return;
         }
 
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        if (currentUser == null || !RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_PATIENTS")) {
+        if (!canDelete()) {
             showError("You don't have permission to delete this patient.");
             return;
         }
