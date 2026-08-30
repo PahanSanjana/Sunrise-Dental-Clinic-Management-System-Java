@@ -569,6 +569,9 @@ public class ReportController {
         return countByStatus;
     }
 
+    public Patient getPatientById(int patientId) {
+    return patientDAO.getPatientById(patientId);
+}
     /**
      * Get appointment count by status from list
      * @param appointments The list of appointments

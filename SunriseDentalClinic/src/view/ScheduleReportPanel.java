@@ -80,9 +80,6 @@ public class ScheduleReportPanel extends JPanel {
     private JTable scheduleTable;
     private DefaultTableModel tableModel;
     
-    // Chart Panel (placeholder)
-    private JPanel chartPanel;
-    
     private ReportController controller;
     private DecimalFormat df = new DecimalFormat("#.00");
     private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -117,10 +114,6 @@ public class ScheduleReportPanel extends JPanel {
         
         // Summary Cards
         mainPanel.add(createSummaryPanel());
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-        
-        // Chart Panel (placeholder)
-        mainPanel.add(createChartPanel());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Table
@@ -356,35 +349,6 @@ public class ScheduleReportPanel extends JPanel {
     private JLabel findValueLabel(JPanel card) {
         JPanel rightPanel = (JPanel) card.getComponent(1);
         return (JLabel) rightPanel.getComponent(2);
-    }
-
-    private JPanel createChartPanel() {
-        chartPanel = new JPanel();
-        chartPanel.setBackground(Color.WHITE);
-        chartPanel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(MINT, 1),
-            "Appointment Status Distribution",
-            TitledBorder.LEFT,
-            TitledBorder.TOP,
-            new Font(UI_FONT_FAMILY, Font.BOLD, 14),
-            PRIMARY_DARK
-        ));
-        chartPanel.setPreferredSize(new Dimension(600, 150));
-        chartPanel.setLayout(new GridBagLayout());
-        
-        JLabel chartPlaceholder = iconLabel(FontAwesomeSolid.CHART_PIE, 24, SECONDARY_TEXT);
-        JLabel chartText = new JLabel(" Chart visualization coming soon");
-        chartText.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 16));
-        chartText.setForeground(SECONDARY_TEXT);
-        
-        JPanel placeholderPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-        placeholderPanel.setOpaque(false);
-        placeholderPanel.add(chartPlaceholder);
-        placeholderPanel.add(chartText);
-        
-        chartPanel.add(placeholderPanel);
-        
-        return chartPanel;
     }
 
     private JPanel createTablePanel() {

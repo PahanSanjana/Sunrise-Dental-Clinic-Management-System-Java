@@ -5,6 +5,9 @@ import model.Patient;
 import model.Appointment;
 import model.Treatment;
 import model.Bill;
+import model.User;
+import model.LoginSession;
+import model.User.UserRole;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -56,6 +59,7 @@ public class PatientReportPanel extends JPanel {
     private JLabel statusLabel;
     private JLabel lastUpdatedLabel;
     private JLabel patientInfoLabel;
+    private JLabel patientNameDisplayLabel;
     
     // Summary Cards - Store references directly
     private JLabel totalAppointmentsLabel;
@@ -72,6 +76,8 @@ public class PatientReportPanel extends JPanel {
     private DecimalFormat df = new DecimalFormat("#.00");
     private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     private Patient selectedPatient;
+    private User currentUser;
+    private boolean isPatientRole = false;
 
     // Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -79,8 +85,9 @@ public class PatientReportPanel extends JPanel {
 
     public PatientReportPanel() {
         this.controller = new ReportController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         initComponents();
-        loadPatients();
+        loadPatientsBasedOnRole();
         startAutoRefresh();
     }
 
@@ -196,7 +203,7 @@ public class PatientReportPanel extends JPanel {
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        JLabel subtitleLabel = new JLabel("View comprehensive patient history and statistics");
+        JLabel subtitleLabel = new JLabel(getSubtitleBasedOnRole());
         subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -206,6 +213,15 @@ public class PatientReportPanel extends JPanel {
         titlePanel.add(subtitleLabel);
         
         return titlePanel;
+    }
+
+    private String getSubtitleBasedOnRole() {
+        if (currentUser == null) return "View comprehensive patient history and statistics";
+        
+        if (currentUser.isPatient()) {
+            return "View your personal health records and statistics";
+        }
+        return "View comprehensive patient history and statistics";
     }
 
     /**
@@ -233,22 +249,33 @@ public class PatientReportPanel extends JPanel {
             }
         });
 
+        // For patient role, disable the combo box and hide the label
+        if (currentUser != null && currentUser.isPatient()) {
+            patientCombo.setEnabled(false);
+            patientLabel.setVisible(false);
+            // Show patient name instead
+            patientNameDisplayLabel = new JLabel("");
+            patientNameDisplayLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
+            patientNameDisplayLabel.setForeground(PRIMARY_DARK);
+            filterPanel.add(patientNameDisplayLabel);
+        } else {
+            filterPanel.add(patientLabel);
+            filterPanel.add(patientCombo);
+        }
+
         generateButton = createStyledButton("Generate Report", PRIMARY_DARK, Color.WHITE);
         generateButton.setPreferredSize(new Dimension(150, 35));
         generateButton.addActionListener(e -> generateReport());
         generateButton.setIcon(icon(FontAwesomeSolid.USER_MD, 14, Color.WHITE));
         generateButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         generateButton.setIconTextGap(8);
-
-        filterPanel.add(patientLabel);
-        filterPanel.add(patientCombo);
         filterPanel.add(generateButton);
         
         // Manual Refresh Button - ICON ONLY
         JButton refreshBtn = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
         refreshBtn.setPreferredSize(new Dimension(40, 40));
         refreshBtn.setToolTipText("Refresh Now");
-        refreshBtn.addActionListener(e -> loadPatients());
+        refreshBtn.addActionListener(e -> loadPatientsBasedOnRole());
         filterPanel.add(refreshBtn);
 
         return filterPanel;
@@ -519,24 +546,73 @@ public class PatientReportPanel extends JPanel {
     // Data Loading Methods
     // ========================
 
-    private void loadPatients() {
-        List<Patient> patients = controller.getAllPatients();
+    private void loadPatientsBasedOnRole() {
         patientCombo.removeAllItems();
-        // Add placeholder item
-        Patient placeholder = new Patient();
-        placeholder.setPatientName("-- Select Patient --");
-        placeholder.setPatientId(0);
-        patientCombo.addItem(placeholder);
         
-        if (patients != null) {
-            for (Patient patient : patients) {
-                patientCombo.addItem(patient);
+        if (currentUser == null) {
+            showError("Please login first.");
+            return;
+        }
+
+        UserRole role = currentUser.getRole();
+
+        // If user is a patient, load only their own profile
+        if (role == UserRole.PATIENT) {
+            isPatientRole = true;
+            Integer patientId = currentUser.getPatientId();
+            if (patientId != null && patientId > 0) {
+                Patient loggedInPatient = controller.getPatientById(patientId);
+                if (loggedInPatient != null) {
+                    patientCombo.addItem(loggedInPatient);
+                    patientCombo.setSelectedItem(loggedInPatient);
+                    patientCombo.setEnabled(false);
+                    
+                    // Update display name
+                    if (patientNameDisplayLabel != null) {
+                        patientNameDisplayLabel.setText("Patient: " + loggedInPatient.getPatientName());
+                    }
+                    
+                    selectedPatient = loggedInPatient;
+                    generateReport();
+                } else {
+                    showError("No patient profile found for your account.");
+                }
+            } else {
+                showError("No patient profile found for your account.");
+            }
+        } else {
+            // For ADMIN, RECEPTION, and DENTIST - show all patients
+            isPatientRole = false;
+            List<Patient> patients = controller.getAllPatients();
+            // Add placeholder item
+            Patient placeholder = new Patient();
+            placeholder.setPatientName("-- Select Patient --");
+            placeholder.setPatientId(0);
+            patientCombo.addItem(placeholder);
+            
+            if (patients != null) {
+                for (Patient patient : patients) {
+                    patientCombo.addItem(patient);
+                }
+            }
+            patientCombo.setEnabled(true);
+            
+            // Hide the patient name display label
+            if (patientNameDisplayLabel != null) {
+                patientNameDisplayLabel.setText("");
             }
         }
     }
 
     private void generateReport() {
         selectedPatient = (Patient) patientCombo.getSelectedItem();
+        
+        // For patient role, selectedPatient should already be set
+        if (isPatientRole && selectedPatient == null) {
+            showError("No patient profile found.");
+            return;
+        }
+        
         if (selectedPatient == null || selectedPatient.getPatientId() <= 0) {
             showError("Please select a valid patient.");
             return;
