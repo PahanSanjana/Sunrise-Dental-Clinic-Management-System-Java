@@ -645,6 +645,122 @@ public class BillDAO {
     }
 
     // =====================================================
+    // BILL ITEM METHODS (NEW)
+    // =====================================================
+
+    /**
+     * Delete all bill items for a bill
+     * @param billId The bill ID
+     * @return true if successful, false otherwise
+     */
+    public boolean deleteBillItems(int billId) {
+        String sql = "DELETE FROM billing_items WHERE bill_id = ?";
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, billId);
+            int affected = pstmt.executeUpdate();
+            return affected >= 0; // Returns true even if no rows were deleted
+        } catch (SQLException e) {
+            System.err.println("Error deleting bill items: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Insert a bill item
+     * @param billId The bill ID
+     * @param item The bill item to insert
+     * @return true if successful, false otherwise
+     */
+    public boolean insertBillItem(int billId, BillItem item) {
+        String sql = "INSERT INTO billing_items (bill_id, treatment_id, description, quantity, unit_price, total_price) "
+                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, billId);
+            if (item.getTreatmentId() > 0) {
+                pstmt.setInt(2, item.getTreatmentId());
+            } else {
+                pstmt.setNull(2, Types.INTEGER);
+            }
+            pstmt.setString(3, item.getDescription());
+            pstmt.setInt(4, item.getQuantity());
+            pstmt.setDouble(5, item.getUnitPrice());
+            pstmt.setDouble(6, item.getTotalPrice());
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error inserting bill item: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Update bill items (delete all and insert new ones) - For Dentist/Admin/Reception
+     * This method handles both deleting old items and inserting new ones in a transaction
+     * @param billId The bill ID
+     * @param items The list of bill items
+     * @return true if successful, false otherwise
+     */
+    public boolean updateBillItems(int billId, List<BillItem> items) {
+        Connection conn = null;
+        try {
+            conn = DBconnection.getConnection();
+            conn.setAutoCommit(false);
+            
+            // Delete existing items
+            String deleteSql = "DELETE FROM billing_items WHERE bill_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(deleteSql)) {
+                pstmt.setInt(1, billId);
+                pstmt.executeUpdate();
+            }
+            
+            // Insert new items
+            if (items != null && !items.isEmpty()) {
+                String insertSql = "INSERT INTO billing_items (bill_id, treatment_id, description, quantity, unit_price, total_price) "
+                                 + "VALUES (?, ?, ?, ?, ?, ?)";
+                for (BillItem item : items) {
+                    try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
+                        pstmt.setInt(1, billId);
+                        if (item.getTreatmentId() > 0) {
+                            pstmt.setInt(2, item.getTreatmentId());
+                        } else {
+                            pstmt.setNull(2, Types.INTEGER);
+                        }
+                        pstmt.setString(3, item.getDescription());
+                        pstmt.setInt(4, item.getQuantity());
+                        pstmt.setDouble(5, item.getUnitPrice());
+                        pstmt.setDouble(6, item.getTotalPrice());
+                        pstmt.executeUpdate();
+                    }
+                }
+            }
+            
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            System.err.println("Error updating bill items: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // =====================================================
     // DELETE METHODS
     // =====================================================
 
@@ -950,6 +1066,10 @@ public class BillDAO {
         }
         return false;
     }
+
+    // =====================================================
+    // MAPPER METHODS
+    // =====================================================
 
     /**
      * Map ResultSet to Bill object

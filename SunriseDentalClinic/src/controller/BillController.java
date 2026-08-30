@@ -103,6 +103,15 @@ public class BillController {
         return patient != null ? patient.getPatientName() : "Unknown";
     }
 
+    /**
+     * Get patient by user ID
+     * @param userId The user ID
+     * @return Patient object if found, null otherwise
+     */
+    public Patient getPatientByUserId(int userId) {
+        return patientDAO.getPatientByUserId(userId);
+    }
+
     // =====================================================
     // APPOINTMENT METHODS
     // =====================================================
@@ -328,6 +337,39 @@ public class BillController {
      */
     public boolean billNumberExists(String billNumber) {
         return billDAO.billNumberExists(billNumber);
+    }
+
+    // =====================================================
+    // BILL ITEM METHODS (NEW)
+    // =====================================================
+
+    /**
+     * Delete all bill items for a bill
+     * @param billId The bill ID
+     * @return true if successful, false otherwise
+     */
+    public boolean deleteBillItems(int billId) {
+        return billDAO.deleteBillItems(billId);
+    }
+
+    /**
+     * Insert a bill item
+     * @param billId The bill ID
+     * @param item The bill item to insert
+     * @return true if successful, false otherwise
+     */
+    public boolean insertBillItem(int billId, BillItem item) {
+        return billDAO.insertBillItem(billId, item);
+    }
+
+    /**
+     * Update bill items (delete all and insert new ones)
+     * @param billId The bill ID
+     * @param items The list of bill items
+     * @return true if successful, false otherwise
+     */
+    public boolean updateBillItems(int billId, List<BillItem> items) {
+        return billDAO.updateBillItems(billId, items);
     }
 
     // =====================================================
@@ -799,13 +841,4 @@ public class BillController {
         User currentUser = LoginSession.getInstance().getCurrentUser();
         return getRevenueForUser(currentUser);
     }
-    
-    /**
- * Get patient by user ID
- * @param userId The user ID
- * @return Patient object if found, null otherwise
- */
-public Patient getPatientByUserId(int userId) {
-    return patientDAO.getPatientByUserId(userId);
-}
 }

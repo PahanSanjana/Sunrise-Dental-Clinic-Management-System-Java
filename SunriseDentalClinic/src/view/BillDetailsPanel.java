@@ -4,6 +4,7 @@ import controller.BillController;
 import model.Bill;
 import model.BillItem;
 import model.Patient;
+import model.Treatment;
 import model.User;
 import model.LoginSession;
 import model.RolePermissions;
@@ -18,6 +19,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -94,6 +96,8 @@ public class BillDetailsPanel extends JPanel {
     private RoundedButton markPaidButton;
     private RoundedButton printButton;
     private RoundedButton emailButton;
+    private RoundedButton addTreatmentButton;
+    private RoundedButton removeTreatmentButton;
     private JButton refreshButton;
     
     private JPanel buttonPanel;
@@ -105,6 +109,10 @@ public class BillDetailsPanel extends JPanel {
     private Patient currentPatient;
     private BillController controller;
     private DecimalFormat df = new DecimalFormat("#.00");
+    private User currentUser;
+
+    // Payment Section Panel
+    private JPanel paymentSectionPanel;
 
     // ✅ Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -112,22 +120,26 @@ public class BillDetailsPanel extends JPanel {
 
     public BillDetailsPanel() {
         this.controller = new BillController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         initComponents();
         setViewMode(false);
         displayEmptyState();
         startAutoRefresh();
         updateActionButtons();
+        applyRoleBasedRestrictions();
     }
 
     public BillDetailsPanel(Bill bill, List<BillItem> items) {
         this.controller = new BillController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         this.currentBill = bill;
-        this.currentItems = items;
+        this.currentItems = items != null ? items : new ArrayList<>();
         initComponents();
         setViewMode(false);
-        displayBill(bill, items);
+        displayBill(bill, this.currentItems);
         startAutoRefresh();
         updateActionButtons();
+        applyRoleBasedRestrictions();
     }
 
     private void initComponents() {
@@ -203,6 +215,73 @@ public class BillDetailsPanel extends JPanel {
     }
 
     // =====================================================
+    // ROLE-BASED PERMISSION METHODS
+    // =====================================================
+
+    /**
+     * Check if current user can edit bills
+     * Admin, Reception, and Dentist can edit
+     */
+    private boolean canEdit() {
+        if (currentUser == null) return false;
+        return currentUser.isAdmin() || currentUser.isReception() || currentUser.isDentist();
+    }
+
+    /**
+     * Check if current user can delete bills
+     * Only Admin can delete
+     */
+    private boolean canDelete() {
+        if (currentUser == null) return false;
+        return currentUser.isAdmin();
+    }
+
+    /**
+     * Check if current user can mark bill as paid
+     * Admin and Reception can mark as paid (Dentist cannot)
+     */
+    private boolean canMarkPaid() {
+        if (currentUser == null) return false;
+        return currentUser.isAdmin() || currentUser.isReception();
+    }
+
+    /**
+     * Check if current user can view bills
+     * All logged-in users can view
+     */
+    private boolean canView() {
+        return currentUser != null;
+    }
+
+    /**
+     * Check if current user can see payment section
+     * Dentist cannot see payment section
+     */
+    private boolean canViewPaymentSection() {
+        if (currentUser == null) return false;
+        return !currentUser.isDentist();
+    }
+
+    /**
+     * Apply role-based restrictions to the form
+     */
+    private void applyRoleBasedRestrictions() {
+        if (currentUser == null) return;
+
+        // If user is a dentist, hide payment section
+        if (currentUser.isDentist()) {
+            if (paymentSectionPanel != null) {
+                paymentSectionPanel.setVisible(false);
+            }
+        } else {
+            // For ADMIN, RECEPTION, and PATIENT - show payment section
+            if (paymentSectionPanel != null) {
+                paymentSectionPanel.setVisible(true);
+            }
+        }
+    }
+
+    // =====================================================
     // ROLE-BASED ACTION BUTTON VISIBILITY
     // =====================================================
 
@@ -210,39 +289,68 @@ public class BillDetailsPanel extends JPanel {
      * Update action button visibility based on user role
      */
     private void updateActionButtons() {
-        User currentUser = LoginSession.getInstance().getCurrentUser();
         if (currentUser == null) {
             return;
         }
         
-        // Check permissions based on user role
-        boolean canEdit = RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS");
-        boolean canDelete = RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS");
-        boolean canMarkPaid = currentUser.isAdmin() || currentUser.isReception();
-        boolean canViewBill = true; // All roles can view bills
+        boolean canEdit = canEdit();
+        boolean canDelete = canDelete();
+        boolean canMarkPaid = canMarkPaid();
+        boolean isDentist = currentUser.isDentist();
         
-        // For Dentist - can only view, not edit/delete
-        if (currentUser.isDentist()) {
-            canEdit = false;
-            canDelete = false;
-            canMarkPaid = false;
-        }
-        
-        // For Patient - can only view their own bills
+        // For Patient - only view access
         if (currentUser.isPatient()) {
-            canEdit = false;
-            canDelete = false;
-            canMarkPaid = false;
+            // Check if this bill belongs to the patient
+            if (currentBill != null) {
+                Integer patientId = currentUser.getPatientId();
+                if (patientId != null && currentBill.getPatientId() != patientId) {
+                    // Patient trying to view another patient's bill - show error
+                    showError("You don't have permission to view this bill.");
+                    return;
+                }
+            }
+            editButton.setVisible(false);
+            markPaidButton.setVisible(false);
+            deleteButton.setVisible(false);
+            saveButton.setVisible(false);
+            cancelButton.setVisible(false);
+            addTreatmentButton.setVisible(false);
+            removeTreatmentButton.setVisible(false);
+            
+            // Print and Email buttons are always visible
+            printButton.setVisible(true);
+            emailButton.setVisible(true);
+            backButton.setVisible(true);
+            return;
         }
         
-        // Update button visibility
+        // For Dentist - can edit notes and add/remove treatments
+        if (isDentist) {
+            editButton.setVisible(canEdit && !isEditMode);
+            markPaidButton.setVisible(false);
+            deleteButton.setVisible(false);
+            saveButton.setVisible(isEditMode);
+            cancelButton.setVisible(isEditMode);
+            addTreatmentButton.setVisible(isEditMode);
+            removeTreatmentButton.setVisible(isEditMode);
+            
+            printButton.setVisible(true);
+            emailButton.setVisible(true);
+            backButton.setVisible(true);
+            return;
+        }
+        
+        // For Admin and Reception - full access
+        // Update button visibility based on edit mode
         editButton.setVisible(canEdit && !isEditMode);
         markPaidButton.setVisible(canMarkPaid && !isEditMode && currentBill != null && !"Paid".equals(currentBill.getStatus()));
         deleteButton.setVisible(canDelete && !isEditMode);
         saveButton.setVisible(isEditMode);
         cancelButton.setVisible(isEditMode);
+        addTreatmentButton.setVisible(isEditMode);
+        removeTreatmentButton.setVisible(isEditMode);
         
-        // Print and Email buttons are always visible (all roles can print/email)
+        // Print and Email buttons are always visible
         printButton.setVisible(true);
         emailButton.setVisible(true);
         
@@ -256,9 +364,10 @@ public class BillDetailsPanel extends JPanel {
             if (updated != null) {
                 List<BillItem> items = controller.getBillItemsByBillId(currentBill.getBillId());
                 currentBill = updated;
-                currentItems = items;
+                currentItems = items != null ? items : new ArrayList<>();
                 displayBill(currentBill, currentItems);
                 updateActionButtons();
+                applyRoleBasedRestrictions();
             }
         }
     }
@@ -352,8 +461,9 @@ public class BillDetailsPanel extends JPanel {
         mainPanel.add(createSectionPanel("Bill Items", createBillItemsPanel()));
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        // Payment Information Section
-        mainPanel.add(createSectionPanel("Payment Information", createPaymentPanel()));
+        // Payment Information Section - Hidden for Dentist
+        paymentSectionPanel = createSectionPanel("Payment Information", createPaymentPanel());
+        mainPanel.add(paymentSectionPanel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Notes Section
@@ -415,7 +525,7 @@ public class BillDetailsPanel extends JPanel {
         billDateLabel.setForeground(SECONDARY_TEXT);
         panel.add(billDateLabel, gbc);
 
-        // Due Date - REMOVED
+        // Due Date - REMOVED (empty placeholders)
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
@@ -568,7 +678,7 @@ public class BillDetailsPanel extends JPanel {
         subtotalLabel.setForeground(SECONDARY_TEXT);
         panel.add(subtotalLabel, gbc);
 
-        // Tax - Now shows as percentage
+        // Tax - Shows as percentage
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
@@ -809,6 +919,24 @@ public class BillDetailsPanel extends JPanel {
         deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         deleteButton.setIconTextGap(6);
 
+        // Add Treatment button (hidden initially)
+        addTreatmentButton = createStyledButton("Add Treatment", PRIMARY_DARK, Color.WHITE);
+        addTreatmentButton.setPreferredSize(new Dimension(140, 35));
+        addTreatmentButton.setVisible(false);
+        addTreatmentButton.addActionListener(e -> showAddTreatmentDialog());
+        addTreatmentButton.setIcon(icon(FontAwesomeSolid.PLUS, 12, Color.WHITE));
+        addTreatmentButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        addTreatmentButton.setIconTextGap(6);
+
+        // Remove Treatment button (hidden initially)
+        removeTreatmentButton = createStyledButton("Remove Selected", ERROR_COLOR, Color.WHITE);
+        removeTreatmentButton.setPreferredSize(new Dimension(150, 35));
+        removeTreatmentButton.setVisible(false);
+        removeTreatmentButton.addActionListener(e -> removeSelectedTreatment());
+        removeTreatmentButton.setIcon(icon(FontAwesomeSolid.TRASH_ALT, 12, Color.WHITE));
+        removeTreatmentButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        removeTreatmentButton.setIconTextGap(6);
+
         buttonPanel.add(backButton);
         buttonPanel.add(printButton);
         buttonPanel.add(emailButton);
@@ -817,6 +945,8 @@ public class BillDetailsPanel extends JPanel {
         buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
         buttonPanel.add(deleteButton);
+        buttonPanel.add(addTreatmentButton);
+        buttonPanel.add(removeTreatmentButton);
 
         footer.add(statusLabel, BorderLayout.WEST);
         footer.add(buttonPanel, BorderLayout.EAST);
@@ -962,13 +1092,340 @@ public class BillDetailsPanel extends JPanel {
         // Empty implementation
     }
 
+    // =====================================================
+    // ADD / REMOVE TREATMENT METHODS
+    // =====================================================
+
+    private void showAddTreatmentDialog() {
+        if (currentBill == null) {
+            showError("No bill loaded.");
+            return;
+        }
+
+        // Get all treatments from database
+        List<Treatment> treatments = controller.getAllTreatments();
+        if (treatments == null || treatments.isEmpty()) {
+            showError("No treatments available in the system.");
+            return;
+        }
+
+        // Create dialog
+        JDialog dialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Add Treatment", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+
+        // Treatment selection panel
+        JPanel selectionPanel = new JPanel(new GridBagLayout());
+        selectionPanel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.weightx = 1.0;
+
+        // Treatment combo
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.2;
+        JLabel treatmentLabel = new JLabel("Treatment:");
+        treatmentLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
+        treatmentLabel.setForeground(PRIMARY_DARK);
+        selectionPanel.add(treatmentLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.5;
+        JComboBox<Treatment> treatmentCombo = new JComboBox<>();
+        treatmentCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
+        treatmentCombo.setPreferredSize(new Dimension(250, 35));
+        for (Treatment t : treatments) {
+            treatmentCombo.addItem(t);
+        }
+        selectionPanel.add(treatmentCombo, gbc);
+
+        // Quantity
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.15;
+        JLabel qtyLabel = new JLabel("Qty:");
+        qtyLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 13));
+        qtyLabel.setForeground(PRIMARY_DARK);
+        selectionPanel.add(qtyLabel, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.15;
+        JSpinner qtySpinner = new JSpinner(new SpinnerNumberModel(1, 1, 10, 1));
+        qtySpinner.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
+        qtySpinner.setPreferredSize(new Dimension(60, 35));
+        selectionPanel.add(qtySpinner, gbc);
+
+        mainPanel.add(selectionPanel, BorderLayout.NORTH);
+
+        // Preview table
+        String[] columns = {"Treatment", "Description", "Unit Price"};
+        DefaultTableModel previewModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        JTable previewTable = new JTable(previewModel);
+        previewTable.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 12));
+        previewTable.setRowHeight(30);
+        JScrollPane scrollPane = new JScrollPane(previewTable);
+        scrollPane.setPreferredSize(new Dimension(450, 150));
+        scrollPane.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Update preview when treatment changes
+        treatmentCombo.addActionListener(e -> {
+            previewModel.setRowCount(0);
+            Treatment selected = (Treatment) treatmentCombo.getSelectedItem();
+            if (selected != null) {
+                Object[] row = {
+                    selected.getTreatmentName(),
+                    selected.getDescription() != null ? selected.getDescription() : "N/A",
+                    "RS" + df.format(selected.getCost())
+                };
+                previewModel.addRow(row);
+            }
+        });
+        // Initial preview
+        if (treatmentCombo.getItemCount() > 0) {
+            Treatment selected = (Treatment) treatmentCombo.getSelectedItem();
+            if (selected != null) {
+                Object[] row = {
+                    selected.getTreatmentName(),
+                    selected.getDescription() != null ? selected.getDescription() : "N/A",
+                    "RS" + df.format(selected.getCost())
+                };
+                previewModel.addRow(row);
+            }
+        }
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        RoundedButton addBtn = createStyledButton("Add", PRIMARY_DARK, Color.WHITE);
+        addBtn.setPreferredSize(new Dimension(100, 35));
+        addBtn.addActionListener(e -> {
+            Treatment selected = (Treatment) treatmentCombo.getSelectedItem();
+            if (selected == null) {
+                showError("Please select a treatment.");
+                return;
+            }
+            int quantity = (int) qtySpinner.getValue();
+            if (quantity <= 0) {
+                showError("Quantity must be greater than 0.");
+                return;
+            }
+
+            addTreatmentToBill(selected, quantity);
+            dialog.dispose();
+        });
+
+        RoundedButton cancelBtn = createStyledButton("Cancel", SOFT_SURFACE, PRIMARY_DARK);
+        cancelBtn.setBorderColor(LIGHT_SURFACE);
+        cancelBtn.setPreferredSize(new Dimension(100, 35));
+        cancelBtn.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(addBtn);
+        buttonPanel.add(cancelBtn);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+
+    private void addTreatmentToBill(Treatment treatment, int quantity) {
+        if (treatment == null || currentBill == null) return;
+
+        double totalPrice = treatment.getCost() * quantity;
+        
+        BillItem newItem = new BillItem(
+            0,
+            treatment.getTreatmentId(),
+            treatment.getTreatmentName(),
+            quantity,
+            treatment.getCost(),
+            totalPrice
+        );
+
+        currentItems.add(newItem);
+        displayBillItems(currentItems);
+        recalculateBillTotals();
+
+        showSuccess("Treatment added successfully!");
+    }
+
+    private void removeSelectedTreatment() {
+        int selectedRow = billItemsTable.getSelectedRow();
+        if (selectedRow == -1) {
+            showError("Please select a treatment to remove.");
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to remove this treatment from the bill?",
+            "Remove Treatment",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            currentItems.remove(selectedRow);
+            displayBillItems(currentItems);
+            recalculateBillTotals();
+            showSuccess("Treatment removed successfully!");
+        }
+    }
+
+    private void recalculateBillTotals() {
+        if (currentBill == null) return;
+
+        double subtotal = 0;
+        for (BillItem item : currentItems) {
+            subtotal += item.getTotalPrice();
+        }
+
+        double taxPercentage = currentBill.getTax();
+        double discount = currentBill.getDiscount();
+        double taxAmount = subtotal * (taxPercentage / 100);
+        double total = subtotal + taxAmount - discount;
+
+        currentBill.setSubtotal(subtotal);
+        currentBill.setTotalAmount(total);
+
+        // Update display
+        subtotalLabel.setText("RS" + df.format(subtotal));
+        totalAmountLabel.setText("RS" + df.format(total));
+
+        // Update status label
+        statusLabel.setText("Bill totals recalculated. Please save changes.");
+        statusLabel.setForeground(new Color(0, 120, 215));
+    }
+
+    // =====================================================
+    // SAVE BILL WITH ITEMS TO DATABASE
+    // =====================================================
+
+    private void saveBillToDatabase() {
+        if (currentBill == null) {
+            showError("No bill loaded to save.");
+            return;
+        }
+
+        statusLabel.setText("Saving bill...");
+        statusLabel.setForeground(new Color(0, 120, 215));
+        setCursor(new Cursor(Cursor.WAIT_CURSOR));
+        saveButton.setEnabled(false);
+
+        SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                // Step 1: Update the bill header
+                boolean isDentist = currentUser != null && currentUser.isDentist();
+                
+                if (isDentist) {
+                    // Dentist can only update notes and totals
+                    currentBill.setNotes(notesArea.getText().trim());
+                } else {
+                    // Admin and Reception can update everything
+                    currentBill.setStatus((String) statusCombo.getSelectedItem());
+                    currentBill.setPaymentMethod((String) paymentMethodCombo.getSelectedItem());
+                    currentBill.setNotes(notesArea.getText().trim());
+                }
+                
+                // Update totals
+                double subtotal = 0;
+                for (BillItem item : currentItems) {
+                    subtotal += item.getTotalPrice();
+                }
+                double taxPercentage = currentBill.getTax();
+                double discount = currentBill.getDiscount();
+                double taxAmount = subtotal * (taxPercentage / 100);
+                double total = subtotal + taxAmount - discount;
+                
+                currentBill.setSubtotal(subtotal);
+                currentBill.setTotalAmount(total);
+                // Balance will be calculated by the DAO based on amount_paid and total_amount
+                
+                // Step 2: Update the bill in database
+                boolean billUpdated = controller.updateBill(currentBill);
+                if (!billUpdated) {
+                    return false;
+                }
+                
+                // Step 3: Delete existing bill items
+                boolean itemsDeleted = controller.deleteBillItems(currentBill.getBillId());
+                if (!itemsDeleted) {
+                    return false;
+                }
+                
+                // Step 4: Insert new bill items
+                boolean itemsInserted = true;
+                for (BillItem item : currentItems) {
+                    // Create a new item with the correct bill_id
+                    BillItem newItem = new BillItem(
+                        0, // item_id will be auto-generated
+                        item.getTreatmentId(),
+                        item.getDescription(),
+                        item.getQuantity(),
+                        item.getUnitPrice(),
+                        item.getTotalPrice()
+                    );
+                    boolean inserted = controller.insertBillItem(currentBill.getBillId(), newItem);
+                    if (!inserted) {
+                        itemsInserted = false;
+                        break;
+                    }
+                }
+                
+                return itemsInserted;
+            }
+
+            @Override
+            protected void done() {
+                setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                saveButton.setEnabled(true);
+                try {
+                    boolean success = get();
+                    if (success) {
+                        statusLabel.setText("Bill saved successfully!");
+                        statusLabel.setForeground(SUCCESS_COLOR);
+                        setViewMode(false);
+                        // Reload the bill to show updated data
+                        loadBillData();
+                        showSuccess("Bill saved successfully!");
+                    } else {
+                        statusLabel.setText("Failed to save bill.");
+                        statusLabel.setForeground(ERROR_COLOR);
+                        showError("Failed to save bill. Please try again.");
+                    }
+                } catch (Exception e) {
+                    statusLabel.setText("Error saving bill.");
+                    statusLabel.setForeground(ERROR_COLOR);
+                    showError("Error saving bill: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
+    }
+
     // ========================
     // Public methods
     // ========================
 
     public void displayBill(Bill bill, List<BillItem> items) {
         this.currentBill = bill;
-        this.currentItems = items;
+        this.currentItems = items != null ? items : new ArrayList<>();
         
         if (bill == null) {
             displayEmptyState();
@@ -991,7 +1448,7 @@ public class BillDetailsPanel extends JPanel {
         
         subtotalLabel.setText("RS" + df.format(bill.getSubtotal()));
         
-        // FIX: Display tax as percentage with % symbol
+        // Display tax as percentage with % symbol
         taxLabel.setText(df.format(bill.getTax()) + "%");
         
         discountLabel.setText("RS" + df.format(bill.getDiscount()));
@@ -1014,13 +1471,14 @@ public class BillDetailsPanel extends JPanel {
         
         updateStatusBadge(bill.getStatus() != null ? bill.getStatus() : "Pending");
         
-        displayBillItems(items);
+        displayBillItems(this.currentItems);
         
         updateMarkPaidButton();
         
         statusLabel.setText(" ");
         setViewMode(false);
         updateActionButtons();
+        applyRoleBasedRestrictions();
     }
 
     private void displayBillItems(List<BillItem> items) {
@@ -1067,6 +1525,7 @@ public class BillDetailsPanel extends JPanel {
         tableModel.setRowCount(0);
         updateMarkPaidButton();
         updateActionButtons();
+        applyRoleBasedRestrictions();
     }
 
     private void updateMarkPaidButton() {
@@ -1080,27 +1539,52 @@ public class BillDetailsPanel extends JPanel {
     private void setViewMode(boolean editMode) {
         this.isEditMode = editMode;
         
-        statusCombo.setEnabled(editMode);
-        paymentMethodCombo.setEnabled(editMode);
-        notesArea.setEnabled(editMode);
+        // Enable fields based on role
+        boolean canEdit = canEdit();
+        boolean isDentist = currentUser != null && currentUser.isDentist();
+        
+        // Dentist can only edit notes, not payment fields
+        if (isDentist) {
+            statusCombo.setEnabled(false);
+            paymentMethodCombo.setEnabled(false);
+            notesArea.setEnabled(editMode);
+        } else {
+            // Admin and Reception can edit everything
+            statusCombo.setEnabled(editMode && canEdit);
+            paymentMethodCombo.setEnabled(editMode && canEdit);
+            notesArea.setEnabled(editMode && canEdit);
+        }
 
         // Update button visibility based on role and edit mode
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        boolean canEdit = currentUser != null && 
-                          RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS");
-        boolean canDelete = currentUser != null && 
-                            RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS");
-        boolean canMarkPaid = currentUser != null && 
-                              (currentUser.isAdmin() || currentUser.isReception());
+        boolean canDelete = canDelete();
+        boolean canMarkPaid = canMarkPaid();
 
-        editButton.setVisible(!editMode && canEdit);
-        markPaidButton.setVisible(!editMode && canMarkPaid && currentBill != null && !"Paid".equals(currentBill.getStatus()));
-        deleteButton.setVisible(!editMode && canDelete);
-        saveButton.setVisible(editMode);
-        cancelButton.setVisible(editMode);
+        // For Dentist - show edit, save, cancel, add/remove treatment buttons
+        if (isDentist) {
+            editButton.setVisible(!editMode && canEdit);
+            markPaidButton.setVisible(false);
+            deleteButton.setVisible(false);
+            saveButton.setVisible(editMode && canEdit);
+            cancelButton.setVisible(editMode && canEdit);
+            addTreatmentButton.setVisible(editMode && canEdit);
+            removeTreatmentButton.setVisible(editMode && canEdit);
+        } else {
+            // Admin and Reception
+            editButton.setVisible(!editMode && canEdit);
+            markPaidButton.setVisible(!editMode && canMarkPaid && currentBill != null && !"Paid".equals(currentBill.getStatus()));
+            deleteButton.setVisible(!editMode && canDelete);
+            saveButton.setVisible(editMode && canEdit);
+            cancelButton.setVisible(editMode && canEdit);
+            addTreatmentButton.setVisible(editMode && canEdit);
+            removeTreatmentButton.setVisible(editMode && canEdit);
+        }
 
         if (editMode) {
-            statusLabel.setText("Editing bill information...");
+            if (isDentist) {
+                statusLabel.setText("Editing notes & treatments... (Dentist mode - payment fields locked)");
+            } else {
+                statusLabel.setText("Editing bill information...");
+            }
             statusLabel.setForeground(new Color(0, 120, 215));
         } else {
             statusLabel.setText(" ");
@@ -1114,8 +1598,7 @@ public class BillDetailsPanel extends JPanel {
             return;
         }
         
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        if (currentUser == null || !RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS")) {
+        if (!canEdit()) {
             showError("You don't have permission to edit this bill.");
             return;
         }
@@ -1140,26 +1623,13 @@ public class BillDetailsPanel extends JPanel {
             return;
         }
 
-        currentBill.setStatus((String) statusCombo.getSelectedItem());
-        currentBill.setPaymentMethod((String) paymentMethodCombo.getSelectedItem());
-        currentBill.setNotes(notesArea.getText().trim());
-
-        statusLabel.setText("Saving bill...");
-        statusLabel.setForeground(new Color(0, 120, 215));
-        
-        boolean success = controller.updateBill(currentBill);
-        
-        if (success) {
-            statusLabel.setText("Bill updated successfully!");
-            statusLabel.setForeground(SUCCESS_COLOR);
-            setViewMode(false);
-            displayBill(currentBill, currentItems);
-            showSuccess("Bill updated successfully!");
-        } else {
-            statusLabel.setText("Failed to update bill.");
-            statusLabel.setForeground(ERROR_COLOR);
-            showError("Failed to update bill. Please try again.");
+        if (!canEdit()) {
+            showError("You don't have permission to save changes.");
+            return;
         }
+        
+        // Call the save method that saves to database
+        saveBillToDatabase();
     }
 
     private void markAsPaid() {
@@ -1168,8 +1638,7 @@ public class BillDetailsPanel extends JPanel {
             return;
         }
 
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        if (currentUser == null || !(currentUser.isAdmin() || currentUser.isReception())) {
+        if (!canMarkPaid()) {
             showError("You don't have permission to mark this bill as paid.");
             return;
         }
@@ -1194,6 +1663,7 @@ public class BillDetailsPanel extends JPanel {
                 statusLabel.setText("Bill marked as paid");
                 statusLabel.setForeground(SUCCESS_COLOR);
                 updateActionButtons();
+                applyRoleBasedRestrictions();
             } else {
                 showError("Failed to mark bill as paid.");
             }
@@ -1390,8 +1860,7 @@ public class BillDetailsPanel extends JPanel {
             return;
         }
 
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        if (currentUser == null || !RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS")) {
+        if (!canDelete()) {
             showError("You don't have permission to delete this bill.");
             return;
         }
@@ -1448,7 +1917,7 @@ public class BillDetailsPanel extends JPanel {
     }
 
     public void setBillItems(List<BillItem> items) {
-        this.currentItems = items;
-        displayBillItems(items);
+        this.currentItems = items != null ? items : new ArrayList<>();
+        displayBillItems(this.currentItems);
     }
 }

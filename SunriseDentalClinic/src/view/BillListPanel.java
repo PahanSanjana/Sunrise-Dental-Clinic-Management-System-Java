@@ -614,13 +614,7 @@ public class BillListPanel extends JPanel {
         }
     }
 
-    // =====================================================
     // ROLE-BASED ACTION BUTTON VISIBILITY
-    // =====================================================
-
-    /**
-     * Update action button visibility based on user role
-     */
     private void updateActionButtons() {
         if (currentUser == null) {
             return;
@@ -631,28 +625,19 @@ public class BillListPanel extends JPanel {
         boolean isDentist = currentUser.isDentist();
         boolean isPatient = currentUser.isPatient();
         
-        // View button - All roles can view bills
         viewButton.setVisible(true);
         
-        // Add/Generate button - ADMIN, RECEPTION, and DENTIST can generate bills
         addButton.setVisible(isAdmin || isReception || isDentist);
         
-        // Edit button - ADMIN and RECEPTION can edit bills
         editButton.setVisible(isAdmin || isReception);
         
-        // Mark Paid button - ADMIN and RECEPTION can mark bills as paid
         markPaidButton.setVisible(isAdmin || isReception);
         
-        // Delete button - Only ADMIN can delete bills
         deleteButton.setVisible(isAdmin);
         
-        // Total Revenue - Only ADMIN and RECEPTION can see
         totalRevenueLabel.setVisible(isAdmin || isReception);
     }
 
-    // =====================================================
-    // DATA LOADING METHODS
-    // =====================================================
 
     public void loadBills() {
         String searchText = searchField != null ? searchField.getText().trim() : "";
@@ -664,25 +649,20 @@ public class BillListPanel extends JPanel {
             protected List<Bill> doInBackground() throws Exception {
                 List<Bill> bills;
                 
-                // If user is a patient, get only their bills using patient ID
                 if (currentUser != null && currentUser.isPatient()) {
                     if (currentPatientId > 0) {
-                        // Get bills by patient ID directly from database
                         bills = controller.getBillsByPatient(currentPatientId);
                     } else {
                         bills = new ArrayList<>();
                     }
                 } else {
-                    // For Admin, Reception, Dentist - get all bills with filters
                     bills = controller.getFilteredBillsForUser(searchText, status, dateFilter, currentUser);
                 }
                 
-                // If bills is null, return empty list
                 if (bills == null) {
                     return new ArrayList<>();
                 }
                 
-                // Apply search filter for patient too
                 if (searchText != null && !searchText.isEmpty() && currentUser != null && currentUser.isPatient()) {
                     String searchLower = searchText.toLowerCase().trim();
                     bills.removeIf(b -> {
@@ -730,10 +710,7 @@ public class BillListPanel extends JPanel {
         for (Bill bill : bills) {
             String patientName = controller.getPatientName(bill.getPatientId());
             String date = bill.getBillDate() != null ? dateFormat.format(bill.getBillDate()) : "N/A";
-            // Due Date removed - commented out
-            // String dueDate = bill.getDueDate() != null ? dateFormat.format(bill.getDueDate()) : "N/A";
-            
-            Object[] row;
+        Object[] row;
             if (isPatient) {
                 // For Patient: ID, Bill Number, Date, Total, Status
                 row = new Object[]{
@@ -771,9 +748,6 @@ public class BillListPanel extends JPanel {
         totalRevenueLabel.setText("Total Revenue: RS" + df.format(totalRevenue));
     }
 
-    // =====================================================
-    // ACTION METHODS WITH PERMISSION CHECKS
-    // =====================================================
 
     public void viewBill(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
@@ -894,14 +868,11 @@ public class BillListPanel extends JPanel {
 
     private int getStatusColumnIndex() {
         if (currentUser != null && currentUser.isPatient()) {
-            return 4; // Status column index for patient view (after removing Due Date)
+            return 4; 
         }
-        return 5; // Status column index for admin/reception/dentist view (after removing Due Date)
+        return 5; 
     }
 
-    // =====================================================
-    // PUBLIC METHODS
-    // =====================================================
 
     public void showError(String message) {
         statusLabel.setText("Error: " + message);

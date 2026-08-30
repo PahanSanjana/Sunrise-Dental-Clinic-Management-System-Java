@@ -44,9 +44,7 @@ public class GenerateBillPanel extends JPanel {
 
     private static final String UI_FONT_FAMILY = "Segoe UI";
 
-    // =====================================================
     // ICON HELPERS (Ikonli FontIcon)
-    // =====================================================
     private static FontIcon icon(FontAwesomeSolid glyph, int size, Color color) {
         return FontIcon.of(glyph, size, color);
     }
@@ -89,11 +87,7 @@ public class GenerateBillPanel extends JPanel {
     
     // Payment Section Panel (for visibility control)
     private JPanel paymentSectionPanel;
-    private JPanel statusPanel;
-
-    // ✅ Auto-refresh timer (hidden) - COMMENTED OUT
-    // private Timer refreshTimer;
-    // private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+    private JPanel paymentFieldsPanel;
 
     public GenerateBillPanel() {
         this.controller = new BillController(this);
@@ -102,7 +96,6 @@ public class GenerateBillPanel extends JPanel {
         loadData();
         generateBillNumber();
         setDefaultDates();
-        // startAutoRefresh(); // COMMENTED OUT
         // Apply role-based restrictions
         applyRoleBasedRestrictions();
     }
@@ -126,39 +119,6 @@ public class GenerateBillPanel extends JPanel {
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
-    // =====================================================
-    // ✅ AUTO-REFRESH (Hidden - No UI Indicator) - COMMENTED OUT
-    // =====================================================
-    
-    /*
-    private void startAutoRefresh() {
-        if (refreshTimer == null) {
-            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
-                if (isShowing()) {
-                    loadData();
-                }
-            });
-            refreshTimer.start();
-        }
-    }
-
-    private void stopAutoRefresh() {
-        if (refreshTimer != null) {
-            refreshTimer.stop();
-            refreshTimer = null;
-        }
-    }
-
-    @Override
-    public void removeNotify() {
-        super.removeNotify();
-        stopAutoRefresh();
-    }
-    */
-
-    // =====================================================
-    // ✅ CREATE ICON BUTTON (No text, only icon)
-    // =====================================================
     private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
         JButton button = new JButton(icon(glyph, 18, Color.WHITE));
         button.setBackground(bg);
@@ -198,7 +158,7 @@ public class GenerateBillPanel extends JPanel {
         titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
         
-        JLabel subtitleLabel = new JLabel("Create a new bill for a patient");
+        JLabel subtitleLabel = new JLabel(getSubtitleBasedOnRole());
         subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         
@@ -222,6 +182,16 @@ public class GenerateBillPanel extends JPanel {
         return header;
     }
 
+    private String getSubtitleBasedOnRole() {
+        User currentUser = LoginSession.getInstance().getCurrentUser();
+        if (currentUser == null) return "Create a new bill for a patient";
+        
+        if (currentUser.isDentist()) {
+            return "Create a new bill (Dentist mode - Pending status only)";
+        }
+        return "Create a new bill for a patient";
+    }
+
     private JPanel createFormPanel() {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -239,9 +209,9 @@ public class GenerateBillPanel extends JPanel {
         mainPanel.add(createSectionPanel("Bill Items", createBillItemsPanel()));
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        // Payment Information Section
-        paymentSectionPanel = createPaymentPanel();
-        mainPanel.add(createSectionPanel("Payment Information", paymentSectionPanel));
+        // Payment Information Section - Only visible for ADMIN and RECEPTION
+        paymentSectionPanel = createSectionPanel("Payment Information", createPaymentPanel());
+        mainPanel.add(paymentSectionPanel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Additional Information Section
@@ -570,7 +540,7 @@ public class GenerateBillPanel extends JPanel {
         totalAmountField.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
         panel.add(totalAmountField, gbc);
 
-        // Row 2: Amount Paid
+        // Row 2: Amount Paid - Hidden for Dentist
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 1;
@@ -593,7 +563,7 @@ public class GenerateBillPanel extends JPanel {
         });
         panel.add(amountPaidField, gbc);
 
-        // Row 2: Balance (Refund)
+        // Row 2: Balance (Refund) - Hidden for Dentist
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
@@ -612,7 +582,7 @@ public class GenerateBillPanel extends JPanel {
         balanceField.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 14));
         panel.add(balanceField, gbc);
 
-        // Row 3: Status
+        // Row 3: Status - Hidden for Dentist
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 1;
@@ -631,7 +601,7 @@ public class GenerateBillPanel extends JPanel {
         statusCombo.addActionListener(e -> updatePaymentFields());
         panel.add(statusCombo, gbc);
 
-        // Row 3: Payment Method
+        // Row 3: Payment Method - Hidden for Dentist
         gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.15;
@@ -841,49 +811,15 @@ public class GenerateBillPanel extends JPanel {
             return;
         }
 
-        // If user is a dentist, restrict payment section
+        // If user is a dentist, restrict payment section and hide payment fields
         if (currentUser.isDentist()) {
-            // Hide payment section
+            // Hide the entire Payment Information section
             if (paymentSectionPanel != null) {
-                Component parent = paymentSectionPanel.getParent();
-                if (parent instanceof JPanel) {
-                    JPanel sectionPanel = (JPanel) parent;
-                    // Find the parent TitledBorder panel and hide it
-                    Container grandParent = sectionPanel.getParent();
-                    if (grandParent instanceof JPanel) {
-                        grandParent.setVisible(false);
-                    }
-                }
-            }
-
-            // Force status to Pending
-            statusCombo.setSelectedItem("Pending");
-            statusCombo.setEnabled(false);
-            statusCombo.setVisible(false);
-            
-            // Disable payment method
-            paymentMethodCombo.setEnabled(false);
-            paymentMethodCombo.setVisible(false);
-            
-            // Disable amount paid and balance fields
-            amountPaidField.setEnabled(false);
-            amountPaidField.setVisible(false);
-            balanceField.setEnabled(false);
-            balanceField.setVisible(false);
-
-            // Hide related labels for cleaner UI
-            // Find parent panel and hide status and payment method rows
-            Container paymentPanel = paymentSectionPanel;
-            if (paymentPanel != null) {
-                Component[] components = paymentPanel.getComponents();
-                for (Component comp : components) {
-                    if (comp instanceof JPanel) {
-                        // Hide status and payment method panels
-                    }
-                }
+                paymentSectionPanel.setVisible(false);
             }
 
             // Set default values for dentist
+            statusCombo.setSelectedItem("Pending");
             amountPaidField.setText("0");
             balanceField.setText("0");
             paymentMethodCombo.setSelectedItem("Cash");
@@ -891,11 +827,13 @@ public class GenerateBillPanel extends JPanel {
             showInfo("Dentist mode: Bills will be generated with Pending status.");
         } else {
             // For ADMIN and RECEPTION - full access
+            if (paymentSectionPanel != null) {
+                paymentSectionPanel.setVisible(true);
+            }
             statusCombo.setEnabled(true);
             paymentMethodCombo.setEnabled(true);
             amountPaidField.setEnabled(true);
             amountPaidField.setVisible(true);
-            balanceField.setEnabled(false);
             balanceField.setVisible(true);
         }
     }
