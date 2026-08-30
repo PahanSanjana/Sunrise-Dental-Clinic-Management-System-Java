@@ -77,7 +77,7 @@ public class BookAppointmentPanel extends JPanel {
 
     // ✅ Auto-refresh timer (hidden)
     private Timer refreshTimer;
-    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+    private static final int AUTO_REFRESH_DELAY = 30000000;
 
     public BookAppointmentPanel() {
         initComponents();

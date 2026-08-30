@@ -799,4 +799,13 @@ public class BillController {
         User currentUser = LoginSession.getInstance().getCurrentUser();
         return getRevenueForUser(currentUser);
     }
+    
+    /**
+ * Get patient by user ID
+ * @param userId The user ID
+ * @return Patient object if found, null otherwise
+ */
+public Patient getPatientByUserId(int userId) {
+    return patientDAO.getPatientByUserId(userId);
+}
 }

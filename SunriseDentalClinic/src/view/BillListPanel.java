@@ -20,6 +20,7 @@ import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.ArrayList;
 
 public class BillListPanel extends JPanel {
     
@@ -73,18 +74,50 @@ public class BillListPanel extends JPanel {
     
     private BillController controller;
     private DecimalFormat df = new DecimalFormat("#.00");
-
-    // ✅ Auto-refresh timer (hidden)
-    private Timer refreshTimer;
-    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+    private User currentUser;
+    private int currentPatientId = -1; // Store the patient ID for the logged-in user
 
     public BillListPanel() {
         this.controller = new BillController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
+        this.currentPatientId = getPatientIdFromUser();
         initComponents();
         loadBills();
-        startAutoRefresh();
-        // Update button visibility based on user role
         updateActionButtons();
+    }
+
+    /**
+     * Get the patient ID from the logged-in user
+     * First check if user has patientId in session, otherwise get from database
+     */
+    private int getPatientIdFromUser() {
+        if (currentUser == null) {
+            return -1;
+        }
+        
+        // If user is not a patient, return -1
+        if (!currentUser.isPatient()) {
+            return -1;
+        }
+        
+        // Try to get patient ID from session
+        Integer patientId = currentUser.getPatientId();
+        if (patientId != null && patientId > 0) {
+            return patientId;
+        }
+        
+        // If not in session, get from database using user ID
+        try {
+            dao.PatientDAO patientDAO = new dao.PatientDAO();
+            Patient patient = patientDAO.getPatientByUserId(currentUser.getUserId());
+            if (patient != null) {
+                return patient.getPatientId();
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting patient ID: " + e.getMessage());
+        }
+        
+        return -1;
     }
 
     private void initComponents() {
@@ -97,34 +130,6 @@ public class BillListPanel extends JPanel {
         
         // Main Content Panel (Search + Table + Footer)
         add(createMainContentPanel(), BorderLayout.CENTER);
-    }
-
-    // =====================================================
-    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
-    // =====================================================
-    
-    private void startAutoRefresh() {
-        if (refreshTimer == null) {
-            refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
-                if (isShowing()) {
-                    loadBills();
-                }
-            });
-            refreshTimer.start();
-        }
-    }
-
-    private void stopAutoRefresh() {
-        if (refreshTimer != null) {
-            refreshTimer.stop();
-            refreshTimer = null;
-        }
-    }
-
-    @Override
-    public void removeNotify() {
-        super.removeNotify();
-        stopAutoRefresh();
     }
 
     // =====================================================
@@ -170,7 +175,7 @@ public class BillListPanel extends JPanel {
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        JLabel subtitleLabel = new JLabel("Manage all bills in the system");
+        JLabel subtitleLabel = new JLabel(getSubtitleBasedOnRole());
         subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -180,6 +185,22 @@ public class BillListPanel extends JPanel {
         titlePanel.add(subtitleLabel);
         
         return titlePanel;
+    }
+
+    private String getSubtitleBasedOnRole() {
+        if (currentUser == null) return "Manage all bills in the system";
+        
+        switch (currentUser.getRole()) {
+            case ADMIN:
+            case RECEPTION:
+                return "Manage all bills in the system";
+            case DENTIST:
+                return "View and manage bills for your patients";
+            case PATIENT:
+                return "View your billing history";
+            default:
+                return "Manage all bills in the system";
+        }
     }
 
     /**
@@ -209,19 +230,29 @@ public class BillListPanel extends JPanel {
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         searchPanel.setOpaque(false);
 
-        // Date filter
+        // Date filter - Hide for PATIENT
         String[] dateFilters = {"All Dates", "Today", "This Week", "This Month"};
         dateFilterCombo = new JComboBox<>(dateFilters);
         dateFilterCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         dateFilterCombo.setPreferredSize(new Dimension(120, 35));
         dateFilterCombo.addActionListener(e -> loadBills());
+        
+        // Hide date filter for PATIENT
+        if (currentUser != null && currentUser.isPatient()) {
+            dateFilterCombo.setVisible(false);
+        }
 
-        // Status filter
+        // Status filter - Hide for PATIENT
         String[] statuses = {"All Status", "Pending", "Paid", "Partial", "Overdue", "Draft", "Cancelled"};
         statusCombo = new JComboBox<>(statuses);
         statusCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         statusCombo.setPreferredSize(new Dimension(120, 35));
         statusCombo.addActionListener(e -> loadBills());
+        
+        // Hide status filter for PATIENT
+        if (currentUser != null && currentUser.isPatient()) {
+            statusCombo.setVisible(false);
+        }
 
         searchField = new JTextField(20);
         searchField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
@@ -260,6 +291,11 @@ public class BillListPanel extends JPanel {
         refreshButton.setToolTipText("Refresh Now");
         refreshButton.addActionListener(e -> loadBills());
 
+        // Hide add button for PATIENT
+        if (currentUser != null && currentUser.isPatient()) {
+            addButton.setVisible(false);
+        }
+
         searchPanel.add(new JLabel("Date:"));
         searchPanel.add(dateFilterCombo);
         searchPanel.add(new JLabel("Status:"));
@@ -276,7 +312,16 @@ public class BillListPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
 
-        String[] columns = {"ID", "Bill Number", "Patient", "Date", "Due Date", "Total", "Status"};
+        // ✅ Columns based on role - Remove Due Date column
+        // For PATIENT: ID, Bill Number, Date, Total, Status (Due Date removed)
+        // For Others: ID, Bill Number, Patient, Date, Total, Status (Due Date removed)
+        String[] columns;
+        if (currentUser != null && currentUser.isPatient()) {
+            columns = new String[]{"ID", "Bill Number", "Date", "Total", "Status"};
+        } else {
+            columns = new String[]{"ID", "Bill Number", "Patient", "Date", "Total", "Status"};
+        }
+        
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -297,9 +342,14 @@ public class BillListPanel extends JPanel {
         billTable.getColumnModel().getColumn(0).setMaxWidth(60);
         billTable.getColumnModel().getColumn(0).setMinWidth(50);
         billTable.getColumnModel().getColumn(1).setPreferredWidth(120);
-        billTable.getColumnModel().getColumn(2).setPreferredWidth(150);
-        billTable.getColumnModel().getColumn(5).setMaxWidth(100);
-        billTable.getColumnModel().getColumn(6).setMaxWidth(120);
+        if (currentUser == null || !currentUser.isPatient()) {
+            billTable.getColumnModel().getColumn(2).setPreferredWidth(150);
+        }
+        int totalColIndex = currentUser != null && currentUser.isPatient() ? 3 : 4;
+        billTable.getColumnModel().getColumn(totalColIndex).setMaxWidth(100);
+        
+        int statusColIndex = currentUser != null && currentUser.isPatient() ? 4 : 5;
+        billTable.getColumnModel().getColumn(statusColIndex).setMaxWidth(120);
 
         // Custom header
         JTableHeader header = billTable.getTableHeader();
@@ -309,7 +359,7 @@ public class BillListPanel extends JPanel {
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_DARK));
 
         // Custom cell renderer for status column
-        billTable.getColumnModel().getColumn(6).setCellRenderer(new StatusCellRenderer());
+        billTable.getColumnModel().getColumn(statusColIndex).setCellRenderer(new StatusCellRenderer());
 
         // Add mouse listener for double click to view
         billTable.addMouseListener(new MouseAdapter() {
@@ -404,6 +454,13 @@ public class BillListPanel extends JPanel {
         deleteButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         deleteButton.setIconTextGap(6);
 
+        // Hide action buttons for PATIENT (except View)
+        if (currentUser != null && currentUser.isPatient()) {
+            editButton.setVisible(false);
+            markPaidButton.setVisible(false);
+            deleteButton.setVisible(false);
+        }
+
         leftPanel.add(viewButton);
         leftPanel.add(editButton);
         leftPanel.add(markPaidButton);
@@ -419,6 +476,11 @@ public class BillListPanel extends JPanel {
         totalRevenueLabel = new JLabel("Total Revenue: RS0.00");
         totalRevenueLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 12));
         totalRevenueLabel.setForeground(SUCCESS_COLOR);
+
+        // Hide total revenue for PATIENT
+        if (currentUser != null && currentUser.isPatient()) {
+            totalRevenueLabel.setVisible(false);
+        }
 
         rightPanel.add(countLabel);
         rightPanel.add(new JLabel("|"));
@@ -560,26 +622,32 @@ public class BillListPanel extends JPanel {
      * Update action button visibility based on user role
      */
     private void updateActionButtons() {
-        User currentUser = LoginSession.getInstance().getCurrentUser();
         if (currentUser == null) {
             return;
         }
+        
+        boolean isAdmin = currentUser.isAdmin();
+        boolean isReception = currentUser.isReception();
+        boolean isDentist = currentUser.isDentist();
+        boolean isPatient = currentUser.isPatient();
         
         // View button - All roles can view bills
         viewButton.setVisible(true);
         
         // Add/Generate button - ADMIN, RECEPTION, and DENTIST can generate bills
-        // Dentist can only generate pending bills (handled in GenerateBillPanel)
-        addButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "ADD_BILLS"));
+        addButton.setVisible(isAdmin || isReception || isDentist);
         
-        // Edit button - Only ADMIN and RECEPTION can edit bills
-        editButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS"));
+        // Edit button - ADMIN and RECEPTION can edit bills
+        editButton.setVisible(isAdmin || isReception);
         
-        // Mark Paid button - Only ADMIN and RECEPTION can mark bills as paid
-        markPaidButton.setVisible(currentUser.isAdmin() || currentUser.isReception());
+        // Mark Paid button - ADMIN and RECEPTION can mark bills as paid
+        markPaidButton.setVisible(isAdmin || isReception);
         
         // Delete button - Only ADMIN can delete bills
-        deleteButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS"));
+        deleteButton.setVisible(isAdmin);
+        
+        // Total Revenue - Only ADMIN and RECEPTION can see
+        totalRevenueLabel.setVisible(isAdmin || isReception);
     }
 
     // =====================================================
@@ -591,13 +659,42 @@ public class BillListPanel extends JPanel {
         String status = statusCombo != null ? (String) statusCombo.getSelectedItem() : "All Status";
         String dateFilter = dateFilterCombo != null ? (String) dateFilterCombo.getSelectedItem() : "All Dates";
         
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        
         SwingWorker<List<Bill>, Void> worker = new SwingWorker<List<Bill>, Void>() {
             @Override
             protected List<Bill> doInBackground() throws Exception {
-                // Get bills based on user role
-                return controller.getFilteredBillsForUser(searchText, status, dateFilter, currentUser);
+                List<Bill> bills;
+                
+                // If user is a patient, get only their bills using patient ID
+                if (currentUser != null && currentUser.isPatient()) {
+                    if (currentPatientId > 0) {
+                        // Get bills by patient ID directly from database
+                        bills = controller.getBillsByPatient(currentPatientId);
+                    } else {
+                        bills = new ArrayList<>();
+                    }
+                } else {
+                    // For Admin, Reception, Dentist - get all bills with filters
+                    bills = controller.getFilteredBillsForUser(searchText, status, dateFilter, currentUser);
+                }
+                
+                // If bills is null, return empty list
+                if (bills == null) {
+                    return new ArrayList<>();
+                }
+                
+                // Apply search filter for patient too
+                if (searchText != null && !searchText.isEmpty() && currentUser != null && currentUser.isPatient()) {
+                    String searchLower = searchText.toLowerCase().trim();
+                    bills.removeIf(b -> {
+                        String billNumber = b.getBillNumber() != null ? b.getBillNumber() : "";
+                        String statusStr = b.getStatus() != null ? b.getStatus() : "";
+                        
+                        return !billNumber.toLowerCase().contains(searchLower) &&
+                               !statusStr.toLowerCase().contains(searchLower);
+                    });
+                }
+                
+                return bills;
             }
 
             @Override
@@ -628,21 +725,35 @@ public class BillListPanel extends JPanel {
         }
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        boolean isPatient = currentUser != null && currentUser.isPatient();
         
         for (Bill bill : bills) {
             String patientName = controller.getPatientName(bill.getPatientId());
             String date = bill.getBillDate() != null ? dateFormat.format(bill.getBillDate()) : "N/A";
-            String dueDate = bill.getDueDate() != null ? dateFormat.format(bill.getDueDate()) : "N/A";
+            // Due Date removed - commented out
+            // String dueDate = bill.getDueDate() != null ? dateFormat.format(bill.getDueDate()) : "N/A";
             
-            Object[] row = {
-                bill.getBillId(),
-                bill.getBillNumber(),
-                patientName,
-                date,
-                dueDate,
-                "RS" + df.format(bill.getTotalAmount()),
-                bill.getStatus() != null ? bill.getStatus() : "N/A"
-            };
+            Object[] row;
+            if (isPatient) {
+                // For Patient: ID, Bill Number, Date, Total, Status
+                row = new Object[]{
+                    bill.getBillId(),
+                    bill.getBillNumber(),
+                    date,
+                    "RS" + df.format(bill.getTotalAmount()),
+                    bill.getStatus() != null ? bill.getStatus() : "N/A"
+                };
+            } else {
+                // For Admin, Reception, Dentist: ID, Bill Number, Patient, Date, Total, Status
+                row = new Object[]{
+                    bill.getBillId(),
+                    bill.getBillNumber(),
+                    patientName,
+                    date,
+                    "RS" + df.format(bill.getTotalAmount()),
+                    bill.getStatus() != null ? bill.getStatus() : "N/A"
+                };
+            }
             tableModel.addRow(row);
         }
 
@@ -674,7 +785,6 @@ public class BillListPanel extends JPanel {
         if (parent instanceof MainFrame) {
             MainFrame mainFrame = (MainFrame) parent;
             
-            User currentUser = LoginSession.getInstance().getCurrentUser();
             Bill bill = controller.getBillByIdForUser(billId, currentUser);
             if (bill != null) {
                 List<BillItem> items = controller.getBillItemsByBillId(billId);
@@ -692,8 +802,7 @@ public class BillListPanel extends JPanel {
         int billId = (int) tableModel.getValueAt(row, 0);
         
         // Check permission before proceeding
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        if (!RolePermissions.hasActionPermission(currentUser.getRole(), "EDIT_BILLS")) {
+        if (currentUser == null || !(currentUser.isAdmin() || currentUser.isReception())) {
             showError("You don't have permission to edit bills.");
             return;
         }
@@ -724,8 +833,7 @@ public class BillListPanel extends JPanel {
         String billNumber = (String) tableModel.getValueAt(row, 1);
         
         // Check permission before proceeding
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        if (!RolePermissions.hasActionPermission(currentUser.getRole(), "DELETE_BILLS")) {
+        if (currentUser == null || !currentUser.isAdmin()) {
             showError("You don't have permission to delete bills.");
             return;
         }
@@ -752,11 +860,10 @@ public class BillListPanel extends JPanel {
     public void markBillAsPaid(int row) {
         int billId = (int) tableModel.getValueAt(row, 0);
         String billNumber = (String) tableModel.getValueAt(row, 1);
-        String currentStatus = (String) tableModel.getValueAt(row, 6);
+        String currentStatus = (String) tableModel.getValueAt(row, getStatusColumnIndex());
         
         // Check permission before proceeding
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        if (!(currentUser.isAdmin() || currentUser.isReception())) {
+        if (currentUser == null || !(currentUser.isAdmin() || currentUser.isReception())) {
             showError("You don't have permission to mark bills as paid.");
             return;
         }
@@ -783,6 +890,13 @@ public class BillListPanel extends JPanel {
                 showError("Failed to update bill status.");
             }
         }
+    }
+
+    private int getStatusColumnIndex() {
+        if (currentUser != null && currentUser.isPatient()) {
+            return 4; // Status column index for patient view (after removing Due Date)
+        }
+        return 5; // Status column index for admin/reception/dentist view (after removing Due Date)
     }
 
     // =====================================================

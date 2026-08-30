@@ -91,9 +91,9 @@ public class GenerateBillPanel extends JPanel {
     private JPanel paymentSectionPanel;
     private JPanel statusPanel;
 
-    // ✅ Auto-refresh timer (hidden)
-    private Timer refreshTimer;
-    private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
+    // ✅ Auto-refresh timer (hidden) - COMMENTED OUT
+    // private Timer refreshTimer;
+    // private static final int AUTO_REFRESH_DELAY = 30000; // 30 seconds
 
     public GenerateBillPanel() {
         this.controller = new BillController(this);
@@ -102,7 +102,7 @@ public class GenerateBillPanel extends JPanel {
         loadData();
         generateBillNumber();
         setDefaultDates();
-        startAutoRefresh();
+        // startAutoRefresh(); // COMMENTED OUT
         // Apply role-based restrictions
         applyRoleBasedRestrictions();
     }
@@ -127,9 +127,10 @@ public class GenerateBillPanel extends JPanel {
     }
 
     // =====================================================
-    // ✅ AUTO-REFRESH (Hidden - No UI Indicator)
+    // ✅ AUTO-REFRESH (Hidden - No UI Indicator) - COMMENTED OUT
     // =====================================================
     
+    /*
     private void startAutoRefresh() {
         if (refreshTimer == null) {
             refreshTimer = new Timer(AUTO_REFRESH_DELAY, e -> {
@@ -153,6 +154,7 @@ public class GenerateBillPanel extends JPanel {
         super.removeNotify();
         stopAutoRefresh();
     }
+    */
 
     // =====================================================
     // ✅ CREATE ICON BUTTON (No text, only icon)
@@ -290,7 +292,19 @@ public class GenerateBillPanel extends JPanel {
         patientCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         patientCombo.setPreferredSize(new Dimension(200, 35));
         patientCombo.addActionListener(e -> {
-            if (!isUpdating) loadAppointments();
+            if (!isUpdating) {
+                loadAppointments();
+                // Clear bill items when patient changes
+                billItems.clear();
+                updateBillItemsTable();
+                calculateSubtotal();
+                // Reset amount paid and balance
+                amountPaidField.setText("0");
+                balanceField.setText("0.00");
+                statusCombo.setSelectedItem("Pending");
+                statusLabel.setText("Patient changed - bill items cleared");
+                statusLabel.setForeground(SECONDARY_TEXT);
+            }
         });
         panel.add(patientCombo, gbc);
 
@@ -1162,7 +1176,7 @@ public class GenerateBillPanel extends JPanel {
         String paymentMethod = isDentist ? null : (String) paymentMethodCombo.getSelectedItem();
 
         Bill bill = new Bill(
-            patient.getPatientId(),
+            patient.getPatientId(),  // ✅ This ensures the selected patient is used
             0,
             billNumberField.getText(),
             Date.valueOf(LocalDate.now()),

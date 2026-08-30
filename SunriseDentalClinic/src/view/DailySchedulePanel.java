@@ -4,6 +4,9 @@ import controller.AppointmentController;
 import model.Appointment;
 import model.Patient;
 import model.Dentist;
+import model.User;
+import model.LoginSession;
+import model.User.UserRole;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.swing.FontIcon;
 
@@ -67,6 +70,8 @@ public class DailySchedulePanel extends JPanel {
     
     private LocalDate currentDate;
     private AppointmentController controller;
+    private User currentUser;
+    private int dentistId;
 
     // ✅ Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -75,9 +80,12 @@ public class DailySchedulePanel extends JPanel {
     public DailySchedulePanel() {
         this.controller = new AppointmentController(this);
         this.currentDate = LocalDate.now();
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
+        this.dentistId = getCurrentDentistId();
         initComponents();
-        loadSchedule();
+        loadScheduleData();
         startAutoRefresh();
+        updateFilterVisibility();
     }
 
     private void initComponents() {
@@ -124,6 +132,47 @@ public class DailySchedulePanel extends JPanel {
     }
 
     // =====================================================
+    // ✅ GET CURRENT DENTIST ID
+    // =====================================================
+    
+    private int getCurrentDentistId() {
+        if (currentUser == null) return -1;
+        
+        // If user is DENTIST, get their dentist ID
+        if (currentUser.isDentist()) {
+            return currentUser.getDentistId() != null ? currentUser.getDentistId() : -1;
+        }
+        return -1;
+    }
+
+    // =====================================================
+    // ✅ UPDATE FILTER VISIBILITY BASED ON ROLE
+    // =====================================================
+    
+    private void updateFilterVisibility() {
+        if (currentUser == null) return;
+        
+        boolean isAdminOrReception = currentUser.isAdmin() || currentUser.isReception();
+        boolean isDentist = currentUser.isDentist();
+        boolean isPatient = currentUser.isPatient();
+        
+        // Dentist filter - Only show for ADMIN and RECEPTION
+        dentistFilterCombo.setVisible(isAdminOrReception);
+        
+        // Status filter - Show for ADMIN, RECEPTION, and DENTIST
+        statusFilterCombo.setVisible(isAdminOrReception || isDentist);
+        
+        // For PATIENT - hide filters and navigation
+        if (isPatient) {
+            dentistFilterCombo.setVisible(false);
+            statusFilterCombo.setVisible(false);
+            prevDayButton.setVisible(false);
+            nextDayButton.setVisible(false);
+            todayButton.setVisible(false);
+        }
+    }
+
+    // =====================================================
     // ✅ CREATE ICON BUTTON (No text, only icon)
     // =====================================================
     private JButton createIconButton(FontAwesomeSolid glyph, Color bg) {
@@ -167,7 +216,6 @@ public class DailySchedulePanel extends JPanel {
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Set icon if glyph is provided
         if (glyph != null) {
             button.setIcon(icon(glyph, 14, fg));
             button.setHorizontalTextPosition(SwingConstants.RIGHT);
@@ -198,9 +246,13 @@ public class DailySchedulePanel extends JPanel {
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setOpaque(false);
         
-        JLabel titleLabel = new JLabel("Daily Schedule");
+        JLabel titleLabel = new JLabel(getTitleBasedOnRole());
         titleLabel.setFont(new Font(UI_FONT_FAMILY, Font.BOLD, 28));
         titleLabel.setForeground(PRIMARY_DARK);
+        
+        JLabel subtitleLabel = new JLabel(getSubtitleBasedOnRole());
+        subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
+        subtitleLabel.setForeground(SECONDARY_TEXT);
         
         dateLabel = new JLabel("");
         dateLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
@@ -208,27 +260,26 @@ public class DailySchedulePanel extends JPanel {
         
         leftPanel.add(titleLabel);
         leftPanel.add(Box.createRigidArea(new Dimension(0, 2)));
+        leftPanel.add(subtitleLabel);
+        leftPanel.add(Box.createRigidArea(new Dimension(0, 2)));
         leftPanel.add(dateLabel);
 
         // Right: Controls
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightPanel.setOpaque(false);
 
-        // Date Navigation - ✅ WITH ICONS
+        // Date Navigation
         JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
         navPanel.setOpaque(false);
         
-        // Previous Day - with left arrow icon
         prevDayButton = createNavButton(FontAwesomeSolid.ANGLE_LEFT, "", Color.WHITE, PRIMARY_DARK);
         prevDayButton.setPreferredSize(new Dimension(40, 35));
         prevDayButton.addActionListener(e -> navigateDay(-1));
         
-        // Today - with calendar icon
         todayButton = createNavButton(FontAwesomeSolid.CALENDAR_ALT, " Today", Color.WHITE, PRIMARY_DARK);
         todayButton.setPreferredSize(new Dimension(100, 35));
         todayButton.addActionListener(e -> goToToday());
         
-        // Next Day - with right arrow icon
         nextDayButton = createNavButton(FontAwesomeSolid.ANGLE_RIGHT, "", Color.WHITE, PRIMARY_DARK);
         nextDayButton.setPreferredSize(new Dimension(40, 35));
         nextDayButton.addActionListener(e -> navigateDay(1));
@@ -240,10 +291,11 @@ public class DailySchedulePanel extends JPanel {
         rightPanel.add(navPanel);
         rightPanel.add(Box.createRigidArea(new Dimension(15, 0)));
 
-        // Filters
+        // Dentist Filter - Only for ADMIN and RECEPTION
         dentistFilterCombo = createFilterCombo("All Dentists");
         dentistFilterCombo.addActionListener(e -> loadSchedule());
         
+        // Status Filter - For ADMIN, RECEPTION, and DENTIST
         statusFilterCombo = createFilterCombo("All Status");
         statusFilterCombo.addActionListener(e -> loadSchedule());
         
@@ -251,7 +303,7 @@ public class DailySchedulePanel extends JPanel {
         rightPanel.add(statusFilterCombo);
         rightPanel.add(Box.createRigidArea(new Dimension(10, 0)));
 
-        // ✅ Refresh Button - ICON ONLY
+        // Refresh Button
         refreshButton = createIconButton(FontAwesomeSolid.SYNC_ALT, COLOR_REFRESH);
         refreshButton.setPreferredSize(new Dimension(40, 40));
         refreshButton.setToolTipText("Refresh Schedule");
@@ -264,13 +316,51 @@ public class DailySchedulePanel extends JPanel {
         return header;
     }
 
+    private String getTitleBasedOnRole() {
+        if (currentUser == null) return "Daily Schedule";
+        
+        switch (currentUser.getRole()) {
+            case ADMIN:
+            case RECEPTION:
+                return "Daily Schedule";
+            case DENTIST:
+                return "My Schedule";
+            case PATIENT:
+                return "My Appointments";
+            default:
+                return "Daily Schedule";
+        }
+    }
+
+    private String getSubtitleBasedOnRole() {
+        if (currentUser == null) return "View daily appointments";
+        
+        switch (currentUser.getRole()) {
+            case ADMIN:
+            case RECEPTION:
+                return "View all appointments for each day";
+            case DENTIST:
+                return "View your daily appointments";
+            case PATIENT:
+                return "View your appointment history";
+            default:
+                return "View daily appointments";
+        }
+    }
+
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createLineBorder(LIGHT_SURFACE, 1));
 
-        // Create table model
-        String[] columns = {"Time", "Patient", "Dentist", "Status", "Reason"};
+        // Create table model - Hide Dentist column for PATIENT
+        String[] columns;
+        if (currentUser != null && currentUser.isPatient()) {
+            columns = new String[]{"Time", "Dentist", "Status", "Reason"};
+        } else {
+            columns = new String[]{"Time", "Patient", "Dentist", "Status", "Reason"};
+        }
+        
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -290,10 +380,17 @@ public class DailySchedulePanel extends JPanel {
         // Set column widths
         scheduleTable.getColumnModel().getColumn(0).setMaxWidth(100);
         scheduleTable.getColumnModel().getColumn(0).setMinWidth(80);
-        scheduleTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-        scheduleTable.getColumnModel().getColumn(2).setPreferredWidth(180);
-        scheduleTable.getColumnModel().getColumn(3).setMaxWidth(120);
-        scheduleTable.getColumnModel().getColumn(4).setPreferredWidth(250);
+        
+        if (currentUser != null && currentUser.isPatient()) {
+            scheduleTable.getColumnModel().getColumn(1).setPreferredWidth(180);
+            scheduleTable.getColumnModel().getColumn(2).setMaxWidth(120);
+            scheduleTable.getColumnModel().getColumn(3).setPreferredWidth(250);
+        } else {
+            scheduleTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+            scheduleTable.getColumnModel().getColumn(2).setPreferredWidth(180);
+            scheduleTable.getColumnModel().getColumn(3).setMaxWidth(120);
+            scheduleTable.getColumnModel().getColumn(4).setPreferredWidth(250);
+        }
 
         // Custom header
         JTableHeader header = scheduleTable.getTableHeader();
@@ -303,7 +400,8 @@ public class DailySchedulePanel extends JPanel {
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_DARK));
 
         // Custom cell renderer for status column
-        scheduleTable.getColumnModel().getColumn(3).setCellRenderer(new StatusCellRenderer());
+        int statusColIndex = currentUser != null && currentUser.isPatient() ? 2 : 3;
+        scheduleTable.getColumnModel().getColumn(statusColIndex).setCellRenderer(new StatusCellRenderer());
 
         // Add mouse listener for double click to view
         scheduleTable.addMouseListener(new MouseAdapter() {
@@ -417,10 +515,8 @@ public class DailySchedulePanel extends JPanel {
     // Data Loading Methods
     // ========================
 
-    private void loadSchedule() {
+    public void loadSchedule() {
         String dateStr = currentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        String dentistFilter = (String) dentistFilterCombo.getSelectedItem();
-        String statusFilter = (String) statusFilterCombo.getSelectedItem();
         
         // Update date label
         String dayOfWeek = currentDate.getDayOfWeek().toString().charAt(0) + 
@@ -431,23 +527,70 @@ public class DailySchedulePanel extends JPanel {
         SwingWorker<List<Appointment>, Void> worker = new SwingWorker<List<Appointment>, Void>() {
             @Override
             protected List<Appointment> doInBackground() throws Exception {
-                List<Appointment> appointments = controller.getAppointmentsByDate(dateStr);
+                List<Appointment> appointments;
                 
-                // Apply dentist filter
-                if (dentistFilter != null && !dentistFilter.equals("All Dentists")) {
-                    int dentistId = getDentistIdByName(dentistFilter);
+                // Role-based data fetching
+                if (currentUser == null) {
+                    return new java.util.ArrayList<>();
+                }
+                
+                if (currentUser.isAdmin() || currentUser.isReception()) {
+                    // ADMIN and RECEPTION - get all appointments for the date
+                    appointments = controller.getAppointmentsByDate(dateStr);
+                } else if (currentUser.isDentist()) {
+                    // DENTIST - get only their appointments
                     if (dentistId > 0) {
-                        appointments.removeIf(a -> a.getDentistId() != dentistId);
+                        appointments = controller.getAppointmentsByDentistAndDate(dentistId, dateStr);
+                    } else {
+                        appointments = new java.util.ArrayList<>();
+                    }
+                } else if (currentUser.isPatient()) {
+                    // PATIENT - get only their appointments
+                    int patientId = currentUser.getPatientId() != null ? currentUser.getPatientId() : -1;
+                    if (patientId > 0) {
+                        List<Appointment> allAppointments = controller.getAppointmentsByPatient(patientId);
+                        // Filter by date
+                        java.time.LocalDate targetDate = LocalDate.parse(dateStr);
+                        appointments = new java.util.ArrayList<>();
+                        for (Appointment appt : allAppointments) {
+                            if (appt.getAppointmentDate() != null) {
+                                java.time.LocalDate apptDate = appt.getAppointmentDate().toLocalDate();
+                                if (apptDate.equals(targetDate)) {
+                                    appointments.add(appt);
+                                }
+                            }
+                        }
+                    } else {
+                        appointments = new java.util.ArrayList<>();
+                    }
+                } else {
+                    appointments = new java.util.ArrayList<>();
+                }
+                
+                // Apply dentist filter (only for ADMIN and RECEPTION)
+                if (currentUser.isAdmin() || currentUser.isReception()) {
+                    String dentistFilter = (String) dentistFilterCombo.getSelectedItem();
+                    if (dentistFilter != null && !dentistFilter.equals("All Dentists")) {
+                        int dentistIdFilter = getDentistIdByName(dentistFilter);
+                        if (dentistIdFilter > 0) {
+                            appointments.removeIf(a -> a.getDentistId() != dentistIdFilter);
+                        }
                     }
                 }
                 
-                // Apply status filter
-                if (statusFilter != null && !statusFilter.equals("All Status")) {
-                    appointments.removeIf(a -> !a.getStatus().equals(statusFilter));
+                // Apply status filter (for ADMIN, RECEPTION, and DENTIST)
+                if (currentUser.isAdmin() || currentUser.isReception() || currentUser.isDentist()) {
+                    String statusFilter = (String) statusFilterCombo.getSelectedItem();
+                    if (statusFilter != null && !statusFilter.equals("All Status")) {
+                        appointments.removeIf(a -> a.getStatus() == null || !a.getStatus().equals(statusFilter));
+                    }
                 }
                 
                 // Sort by time
-                appointments.sort((a1, a2) -> a1.getAppointmentTime().compareTo(a2.getAppointmentTime()));
+                appointments.sort((a1, a2) -> {
+                    if (a1.getAppointmentTime() == null || a2.getAppointmentTime() == null) return 0;
+                    return a1.getAppointmentTime().compareTo(a2.getAppointmentTime());
+                });
                 
                 return appointments;
             }
@@ -486,6 +629,7 @@ public class DailySchedulePanel extends JPanel {
         }
 
         java.text.SimpleDateFormat timeFormat = new java.text.SimpleDateFormat("HH:mm");
+        boolean isPatient = currentUser != null && currentUser.isPatient();
         
         for (Appointment appointment : appointments) {
             String time = appointment.getAppointmentTime() != null ? 
@@ -495,7 +639,14 @@ public class DailySchedulePanel extends JPanel {
             String status = appointment.getStatus() != null ? appointment.getStatus() : "Scheduled";
             String reason = appointment.getReason() != null ? appointment.getReason() : "No reason provided";
             
-            Object[] row = {time, patientName, dentistName, status, reason};
+            Object[] row;
+            if (isPatient) {
+                // For Patient: Time, Dentist, Status, Reason
+                row = new Object[]{time, dentistName, status, reason};
+            } else {
+                // For Admin, Reception, Dentist: Time, Patient, Dentist, Status, Reason
+                row = new Object[]{time, patientName, dentistName, status, reason};
+            }
             tableModel.addRow(row);
         }
 
@@ -528,30 +679,42 @@ public class DailySchedulePanel extends JPanel {
     }
 
     private void viewAppointment(int row) {
-        int appointmentId = getAppointmentIdFromRow(row);
-        if (appointmentId > 0) {
+        // Get appointment ID from row - need to fetch the appointment
+        // Since we don't store ID in table, we need to get it from the data
+        String time = (String) tableModel.getValueAt(row, 0);
+        String patientName = (String) tableModel.getValueAt(row, 1);
+        
+        // Find appointment by time and patient name
+        List<Appointment> appointments = controller.getAppointmentsByDate(
+            currentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        );
+        
+        Appointment targetAppt = null;
+        for (Appointment appt : appointments) {
+            String apptTime = appt.getAppointmentTime() != null ? 
+                new java.text.SimpleDateFormat("HH:mm").format(appt.getAppointmentTime()) : "";
+            String apptPatient = getPatientName(appt.getPatientId());
+            if (apptTime.equals(time) && apptPatient.equals(patientName)) {
+                targetAppt = appt;
+                break;
+            }
+        }
+        
+        if (targetAppt != null) {
             Container parent = getParent();
             while (parent != null && !(parent instanceof MainFrame)) {
                 parent = parent.getParent();
             }
             if (parent instanceof MainFrame) {
                 MainFrame mainFrame = (MainFrame) parent;
-                
-                Appointment appt = controller.getAppointmentById(appointmentId);
-                if (appt != null) {
-                    AppointmentDetailsPanel detailsPanel = new AppointmentDetailsPanel(appt);
-                    detailsPanel.setName("APPOINTMENT_DETAILS");
-                    mainFrame.addScreen("APPOINTMENT_DETAILS", detailsPanel);
-                    mainFrame.showCard("APPOINTMENT_DETAILS");
-                } else {
-                    showError("Appointment not found.");
-                }
+                AppointmentDetailsPanel detailsPanel = new AppointmentDetailsPanel(targetAppt);
+                detailsPanel.setName("APPOINTMENT_DETAILS");
+                mainFrame.addScreen("APPOINTMENT_DETAILS", detailsPanel);
+                mainFrame.showCard("APPOINTMENT_DETAILS");
             }
+        } else {
+            showError("Appointment not found.");
         }
-    }
-
-    private int getAppointmentIdFromRow(int row) {
-        return 0; // Placeholder
     }
 
     private void loadDentistFilter() {
@@ -571,6 +734,7 @@ public class DailySchedulePanel extends JPanel {
 
     public void loadScheduleData() {
         loadDentistFilter();
+        updateFilterVisibility();
         loadSchedule();
     }
 

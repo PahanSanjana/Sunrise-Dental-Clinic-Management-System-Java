@@ -69,6 +69,7 @@ public class AppointmentListPanel extends JPanel {
     private JComboBox<String> dateFilterCombo;
     
     private AppointmentController controller;
+    private User currentUser;
 
     // ✅ Auto-refresh timer (hidden)
     private Timer refreshTimer;
@@ -76,9 +77,11 @@ public class AppointmentListPanel extends JPanel {
 
     public AppointmentListPanel() {
         this.controller = new AppointmentController(this);
+        this.currentUser = LoginSession.getInstance().getCurrentUser();
         initComponents();
         loadAppointments();
         startAutoRefresh();
+        updateActionButtons();
     }
 
     private void initComponents() {
@@ -91,9 +94,6 @@ public class AppointmentListPanel extends JPanel {
         
         // Main Content Panel (Search + Table + Footer)
         add(createMainContentPanel(), BorderLayout.CENTER);
-        
-        // Update button visibility based on user role
-        updateActionButtons();
     }
 
     // =====================================================
@@ -167,7 +167,7 @@ public class AppointmentListPanel extends JPanel {
         titleLabel.setForeground(PRIMARY_DARK);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        JLabel subtitleLabel = new JLabel("Manage all appointments in the system");
+        JLabel subtitleLabel = new JLabel(getSubtitleBasedOnRole());
         subtitleLabel.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(107, 123, 121));
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -177,6 +177,22 @@ public class AppointmentListPanel extends JPanel {
         titlePanel.add(subtitleLabel);
         
         return titlePanel;
+    }
+
+    private String getSubtitleBasedOnRole() {
+        if (currentUser == null) return "Manage all appointments in the system";
+        
+        switch (currentUser.getRole()) {
+            case ADMIN:
+            case RECEPTION:
+                return "Manage all appointments in the system";
+            case DENTIST:
+                return "View and manage your appointments";
+            case PATIENT:
+                return "View your appointment history";
+            default:
+                return "Manage all appointments in the system";
+        }
     }
 
     /**
@@ -206,19 +222,29 @@ public class AppointmentListPanel extends JPanel {
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         searchPanel.setOpaque(false);
 
-        // Date filter
+        // Date filter - Hide for PATIENT
         String[] dateFilters = {"All Dates", "Today", "Tomorrow", "This Week", "Next Week"};
         dateFilterCombo = new JComboBox<>(dateFilters);
         dateFilterCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         dateFilterCombo.setPreferredSize(new Dimension(120, 35));
         dateFilterCombo.addActionListener(e -> loadAppointments());
+        
+        // Hide date filter for PATIENT
+        if (currentUser != null && currentUser.isPatient()) {
+            dateFilterCombo.setVisible(false);
+        }
 
-        // Status filter
+        // Status filter - Hide for PATIENT
         String[] statuses = {"All Status", "Scheduled", "Confirmed", "In Progress", "Completed", "Cancelled", "No Show"};
         statusCombo = new JComboBox<>(statuses);
         statusCombo.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
         statusCombo.setPreferredSize(new Dimension(120, 35));
         statusCombo.addActionListener(e -> loadAppointments());
+        
+        // Hide status filter for PATIENT
+        if (currentUser != null && currentUser.isPatient()) {
+            statusCombo.setVisible(false);
+        }
 
         searchField = new JTextField(20);
         searchField.setFont(new Font(UI_FONT_FAMILY, Font.PLAIN, 13));
@@ -273,8 +299,14 @@ public class AppointmentListPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.WHITE);
 
-        // ✅ Removed "Actions" column - No buttons inside table
-        String[] columns = {"ID", "Patient", "Dentist", "Date", "Time", "Status", "Reason"};
+        // ✅ Columns based on role
+        String[] columns;
+        if (currentUser != null && currentUser.isPatient()) {
+            columns = new String[]{"ID", "Dentist", "Date", "Time", "Status", "Reason"};
+        } else {
+            columns = new String[]{"ID", "Patient", "Dentist", "Date", "Time", "Status", "Reason"};
+        }
+        
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -294,9 +326,14 @@ public class AppointmentListPanel extends JPanel {
         // Set column widths
         appointmentTable.getColumnModel().getColumn(0).setMaxWidth(60);
         appointmentTable.getColumnModel().getColumn(0).setMinWidth(50);
-        appointmentTable.getColumnModel().getColumn(1).setPreferredWidth(150);
-        appointmentTable.getColumnModel().getColumn(2).setPreferredWidth(150);
-        appointmentTable.getColumnModel().getColumn(5).setMaxWidth(120);
+        if (currentUser == null || !currentUser.isPatient()) {
+            appointmentTable.getColumnModel().getColumn(1).setPreferredWidth(150);
+            appointmentTable.getColumnModel().getColumn(2).setPreferredWidth(150);
+        } else {
+            appointmentTable.getColumnModel().getColumn(1).setPreferredWidth(150);
+        }
+        int statusColIndex = currentUser != null && currentUser.isPatient() ? 4 : 5;
+        appointmentTable.getColumnModel().getColumn(statusColIndex).setMaxWidth(120);
 
         // Custom header
         JTableHeader header = appointmentTable.getTableHeader();
@@ -306,7 +343,8 @@ public class AppointmentListPanel extends JPanel {
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_DARK));
 
         // Custom cell renderer for status column
-        appointmentTable.getColumnModel().getColumn(5).setCellRenderer(new StatusCellRenderer());
+        int statusColumn = currentUser != null && currentUser.isPatient() ? 4 : 5;
+        appointmentTable.getColumnModel().getColumn(statusColumn).setCellRenderer(new StatusCellRenderer());
 
         // Add mouse listener for double click to view
         appointmentTable.addMouseListener(new MouseAdapter() {
@@ -545,7 +583,6 @@ public class AppointmentListPanel extends JPanel {
      * Update action button visibility based on user role
      */
     private void updateActionButtons() {
-        User currentUser = LoginSession.getInstance().getCurrentUser();
         if (currentUser == null) {
             return;
         }
@@ -553,15 +590,17 @@ public class AppointmentListPanel extends JPanel {
         // Everyone can view appointments
         viewButton.setVisible(true);
         
-        // Add button - Only ADMIN and RECEPTION can book appointments
-        addButton.setVisible(RolePermissions.hasActionPermission(currentUser.getRole(), "ADD_APPOINTMENTS"));
+        // Add button - ADMIN, RECEPTION, and DENTIST can book appointments
+        // PATIENT can also book appointments (they have the Book Appointment button)
+        addButton.setVisible(currentUser.isAdmin() || currentUser.isReception() || 
+                            currentUser.isDentist() || currentUser.isPatient());
         
         // Edit button - ADMIN, RECEPTION, and DENTIST (own appointments) can edit
-        // Dentist can only edit their own appointments - handled in editAppointment()
+        // PATIENT cannot edit (handled in canEditAppointment)
         editButton.setVisible(currentUser.isAdmin() || currentUser.isReception() || currentUser.isDentist());
         
-        // Cancel button - All roles except PATIENT can cancel
-        cancelButton.setVisible(!currentUser.isPatient());
+        // Cancel button - ADMIN, RECEPTION, DENTIST, and PATIENT (own appointments) can cancel
+        cancelButton.setVisible(true);
         
         // Delete button - Only ADMIN can delete
         deleteButton.setVisible(currentUser.isAdmin());
@@ -573,7 +612,6 @@ public class AppointmentListPanel extends JPanel {
      * Check if user can edit the selected appointment
      */
     private boolean canEditAppointment(int appointmentId) {
-        User currentUser = LoginSession.getInstance().getCurrentUser();
         Appointment appointment = controller.getAppointmentById(appointmentId);
         if (appointment == null || currentUser == null) {
             return false;
@@ -585,7 +623,6 @@ public class AppointmentListPanel extends JPanel {
      * Check if user can cancel the selected appointment
      */
     private boolean canCancelAppointment(int appointmentId) {
-        User currentUser = LoginSession.getInstance().getCurrentUser();
         Appointment appointment = controller.getAppointmentById(appointmentId);
         if (appointment == null || currentUser == null) {
             return false;
@@ -597,7 +634,6 @@ public class AppointmentListPanel extends JPanel {
      * Check if user can delete the selected appointment
      */
     private boolean canDeleteAppointment(int appointmentId) {
-        User currentUser = LoginSession.getInstance().getCurrentUser();
         Appointment appointment = controller.getAppointmentById(appointmentId);
         if (appointment == null || currentUser == null) {
             return false;
@@ -614,8 +650,6 @@ public class AppointmentListPanel extends JPanel {
         String status = statusCombo != null ? (String) statusCombo.getSelectedItem() : "All Status";
         String dateFilter = dateFilterCombo != null ? (String) dateFilterCombo.getSelectedItem() : "All Dates";
         
-        User currentUser = LoginSession.getInstance().getCurrentUser();
-        
         SwingWorker<List<Appointment>, Void> worker = new SwingWorker<List<Appointment>, Void>() {
             @Override
             protected List<Appointment> doInBackground() throws Exception {
@@ -626,41 +660,45 @@ public class AppointmentListPanel extends JPanel {
                     return new java.util.ArrayList<>();
                 }
                 
-                // Apply status filter
-                if (status != null && !status.equals("All Status")) {
-                    appointments.removeIf(a -> a.getStatus() == null || !a.getStatus().equals(status));
+                // Apply status filter (only for non-patient roles)
+                if (currentUser != null && !currentUser.isPatient()) {
+                    if (status != null && !status.equals("All Status")) {
+                        appointments.removeIf(a -> a.getStatus() == null || !a.getStatus().equals(status));
+                    }
                 }
                 
-                // Apply date filter
-                if (dateFilter != null && !dateFilter.equals("All Dates")) {
-                    java.time.LocalDate today = java.time.LocalDate.now();
-                    switch (dateFilter) {
-                        case "Today":
-                            appointments.removeIf(a -> a.getAppointmentDate() == null || 
-                                !a.getAppointmentDate().toLocalDate().equals(today));
-                            break;
-                        case "Tomorrow":
-                            appointments.removeIf(a -> a.getAppointmentDate() == null || 
-                                !a.getAppointmentDate().toLocalDate().equals(today.plusDays(1)));
-                            break;
-                        case "This Week":
-                            java.time.LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
-                            java.time.LocalDate weekEnd = weekStart.plusDays(6);
-                            appointments.removeIf(a -> {
-                                if (a.getAppointmentDate() == null) return true;
-                                java.time.LocalDate date = a.getAppointmentDate().toLocalDate();
-                                return date.isBefore(weekStart) || date.isAfter(weekEnd);
-                            });
-                            break;
-                        case "Next Week":
-                            java.time.LocalDate nextWeekStart = today.plusDays(7 - today.getDayOfWeek().getValue() + 1);
-                            java.time.LocalDate nextWeekEnd = nextWeekStart.plusDays(6);
-                            appointments.removeIf(a -> {
-                                if (a.getAppointmentDate() == null) return true;
-                                java.time.LocalDate date = a.getAppointmentDate().toLocalDate();
-                                return date.isBefore(nextWeekStart) || date.isAfter(nextWeekEnd);
-                            });
-                            break;
+                // Apply date filter (only for non-patient roles)
+                if (currentUser != null && !currentUser.isPatient()) {
+                    if (dateFilter != null && !dateFilter.equals("All Dates")) {
+                        java.time.LocalDate today = java.time.LocalDate.now();
+                        switch (dateFilter) {
+                            case "Today":
+                                appointments.removeIf(a -> a.getAppointmentDate() == null || 
+                                    !a.getAppointmentDate().toLocalDate().equals(today));
+                                break;
+                            case "Tomorrow":
+                                appointments.removeIf(a -> a.getAppointmentDate() == null || 
+                                    !a.getAppointmentDate().toLocalDate().equals(today.plusDays(1)));
+                                break;
+                            case "This Week":
+                                java.time.LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
+                                java.time.LocalDate weekEnd = weekStart.plusDays(6);
+                                appointments.removeIf(a -> {
+                                    if (a.getAppointmentDate() == null) return true;
+                                    java.time.LocalDate date = a.getAppointmentDate().toLocalDate();
+                                    return date.isBefore(weekStart) || date.isAfter(weekEnd);
+                                });
+                                break;
+                            case "Next Week":
+                                java.time.LocalDate nextWeekStart = today.plusDays(7 - today.getDayOfWeek().getValue() + 1);
+                                java.time.LocalDate nextWeekEnd = nextWeekStart.plusDays(6);
+                                appointments.removeIf(a -> {
+                                    if (a.getAppointmentDate() == null) return true;
+                                    java.time.LocalDate date = a.getAppointmentDate().toLocalDate();
+                                    return date.isBefore(nextWeekStart) || date.isAfter(nextWeekEnd);
+                                });
+                                break;
+                        }
                     }
                 }
                 
@@ -721,21 +759,37 @@ public class AppointmentListPanel extends JPanel {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
         
+        boolean isPatient = currentUser != null && currentUser.isPatient();
+        
         for (Appointment appointment : appointments) {
             String patientName = getPatientName(appointment.getPatientId());
             String dentistName = getDentistName(appointment.getDentistId());
             String date = appointment.getAppointmentDate() != null ? dateFormat.format(appointment.getAppointmentDate()) : "N/A";
             String time = appointment.getAppointmentTime() != null ? timeFormat.format(appointment.getAppointmentTime()) : "N/A";
             
-            Object[] row = {
-                appointment.getAppointmentId(),
-                patientName,
-                dentistName,
-                date,
-                time,
-                appointment.getStatus() != null ? appointment.getStatus() : "N/A",
-                appointment.getReason() != null ? appointment.getReason() : "N/A"
-            };
+            Object[] row;
+            if (isPatient) {
+                // For patient: ID, Dentist, Date, Time, Status, Reason
+                row = new Object[]{
+                    appointment.getAppointmentId(),
+                    dentistName,
+                    date,
+                    time,
+                    appointment.getStatus() != null ? appointment.getStatus() : "N/A",
+                    appointment.getReason() != null ? appointment.getReason() : "N/A"
+                };
+            } else {
+                // For Admin, Reception, Dentist: ID, Patient, Dentist, Date, Time, Status, Reason
+                row = new Object[]{
+                    appointment.getAppointmentId(),
+                    patientName,
+                    dentistName,
+                    date,
+                    time,
+                    appointment.getStatus() != null ? appointment.getStatus() : "N/A",
+                    appointment.getReason() != null ? appointment.getReason() : "N/A"
+                };
+            }
             tableModel.addRow(row);
         }
 
@@ -805,7 +859,7 @@ public class AppointmentListPanel extends JPanel {
             return;
         }
         
-        String patientName = (String) tableModel.getValueAt(row, 1);
+        String patientName = getPatientNameFromRow(row);
         
         int confirm = JOptionPane.showConfirmDialog(
             this,
@@ -816,7 +870,6 @@ public class AppointmentListPanel extends JPanel {
         );
         
         if (confirm == JOptionPane.YES_OPTION) {
-            User currentUser = LoginSession.getInstance().getCurrentUser();
             boolean success = controller.cancelAppointmentForUser(appointmentId, currentUser);
             if (success) {
                 showSuccess("Appointment cancelled successfully!");
@@ -836,7 +889,7 @@ public class AppointmentListPanel extends JPanel {
             return;
         }
         
-        String patientName = (String) tableModel.getValueAt(row, 1);
+        String patientName = getPatientNameFromRow(row);
         
         int confirm = JOptionPane.showConfirmDialog(
             this,
@@ -847,7 +900,6 @@ public class AppointmentListPanel extends JPanel {
         );
         
         if (confirm == JOptionPane.YES_OPTION) {
-            User currentUser = LoginSession.getInstance().getCurrentUser();
             boolean success = controller.deleteAppointmentForUser(appointmentId, currentUser);
             if (success) {
                 showSuccess("Appointment deleted successfully!");
@@ -856,6 +908,20 @@ public class AppointmentListPanel extends JPanel {
                 showError("Failed to delete appointment.");
             }
         }
+    }
+
+    private String getPatientNameFromRow(int row) {
+        boolean isPatient = currentUser != null && currentUser.isPatient();
+        // For patient view, patient name is not in the table, so get from appointment
+        if (isPatient) {
+            int appointmentId = (int) tableModel.getValueAt(row, 0);
+            Appointment appointment = controller.getAppointmentById(appointmentId);
+            if (appointment != null) {
+                return getPatientName(appointment.getPatientId());
+            }
+            return "Unknown";
+        }
+        return (String) tableModel.getValueAt(row, 1);
     }
 
     // =====================================================
