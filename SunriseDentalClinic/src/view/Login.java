@@ -42,7 +42,7 @@ public class Login extends javax.swing.JFrame {
         
               try {
             // Load image from resources folder
-            Image icon = ImageIO.read(getClass().getResource("/resources/Remove Bg light.png"));
+            Image icon = ImageIO.read(getClass().getResource("/resources/Logo.png"));
             setIconImage(icon);
         } catch (IOException e) {
             e.printStackTrace();

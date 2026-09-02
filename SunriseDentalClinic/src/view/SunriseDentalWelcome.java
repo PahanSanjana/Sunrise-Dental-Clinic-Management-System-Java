@@ -5,7 +5,6 @@ import controller.SignupController;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
@@ -14,28 +13,24 @@ import javax.swing.border.EmptyBorder;
 
 public class SunriseDentalWelcome extends JFrame {
 
-    // Color Palette - Modern & Minimal
+    // Color Palette - Clean & Professional
     private static final Color PRIMARY_DARK = new Color(0x2F3E3C);
     private static final Color PRIMARY_LIGHT = new Color(0x4A6A65);
     private static final Color MINT = new Color(0xBDDBD1);
-    private static final Color MINT_LIGHT = new Color(0xE8F5F0);
     private static final Color SOFT_SURFACE = new Color(0xFBF9F1);
-    private static final Color LIGHT_SURFACE = new Color(0xE7E9E3);
-    private static final Color CARD_BG = new Color(0xFFFFFF);
     private static final Color SECONDARY_TEXT = new Color(107, 123, 121);
-    private static final Color ACCENT_GRADIENT_START = new Color(0xBDDBD1);
-    private static final Color ACCENT_GRADIENT_END = new Color(0xA8C8BC);
+    private static final Color CARD_BG = new Color(0xFFFFFF);
 
     private BufferedImage logoImage;
     private BufferedImage welcomeImage;
     private RoundedButton loginBtn;
     private RoundedButton signupBtn;
 
-    // Frame size matching MainFrame
     private static final int FRAME_WIDTH = 1400;
     private static final int FRAME_HEIGHT = 820;
 
-    public SunriseDentalWelcome() {
+    public SunriseDentalWelcome() 
+    {
         loadImages();
 
         setTitle("SUNRISE DENTAL - Clinic Management System");
@@ -55,6 +50,8 @@ public class SunriseDentalWelcome extends JFrame {
 
         setContentPane(root);
     }
+    
+    
 
     private void loadImages() {
         try {
@@ -64,6 +61,8 @@ public class SunriseDentalWelcome extends JFrame {
             System.err.println("Error loading images: " + e.getMessage());
         }
     }
+    
+    
 
     private BufferedImage resizeImage(BufferedImage original, int width, int height) {
         if (original == null) return null;
@@ -82,7 +81,7 @@ public class SunriseDentalWelcome extends JFrame {
     }
 
     // =====================================================
-    // TOP NAVIGATION - Clean & Minimal
+    // TOP NAVIGATION - Minimal
     // =====================================================
     private JPanel createTopNavigation() {
         JPanel nav = new JPanel(new BorderLayout());
@@ -92,35 +91,19 @@ public class SunriseDentalWelcome extends JFrame {
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         left.setOpaque(false);
 
-        // Logo
         if (logoImage != null) {
-            BufferedImage scaledLogo = resizeImage(logoImage, 50, 50);
+            BufferedImage scaledLogo = resizeImage(logoImage, 45, 45);
             JLabel logo = new JLabel(new ImageIcon(scaledLogo));
             left.add(logo);
         }
 
-        // Brand
-        JPanel brandPanel = new JPanel();
-        brandPanel.setLayout(new BoxLayout(brandPanel, BoxLayout.Y_AXIS));
-        brandPanel.setOpaque(false);
-
         JLabel title = new JLabel("SUNRISE DENTAL");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
         title.setForeground(PRIMARY_DARK);
-
-        JLabel subtitle = new JLabel("Clinic Management System");
-        subtitle.setForeground(SECONDARY_TEXT);
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-
-        brandPanel.add(title);
-        brandPanel.add(Box.createRigidArea(new Dimension(0, 1)));
-        brandPanel.add(subtitle);
-
-        left.add(brandPanel);
+        left.add(title);
 
         nav.add(left, BorderLayout.WEST);
 
-        // Right - Version Badge
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         right.setOpaque(false);
 
@@ -128,9 +111,8 @@ public class SunriseDentalWelcome extends JFrame {
         badge.setOpaque(true);
         badge.setBackground(MINT);
         badge.setForeground(PRIMARY_DARK);
-        badge.setBorder(new EmptyBorder(6, 16, 6, 16));
+        badge.setBorder(new EmptyBorder(4, 14, 4, 14));
         badge.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        badge.setBorder(BorderFactory.createLineBorder(MINT, 1));
         right.add(badge);
 
         nav.add(right, BorderLayout.EAST);
@@ -139,7 +121,7 @@ public class SunriseDentalWelcome extends JFrame {
     }
 
     // =====================================================
-    // MAIN CONTENT - Modern Split Layout
+    // MAIN CONTENT - Clean Layout
     // =====================================================
     private JPanel createMainContent() {
         JPanel main = new JPanel(new GridLayout(1, 2, 50, 0));
@@ -153,7 +135,7 @@ public class SunriseDentalWelcome extends JFrame {
     }
 
     // =====================================================
-    // LEFT SECTION - Content with spacing
+    // LEFT SECTION - Clean & Minimal
     // =====================================================
     private JPanel createLeftSection() {
         JPanel panel = new JPanel();
@@ -163,47 +145,36 @@ public class SunriseDentalWelcome extends JFrame {
 
         panel.add(Box.createVerticalGlue());
 
-        // Badge
-        JLabel badge = new JLabel("✦ SMART CLINIC MANAGEMENT");
-        badge.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        badge.setForeground(PRIMARY_LIGHT);
-        badge.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(badge);
-        panel.add(Box.createRigidArea(new Dimension(0, 12)));
-
         // Heading
         JLabel heading = new JLabel(
-                "<html><span style='font-size:38px; font-weight:700; color:#2F3E3C;'>Transforming Dental Care</span><br>" +
-                "<span style='font-size:32px; font-weight:300; color:#4A6A65;'>Through Smart Management</span></html>");
+            "<html><span style='font-size:36px; font-weight:700; color:#2F3E3C;'>Welcome to</span><br>" +
+            "<span style='font-size:34px; font-weight:300; color:#4A6A65;'>Sunrise Dental</span></html>"
+        );
         heading.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(heading);
-        panel.add(Box.createRigidArea(new Dimension(0, 16)));
+        panel.add(Box.createRigidArea(new Dimension(0, 12)));
 
-        // Description
+        // Description - Minimal
         JLabel desc = new JLabel(
-                "<html><div style='width:480px; font-size:15px; color:#6B7B79; line-height:1.6;'>" +
-                "Manage patients, appointments, treatments, billing, staff, and clinic operations " +
-                "from one powerful and beautifully designed platform." +
-                "</div></html>");
+            "<html><div style='width:450px; font-size:12px; color:#6B7B79; line-height:1.6;'>" +
+            "Complete clinic management system for modern dental practices." +
+            "</div></html>"
+        );
         desc.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(desc);
-        panel.add(Box.createRigidArea(new Dimension(0, 28)));
-
-        // Features Grid
-        panel.add(createFeatureGrid());
         panel.add(Box.createRigidArea(new Dimension(0, 30)));
 
         // Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
         btnPanel.setOpaque(false);
 
-        loginBtn = new RoundedButton("Login", PRIMARY_DARK, Color.WHITE);
-        loginBtn.setPreferredSize(new Dimension(160, 48));
+        loginBtn = new RoundedButton("Sign In", PRIMARY_DARK, Color.WHITE);
+        loginBtn.setPreferredSize(new Dimension(140, 44));
         loginBtn.addActionListener(e -> openLoginView());
 
         signupBtn = new RoundedButton("Create Account", SOFT_SURFACE, PRIMARY_DARK);
         signupBtn.setBorderColor(MINT);
-        signupBtn.setPreferredSize(new Dimension(160, 48));
+        signupBtn.setPreferredSize(new Dimension(140, 44));
         signupBtn.addActionListener(e -> openSignupView());
 
         btnPanel.add(loginBtn);
@@ -213,33 +184,6 @@ public class SunriseDentalWelcome extends JFrame {
         panel.add(Box.createVerticalGlue());
 
         return panel;
-    }
-
-    // =====================================================
-    // FEATURE GRID - Clean & Minimal
-    // =====================================================
-    private JPanel createFeatureGrid() {
-        JPanel grid = new JPanel(new GridLayout(2, 3, 12, 10));
-        grid.setOpaque(false);
-        grid.setMaximumSize(new Dimension(500, 80));
-
-        String[] features = {
-            "Patient Management",
-            "Appointment Scheduling",
-            "Billing & Payments",
-            "Staff & Dentist Management",
-            "Reports & Analytics",
-            "Secure & Reliable"
-        };
-
-        for (String text : features) {
-            JLabel lbl = new JLabel("✓ " + text);
-            lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-            lbl.setForeground(PRIMARY_DARK);
-            grid.add(lbl);
-        }
-
-        return grid;
     }
 
     // =====================================================
@@ -262,16 +206,16 @@ public class SunriseDentalWelcome extends JFrame {
     }
 
     // =====================================================
-    // FOOTER - Minimal
+    // FOOTER - Clean
     // =====================================================
     private JPanel createFooter() {
         JPanel footer = new JPanel();
         footer.setOpaque(false);
         footer.setBorder(new EmptyBorder(10, 40, 20, 40));
 
-        JLabel text = new JLabel("© 2026 Sunrise Dental Clinic | Version 2.0 | Designed for Modern Healthcare");
+        JLabel text = new JLabel("© 2026 Sunrise Dental Clinic");
         text.setForeground(new Color(138, 151, 148));
-        text.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        text.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         footer.add(text);
         return footer;
@@ -296,10 +240,6 @@ public class SunriseDentalWelcome extends JFrame {
             new SignupController(signupView);
             signupView.setVisible(true);
         });
-    }
-
-    private Font font(int style, int size) {
-        return new Font("Segoe UI", style, size);
     }
 
     // =====================================================
@@ -356,13 +296,8 @@ public class SunriseDentalWelcome extends JFrame {
 
                 g2.drawImage(welcomeImage, x, y, drawW, drawH, null);
 
-                // Subtle glow
-                g2.setColor(new Color(47, 62, 60, 15));
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawRoundRect(x - 8, y - 8, drawW + 16, drawH + 16, 25, 25);
-
             } else {
-                // Fallback
+                // Fallback text
                 g2.setColor(new Color(200, 200, 200));
                 g2.setFont(new Font("Segoe UI", Font.PLAIN, 16));
                 String msg = "Welcome Image";
@@ -399,7 +334,7 @@ public class SunriseDentalWelcome extends JFrame {
             this.borderColor = bg;
 
             setForeground(fg);
-            setFont(new Font("Segoe UI", Font.BOLD, 14));
+            setFont(new Font("Segoe UI", Font.BOLD, 13));
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);
