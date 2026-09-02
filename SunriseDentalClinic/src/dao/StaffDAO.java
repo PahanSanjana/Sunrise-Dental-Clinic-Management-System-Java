@@ -16,11 +16,88 @@ public class StaffDAO {
     // =====================================================
 
     /**
-     * Add a new staff member to the database
+     * Add a new staff member to the database with validation
      * @param staff The staff object to save
      * @return true if successful, false otherwise
      */
     public boolean addStaff(Staff staff) {
+        // =============================================
+        // VALIDATE BEFORE INSERTING
+        // =============================================
+        
+        // 1. Validate First Name
+        if (staff.getFirstName() == null || staff.getFirstName().trim().isEmpty()) {
+            System.err.println("Validation Error: First Name is required");
+            return false;
+        }
+        
+        if (staff.getFirstName().trim().length() < 2) {
+            System.err.println("Validation Error: First Name must be at least 2 characters");
+            return false;
+        }
+        
+        // 2. Validate Last Name
+        if (staff.getLastName() == null || staff.getLastName().trim().isEmpty()) {
+            System.err.println("Validation Error: Last Name is required");
+            return false;
+        }
+        
+        if (staff.getLastName().trim().length() < 2) {
+            System.err.println("Validation Error: Last Name must be at least 2 characters");
+            return false;
+        }
+        
+        // 3. Validate Position
+        if (staff.getPosition() == null || staff.getPosition().trim().isEmpty()) {
+            System.err.println("Validation Error: Position is required");
+            return false;
+        }
+        
+        // 4. Validate Department
+        if (staff.getDepartment() == null || staff.getDepartment().trim().isEmpty()) {
+            System.err.println("Validation Error: Department is required");
+            return false;
+        }
+        
+        // 5. Validate Phone
+        if (staff.getPhone() == null || staff.getPhone().trim().isEmpty()) {
+            System.err.println("Validation Error: Phone is required");
+            return false;
+        }
+        
+        String phoneDigits = staff.getPhone().replaceAll("[^0-9]", "");
+        if (phoneDigits.length() < 10) {
+            System.err.println("Validation Error: Phone must have at least 10 digits");
+            return false;
+        }
+        
+        // 6. Validate Email
+        if (staff.getEmail() == null || staff.getEmail().trim().isEmpty()) {
+            System.err.println("Validation Error: Email is required");
+            return false;
+        }
+        
+        if (!staff.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            System.err.println("Validation Error: Invalid email format");
+            return false;
+        }
+        
+        // 7. Validate Hire Date
+        if (staff.getHireDate() == null) {
+            System.err.println("Validation Error: Hire Date is required");
+            return false;
+        }
+        
+        // 8. Validate Salary
+        if (staff.getSalary() < 0) {
+            System.err.println("Validation Error: Salary cannot be negative");
+            return false;
+        }
+        
+        // =============================================
+        // INSERT INTO DATABASE
+        // =============================================
+        
         String sql = "INSERT INTO staff (first_name, last_name, position, department, "
                    + "phone, email, hire_date, salary, is_active) "
                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -28,12 +105,12 @@ public class StaffDAO {
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(1, staff.getFirstName());
-            pstmt.setString(2, staff.getLastName());
-            pstmt.setString(3, staff.getPosition());
-            pstmt.setString(4, staff.getDepartment());
-            pstmt.setString(5, staff.getPhone());
-            pstmt.setString(6, staff.getEmail());
+            pstmt.setString(1, staff.getFirstName().trim());
+            pstmt.setString(2, staff.getLastName().trim());
+            pstmt.setString(3, staff.getPosition().trim());
+            pstmt.setString(4, staff.getDepartment().trim());
+            pstmt.setString(5, staff.getPhone().trim());
+            pstmt.setString(6, staff.getEmail().trim());
             pstmt.setDate(7, staff.getHireDate());
             pstmt.setDouble(8, staff.getSalary());
             pstmt.setBoolean(9, staff.isActive());

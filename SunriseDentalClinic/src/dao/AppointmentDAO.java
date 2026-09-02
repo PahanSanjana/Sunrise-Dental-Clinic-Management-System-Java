@@ -14,11 +14,71 @@ public class AppointmentDAO {
     // =====================================================
 
     /**
-     * Book a new appointment
+     * Book a new appointment with validation
      * @param appointment The appointment to book
      * @return true if successful, false otherwise
      */
     public boolean bookAppointment(Appointment appointment) {
+        // =============================================
+        // VALIDATE BEFORE INSERTING
+        // =============================================
+        
+        // 1. Validate Patient ID
+        if (appointment.getPatientId() <= 0) {
+            System.err.println("Validation Error: Invalid Patient ID");
+            return false;
+        }
+        
+        // 2. Validate Dentist ID - Check if dentist exists
+        if (appointment.getDentistId() <= 0) {
+            System.err.println("Validation Error: Invalid Dentist ID");
+            return false;
+        }
+        
+        // Check if dentist exists in database
+        String dentistCheckSql = "SELECT COUNT(*) FROM dentists WHERE dentist_id = ?";
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(dentistCheckSql)) {
+            pstmt.setInt(1, appointment.getDentistId());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next() && rs.getInt(1) == 0) {
+                System.err.println("Validation Error: Dentist does not exist (ID: " + appointment.getDentistId() + ")");
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking dentist existence: " + e.getMessage());
+            return false;
+        }
+        
+        // 3. Validate Date (not in past)
+        if (appointment.getAppointmentDate() != null) {
+            if (appointment.getAppointmentDate().toLocalDate().isBefore(LocalDate.now())) {
+                System.err.println("Validation Error: Appointment date cannot be in the past");
+                return false;
+            }
+        }
+        
+        // 4. Check for double booking
+        String checkSql = "SELECT COUNT(*) FROM appointments WHERE dentist_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'Cancelled'";
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(checkSql)) {
+            pstmt.setInt(1, appointment.getDentistId());
+            pstmt.setDate(2, appointment.getAppointmentDate());
+            pstmt.setTime(3, appointment.getAppointmentTime());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                System.err.println("Validation Error: Dentist already has an appointment at this time");
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking availability: " + e.getMessage());
+            return false;
+        }
+        
+        // =============================================
+        // INSERT APPOINTMENT
+        // =============================================
+        
         String sql = "INSERT INTO appointments (patient_id, dentist_id, appointment_date, appointment_time, "
                    + "end_time, status, reason, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -51,7 +111,7 @@ public class AppointmentDAO {
     }
 
     // =====================================================
-    // READ METHODS
+    // READ METHODS (UNCHANGED)
     // =====================================================
 
     /**
@@ -353,7 +413,7 @@ public class AppointmentDAO {
     }
 
     // =====================================================
-    // UPDATE METHODS
+    // UPDATE METHODS (UNCHANGED)
     // =====================================================
 
     /**
@@ -386,28 +446,45 @@ public class AppointmentDAO {
         return false;
     }
 
+    // =====================================================
+    // CANCEL APPOINTMENT (FIXED)
+    // =====================================================
+
     /**
      * Cancel an appointment (soft delete)
      * @param appointmentId The appointment ID to cancel
      * @return true if successful, false otherwise
      */
     public boolean cancelAppointment(int appointmentId) {
-        String sql = "UPDATE appointments SET status = 'Cancelled' WHERE appointment_id = ?";
-        
+        // Validate appointment ID
+        if (appointmentId <= 0) {
+            System.err.println("Validation Error: Invalid Appointment ID");
+            return false;
+        }
+
+        String sql = "UPDATE appointments " +
+                     "SET status = 'Cancelled' " +
+                     "WHERE appointment_id = ? " +
+                     "AND status != 'Cancelled'";
+
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
             pstmt.setInt(1, appointmentId);
-            return pstmt.executeUpdate() > 0;
+
+            int affectedRows = pstmt.executeUpdate();
+
+            return affectedRows > 0;
+
         } catch (SQLException e) {
             System.err.println("Error cancelling appointment: " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
     // =====================================================
-    // DELETE METHODS
+    // DELETE METHODS (UNCHANGED)
     // =====================================================
 
     /**
@@ -431,7 +508,7 @@ public class AppointmentDAO {
     }
 
     // =====================================================
-    // COUNT METHODS
+    // COUNT METHODS (UNCHANGED)
     // =====================================================
 
     /**
@@ -573,7 +650,7 @@ public class AppointmentDAO {
     }
 
     // =====================================================
-    // HELPER METHODS
+    // HELPER METHODS (UNCHANGED)
     // =====================================================
 
     /**

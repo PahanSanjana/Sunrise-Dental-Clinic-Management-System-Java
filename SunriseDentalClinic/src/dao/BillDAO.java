@@ -617,35 +617,60 @@ public class BillDAO {
     }
 
     /**
-     * Update bill payment
+     * Update bill payment - FIXED with validation
      * @param billId The bill ID
      * @param amountPaid The amount paid
      * @param paymentMethod The payment method
      * @return true if successful, false otherwise
      */
     public boolean updateBillPayment(int billId, double amountPaid, String paymentMethod) {
-        String sql = "UPDATE billing SET amount_paid = ?, balance = total_amount - ?, payment_method = ?, "
-                   + "status = CASE WHEN total_amount - ? <= 0 THEN 'Paid' ELSE 'Partial' END WHERE bill_id = ?";
-        
+        // Validate bill ID
+        if (billId <= 0) {
+            System.err.println("Validation Error: Invalid Bill ID");
+            return false;
+        }
+
+        // Validate payment amount
+        if (amountPaid < 0) {
+            System.err.println("Validation Error: Payment amount cannot be negative");
+            return false;
+        }
+
+        // Validate payment method
+        if (paymentMethod == null || paymentMethod.trim().isEmpty()) {
+            System.err.println("Validation Error: Payment method is required");
+            return false;
+        }
+
+        String sql = "UPDATE billing " +
+                     "SET amount_paid = ?, " +
+                     "balance = total_amount - ?, " +
+                     "payment_method = ?, " +
+                     "status = CASE " +
+                     "WHEN total_amount - ? <= 0 THEN 'Paid' " +
+                     "ELSE 'Partial' END " +
+                     "WHERE bill_id = ?";
+
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
             pstmt.setDouble(1, amountPaid);
             pstmt.setDouble(2, amountPaid);
             pstmt.setString(3, paymentMethod);
             pstmt.setDouble(4, amountPaid);
             pstmt.setInt(5, billId);
-            
+
             return pstmt.executeUpdate() > 0;
+
         } catch (SQLException e) {
             System.err.println("Error updating bill payment: " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
     // =====================================================
-    // BILL ITEM METHODS (NEW)
+    // BILL ITEM METHODS
     // =====================================================
 
     /**

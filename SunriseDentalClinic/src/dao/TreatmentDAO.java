@@ -12,21 +12,57 @@ import java.util.List;
 public class TreatmentDAO {
 
     /**
-     * Add a new treatment to the database
+     * Add a new treatment to the database with validation
      */
     public boolean addTreatment(Treatment treatment) {
-        // ✅ FIXED: Using 'duration' (not 'estimated_duration')
+        // =============================================
+        // VALIDATE BEFORE INSERTING
+        // =============================================
+        
+        // 1. Validate Treatment Name
+        if (treatment.getTreatmentName() == null || treatment.getTreatmentName().trim().isEmpty()) {
+            System.err.println("Validation Error: Treatment Name is required");
+            return false;
+        }
+        
+        if (treatment.getTreatmentName().trim().length() < 2) {
+            System.err.println("Validation Error: Treatment Name must be at least 2 characters");
+            return false;
+        }
+        
+        // 2. Validate Category
+        if (treatment.getCategory() == null || treatment.getCategory().trim().isEmpty()) {
+            System.err.println("Validation Error: Category is required");
+            return false;
+        }
+        
+        // 3. Validate Cost
+        if (treatment.getCost() < 0) {
+            System.err.println("Validation Error: Cost cannot be negative");
+            return false;
+        }
+        
+        // 4. Validate Duration
+        if (treatment.getDuration() <= 0) {
+            System.err.println("Validation Error: Duration must be greater than 0");
+            return false;
+        }
+        
+        // =============================================
+        // INSERT INTO DATABASE
+        // =============================================
+        
         String sql = "INSERT INTO treatments (treatment_name, description, category, cost, duration, is_active) "
                    + "VALUES (?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(1, treatment.getTreatmentName());
+            pstmt.setString(1, treatment.getTreatmentName().trim());
             pstmt.setString(2, treatment.getDescription());
-            pstmt.setString(3, treatment.getCategory());
+            pstmt.setString(3, treatment.getCategory().trim());
             pstmt.setDouble(4, treatment.getCost());
-            pstmt.setInt(5, treatment.getDuration()); // ✅ Using duration
+            pstmt.setInt(5, treatment.getDuration());
             pstmt.setBoolean(6, treatment.isActive());
             
             int affectedRows = pstmt.executeUpdate();
@@ -275,7 +311,6 @@ public class TreatmentDAO {
      * Update treatment information
      */
     public boolean updateTreatment(Treatment treatment) {
-        // ✅ FIXED: Using 'duration' (not 'estimated_duration')
         String sql = "UPDATE treatments SET treatment_name=?, description=?, category=?, "
                    + "cost=?, duration=?, is_active=? WHERE treatment_id=?";
         
@@ -286,7 +321,7 @@ public class TreatmentDAO {
             pstmt.setString(2, treatment.getDescription());
             pstmt.setString(3, treatment.getCategory());
             pstmt.setDouble(4, treatment.getCost());
-            pstmt.setInt(5, treatment.getDuration()); // ✅ Using duration
+            pstmt.setInt(5, treatment.getDuration());
             pstmt.setBoolean(6, treatment.isActive());
             pstmt.setInt(7, treatment.getTreatmentId());
             
@@ -525,17 +560,16 @@ public class TreatmentDAO {
      * Map ResultSet to Treatment object
      */
     private Treatment mapResultSetToTreatment(ResultSet rs) throws SQLException {
-        // ✅ FIXED: Using 'duration' (not 'estimated_duration')
-        return new Treatment(
-            rs.getInt("treatment_id"),
-            rs.getString("treatment_name"),
-            rs.getString("description"),
-            rs.getString("category"),
-            rs.getDouble("cost"),
-            rs.getInt("duration"), // ✅ FIXED: was 'estimated_duration'
-            rs.getBoolean("is_active"),
-            rs.getString("created_at"),
-            rs.getString("updated_at")
-        );
+        Treatment treatment = new Treatment();
+        treatment.setTreatmentId(rs.getInt("treatment_id"));
+        treatment.setTreatmentName(rs.getString("treatment_name"));
+        treatment.setDescription(rs.getString("description"));
+        treatment.setCategory(rs.getString("category"));
+        treatment.setCost(rs.getDouble("cost"));
+        treatment.setDuration(rs.getInt("duration"));
+        treatment.setActive(rs.getBoolean("is_active"));
+        treatment.setCreatedAt(rs.getString("created_at"));
+        treatment.setUpdatedAt(rs.getString("updated_at"));
+        return treatment;
     }
 }

@@ -602,7 +602,7 @@ public class UserProfilePanel extends JPanel {
                         addProfileField("Phone", getString(data.get("phone")));
                         addProfileField("Email", getString(data.get("email")));
                         addProfileField("Hire Date", getString(data.get("hireDate")));
-                        addProfileField("Salary", data.get("salary") != null ? "$" + data.get("salary") : "N/A");
+                        addProfileField("Salary", data.get("salary") != null ? "Rs" + data.get("salary") : "N/A");
                         addProfileField("Status", data.get("isActive") != null ? 
                             (Boolean) data.get("isActive") ? "Active" : "Inactive" : "N/A");
                     } else {
@@ -638,7 +638,7 @@ public class UserProfilePanel extends JPanel {
                         addProfileField("Email", getString(data.get("email")));
                         addProfileField("Years of Experience", String.valueOf(data.get("yearsOfExperience")));
                         addProfileField("Consultation Fee", data.get("consultationFee") != null ? 
-                            "$" + data.get("consultationFee") : "N/A");
+                            "Rs" + data.get("consultationFee") : "N/A");
                         addProfileField("Availability", data.get("isAvailable") != null ? 
                             (Boolean) data.get("isAvailable") ? "Available" : "Unavailable" : "N/A");
                     } else {

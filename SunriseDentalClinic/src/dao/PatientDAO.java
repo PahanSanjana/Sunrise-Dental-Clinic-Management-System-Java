@@ -12,11 +12,81 @@ import java.util.List;
 public class PatientDAO {
 
     /**
-     * Add a new patient to the database
+     * Add a new patient to the database with validation
      * @param patient The patient object to save
      * @return true if successful, false otherwise
      */
     public boolean addPatient(Patient patient) {
+        // =============================================
+        // VALIDATE BEFORE SAVING
+        // =============================================
+        
+        // 1. Validate Name
+        if (patient.getPatientName() == null || patient.getPatientName().trim().isEmpty()) {
+            System.err.println("Validation Error: Patient Name is required");
+            return false;
+        }
+        
+        if (patient.getPatientName().trim().length() < 2) {
+            System.err.println("Validation Error: Patient Name must be at least 2 characters");
+            return false;
+        }
+        
+        // 2. Validate Contact Number
+        if (patient.getContactNumber() == null || patient.getContactNumber().trim().isEmpty()) {
+            System.err.println("Validation Error: Contact Number is required");
+            return false;
+        }
+        
+        String phoneDigits = patient.getContactNumber().replaceAll("[^0-9]", "");
+        if (phoneDigits.length() < 10) {
+            System.err.println("Validation Error: Contact Number must have at least 10 digits");
+            return false;
+        }
+        
+        // 3. Validate Email (if provided)
+        if (patient.getEmail() != null && !patient.getEmail().trim().isEmpty()) {
+            String email = patient.getEmail().trim();
+            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                System.err.println("Validation Error: Invalid email format");
+                return false;
+            }
+        }
+        
+        // 4. Validate Date of Birth
+        if (patient.getDateOfBirth() == null) {
+            System.err.println("Validation Error: Date of Birth is required");
+            return false;
+        }
+        
+        // 5. Validate Gender
+        if (patient.getGender() == null || patient.getGender().trim().isEmpty()) {
+            System.err.println("Validation Error: Gender is required");
+            return false;
+        }
+        
+        // =============================================
+        // CHECK FOR DUPLICATES
+        // =============================================
+        
+        // Check if phone already exists
+        if (contactNumberExists(patient.getContactNumber(), -1)) {
+            System.err.println("Validation Error: Contact Number already exists");
+            return false;
+        }
+        
+        // Check if email already exists (if email is provided)
+        if (patient.getEmail() != null && !patient.getEmail().trim().isEmpty()) {
+            if (emailExists(patient.getEmail(), -1)) {
+                System.err.println("Validation Error: Email already exists");
+                return false;
+            }
+        }
+        
+        // =============================================
+        // SAVE TO DATABASE
+        // =============================================
+        
         String sql = "INSERT INTO patients (patient_name, gender, address, contact_number, email, "
                    + "date_of_birth, emergency_contact, emergency_phone, user_id, "
                    + "medical_history, allergies) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -24,11 +94,11 @@ public class PatientDAO {
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(1, patient.getPatientName());
-            pstmt.setString(2, patient.getGender());
+            pstmt.setString(1, patient.getPatientName().trim());
+            pstmt.setString(2, patient.getGender().trim());
             pstmt.setString(3, patient.getAddress());
-            pstmt.setString(4, patient.getContactNumber());
-            pstmt.setString(5, patient.getEmail());
+            pstmt.setString(4, patient.getContactNumber().trim());
+            pstmt.setString(5, patient.getEmail() != null ? patient.getEmail().trim() : null);
             pstmt.setDate(6, patient.getDateOfBirth());
             pstmt.setString(7, patient.getEmergencyContact());
             pstmt.setString(8, patient.getEmergencyPhone());
@@ -54,6 +124,169 @@ public class PatientDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error adding patient: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Update patient information with validation
+     * @param patient The patient to update
+     * @return true if successful, false otherwise
+     */
+    public boolean updatePatient(Patient patient) {
+        // =============================================
+        // VALIDATE BEFORE UPDATING
+        // =============================================
+        
+        // 1. Validate Name
+        if (patient.getPatientName() == null || patient.getPatientName().trim().isEmpty()) {
+            System.err.println("Validation Error: Patient Name is required");
+            return false;
+        }
+        
+        if (patient.getPatientName().trim().length() < 2) {
+            System.err.println("Validation Error: Patient Name must be at least 2 characters");
+            return false;
+        }
+        
+        // 2. Validate Contact Number
+        if (patient.getContactNumber() == null || patient.getContactNumber().trim().isEmpty()) {
+            System.err.println("Validation Error: Contact Number is required");
+            return false;
+        }
+        
+        String phoneDigits = patient.getContactNumber().replaceAll("[^0-9]", "");
+        if (phoneDigits.length() < 10) {
+            System.err.println("Validation Error: Contact Number must have at least 10 digits");
+            return false;
+        }
+        
+        // 3. Validate Email (if provided)
+        if (patient.getEmail() != null && !patient.getEmail().trim().isEmpty()) {
+            String email = patient.getEmail().trim();
+            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                System.err.println("Validation Error: Invalid email format");
+                return false;
+            }
+        }
+        
+        // 4. Validate Date of Birth
+        if (patient.getDateOfBirth() == null) {
+            System.err.println("Validation Error: Date of Birth is required");
+            return false;
+        }
+        
+        // 5. Validate Gender
+        if (patient.getGender() == null || patient.getGender().trim().isEmpty()) {
+            System.err.println("Validation Error: Gender is required");
+            return false;
+        }
+        
+        // =============================================
+        // CHECK FOR DUPLICATES (excluding this patient)
+        // =============================================
+        
+        // Check if phone already exists for another patient
+        if (contactNumberExists(patient.getContactNumber(), patient.getPatientId())) {
+            System.err.println("Validation Error: Contact Number already exists for another patient");
+            return false;
+        }
+        
+        // Check if email already exists for another patient (if email is provided)
+        if (patient.getEmail() != null && !patient.getEmail().trim().isEmpty()) {
+            if (emailExists(patient.getEmail(), patient.getPatientId())) {
+                System.err.println("Validation Error: Email already exists for another patient");
+                return false;
+            }
+        }
+        
+        // =============================================
+        // UPDATE IN DATABASE
+        // =============================================
+        
+        String sql = "UPDATE patients SET patient_name=?, gender=?, address=?, contact_number=?, email=?, "
+                   + "date_of_birth=?, emergency_contact=?, emergency_phone=?, user_id=?, "
+                   + "medical_history=?, allergies=? WHERE patient_id=?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, patient.getPatientName().trim());
+            pstmt.setString(2, patient.getGender().trim());
+            pstmt.setString(3, patient.getAddress());
+            pstmt.setString(4, patient.getContactNumber().trim());
+            pstmt.setString(5, patient.getEmail() != null ? patient.getEmail().trim() : null);
+            pstmt.setDate(6, patient.getDateOfBirth());
+            pstmt.setString(7, patient.getEmergencyContact());
+            pstmt.setString(8, patient.getEmergencyPhone());
+            
+            // Handle user_id - if -1 or 0, set to NULL
+            if (patient.getPatientLoginId() > 0) {
+                pstmt.setInt(9, patient.getPatientLoginId());
+            } else {
+                pstmt.setNull(9, Types.INTEGER);
+            }
+            
+            pstmt.setString(10, patient.getMedicalHistory());
+            pstmt.setString(11, patient.getAllergies());
+            pstmt.setInt(12, patient.getPatientId());
+            
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating patient: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Check if email already exists for another patient
+     * @param email The email to check
+     * @param excludePatientId Patient ID to exclude from check (for updates)
+     * @return true if email exists, false otherwise
+     */
+    public boolean emailExists(String email, int excludePatientId) {
+        String sql = "SELECT COUNT(*) FROM patients WHERE email = ? AND patient_id != ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, email);
+            pstmt.setInt(2, excludePatientId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking email existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Check if contact number already exists for another patient
+     * @param contactNumber The contact number to check
+     * @param excludePatientId Patient ID to exclude from check (for updates)
+     * @return true if contact number exists, false otherwise
+     */
+    public boolean contactNumberExists(String contactNumber, int excludePatientId) {
+        String sql = "SELECT COUNT(*) FROM patients WHERE contact_number = ? AND patient_id != ?";
+        
+        try (Connection conn = DBconnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, contactNumber);
+            pstmt.setInt(2, excludePatientId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking contact number existence: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
@@ -261,47 +494,6 @@ public class PatientDAO {
     }
 
     /**
-     * Update patient information
-     * @param patient The patient to update
-     * @return true if successful, false otherwise
-     */
-    public boolean updatePatient(Patient patient) {
-        String sql = "UPDATE patients SET patient_name=?, gender=?, address=?, contact_number=?, email=?, "
-                   + "date_of_birth=?, emergency_contact=?, emergency_phone=?, user_id=?, "
-                   + "medical_history=?, allergies=? WHERE patient_id=?";
-        
-        try (Connection conn = DBconnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, patient.getPatientName());
-            pstmt.setString(2, patient.getGender());
-            pstmt.setString(3, patient.getAddress());
-            pstmt.setString(4, patient.getContactNumber());
-            pstmt.setString(5, patient.getEmail());
-            pstmt.setDate(6, patient.getDateOfBirth());
-            pstmt.setString(7, patient.getEmergencyContact());
-            pstmt.setString(8, patient.getEmergencyPhone());
-            
-            // Handle user_id - if -1 or 0, set to NULL
-            if (patient.getPatientLoginId() > 0) {
-                pstmt.setInt(9, patient.getPatientLoginId());
-            } else {
-                pstmt.setNull(9, Types.INTEGER);
-            }
-            
-            pstmt.setString(10, patient.getMedicalHistory());
-            pstmt.setString(11, patient.getAllergies());
-            pstmt.setInt(12, patient.getPatientId());
-            
-            return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Error updating patient: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
      * Delete a patient
      * @param patientId The patient ID to delete
      * @return true if successful, false otherwise
@@ -340,58 +532,6 @@ public class PatientDAO {
             e.printStackTrace();
         }
         return 0;
-    }
-
-    /**
-     * Check if email already exists for another patient
-     * @param email The email to check
-     * @param excludePatientId Patient ID to exclude from check (for updates)
-     * @return true if email exists, false otherwise
-     */
-    public boolean emailExists(String email, int excludePatientId) {
-        String sql = "SELECT COUNT(*) FROM patients WHERE email = ? AND patient_id != ?";
-        
-        try (Connection conn = DBconnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, email);
-            pstmt.setInt(2, excludePatientId);
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("Error checking email existence: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    /**
-     * Check if contact number already exists for another patient
-     * @param contactNumber The contact number to check
-     * @param excludePatientId Patient ID to exclude from check (for updates)
-     * @return true if contact number exists, false otherwise
-     */
-    public boolean contactNumberExists(String contactNumber, int excludePatientId) {
-        String sql = "SELECT COUNT(*) FROM patients WHERE contact_number = ? AND patient_id != ?";
-        
-        try (Connection conn = DBconnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, contactNumber);
-            pstmt.setInt(2, excludePatientId);
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("Error checking contact number existence: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return false;
     }
 
     /**

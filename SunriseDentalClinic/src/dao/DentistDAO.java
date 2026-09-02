@@ -16,11 +16,83 @@ public class DentistDAO {
     // =====================================================
 
     /**
-     * Add a new dentist to the database
+     * Add a new dentist to the database with validation
      * @param dentist The dentist object to save
      * @return true if successful, false otherwise
      */
     public boolean addDentist(Dentist dentist) {
+        // =============================================
+        // VALIDATE BEFORE INSERTING
+        // =============================================
+        
+        // 1. Validate Dentist Name
+        if (dentist.getDentistName() == null || dentist.getDentistName().trim().isEmpty()) {
+            System.err.println("Validation Error: Dentist Name is required");
+            return false;
+        }
+        
+        if (dentist.getDentistName().trim().length() < 2) {
+            System.err.println("Validation Error: Dentist Name must be at least 2 characters");
+            return false;
+        }
+        
+        // 2. Validate Specialization
+        if (dentist.getSpecialization() == null || dentist.getSpecialization().trim().isEmpty()) {
+            System.err.println("Validation Error: Specialization is required");
+            return false;
+        }
+        
+        // 3. Validate License Number
+        if (dentist.getLicenseNumber() == null || dentist.getLicenseNumber().trim().isEmpty()) {
+            System.err.println("Validation Error: License Number is required");
+            return false;
+        }
+        
+        // Check if license number already exists
+        if (licenseNumberExists(dentist.getLicenseNumber())) {
+            System.err.println("Validation Error: License Number already exists");
+            return false;
+        }
+        
+        // 4. Validate Phone
+        if (dentist.getPhone() == null || dentist.getPhone().trim().isEmpty()) {
+            System.err.println("Validation Error: Phone is required");
+            return false;
+        }
+        
+        String phoneDigits = dentist.getPhone().replaceAll("[^0-9]", "");
+        if (phoneDigits.length() < 10) {
+            System.err.println("Validation Error: Phone must have at least 10 digits");
+            return false;
+        }
+        
+        // 5. Validate Email
+        if (dentist.getEmail() == null || dentist.getEmail().trim().isEmpty()) {
+            System.err.println("Validation Error: Email is required");
+            return false;
+        }
+        
+        if (!dentist.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            System.err.println("Validation Error: Invalid email format");
+            return false;
+        }
+        
+        // 6. Validate Experience
+        if (dentist.getYearsOfExperience() < 0) {
+            System.err.println("Validation Error: Years of Experience cannot be negative");
+            return false;
+        }
+        
+        // 7. Validate Consultation Fee
+        if (dentist.getConsultationFee() < 0) {
+            System.err.println("Validation Error: Consultation Fee cannot be negative");
+            return false;
+        }
+        
+        // =============================================
+        // INSERT INTO DATABASE
+        // =============================================
+        
         String sql = "INSERT INTO dentists (dentist_name, specialization, license_number, "
                    + "working_hours, phone, email, years_of_experience, consultation_fee, "
                    + "is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -28,12 +100,12 @@ public class DentistDAO {
         try (Connection conn = DBconnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(1, dentist.getDentistName());
-            pstmt.setString(2, dentist.getSpecialization());
-            pstmt.setString(3, dentist.getLicenseNumber());
+            pstmt.setString(1, dentist.getDentistName().trim());
+            pstmt.setString(2, dentist.getSpecialization().trim());
+            pstmt.setString(3, dentist.getLicenseNumber().trim());
             pstmt.setString(4, dentist.getWorkingHours());
-            pstmt.setString(5, dentist.getPhone());
-            pstmt.setString(6, dentist.getEmail());
+            pstmt.setString(5, dentist.getPhone().trim());
+            pstmt.setString(6, dentist.getEmail().trim());
             pstmt.setInt(7, dentist.getYearsOfExperience());
             pstmt.setDouble(8, dentist.getConsultationFee());
             pstmt.setBoolean(9, dentist.isAvailable());
